@@ -5,7 +5,9 @@
  * cards render. Data access lives behind provider seams (mock / cli / http);
  * switching providers never changes the model-facing surface.
  */
+import { resolve } from 'node:path'
 import { normalizeConfig } from './config.js'
+import { buildPipelinePackage } from './pipeline-package.js'
 import { createMockProvider } from './providers/mock.js'
 import { createDevops } from './providers/devops.js'
 import { createCatalog } from './providers/catalog.js'
@@ -612,7 +614,10 @@ export function createTools(config, deps) {
       parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：完成后把 workitem cicd 阶段标为 done。' } }),
       execute: async args => {
         const value = { ...CICD_PIPELINE, mock: true }
-        if (args.workitemId) value.workitem = stageComplete(config, { id: args.workitemId })
+        if (args.workitemId) {
+          value.artifact = buildPipelinePackage(resolve(config.workitemsDir), args.workitemId, { target: value.target, commit: value.commit })
+          value.workitem = stageComplete(config, { id: args.workitemId })
+        }
         return value
       },
       summary: value => 'CICD：' + value.pipelineRunId + '｜' + value.status + '｜' + value.artifact.package

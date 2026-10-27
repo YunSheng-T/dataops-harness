@@ -372,7 +372,7 @@ export function ensureWorkitem(config, args) {
   for (const stage of STAGES) mkdirSync(join(dir, 'deliverables', stage), { recursive: true })
   mkdirSync(join(dir, 'evidence'), { recursive: true })
   const stage = STAGES.includes(args.initialStage) ? args.initialStage : 'requirement'
-  const approvals = ['requirement', 'design', 'scheme.analysis', 'scheme.solution', 'scheme.tech_plan'].map(gate => ({
+  const approvals = ['requirement', 'design', 'scheme.analysis', 'scheme.solution', 'scheme.tech_plan', 'develop.code_review', 'develop.merge'].map(gate => ({
     gate, status: 'pending', signoffs: []
   }))
   const item = {

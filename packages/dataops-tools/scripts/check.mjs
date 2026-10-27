@@ -4,7 +4,8 @@ import { normalizeConfig } from '../src/config.js'
 import { normalizeTicket } from '../src/providers/devops.js'
 import { normalizeTable, normalizeLineage } from '../src/providers/catalog.js'
 import { requirementPayload } from '../src/contracts.js'
-import { mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
+import { gunzipSync } from 'node:zlib'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { SCENARIO_KEYS, buildRequirement, buildDesign, buildTechPlan, buildEvidence } from '../src/mock.js'
@@ -360,6 +361,16 @@ check('stage 4 and stage 5 gates advance without DSH release approval', async ()
     assert(cicd.kind === 'cicd', 'cicd stage prepare')
     const pipeline = await by('dataops_cicd_pipeline').execute({ workitemId: id }, { signal })
     assert(pipeline.workitem && pipeline.workitem.stages.cicd.status === 'done', 'pipeline completes stage 5')
+    const pkgPath = join(dir, id, 'deliverables', 'cicd', pipeline.artifact.package)
+    const manifestPath = join(dir, id, 'deliverables', 'cicd', pipeline.artifact.manifest)
+    const checksumPath = join(dir, id, 'deliverables', 'cicd', pipeline.artifact.checksum)
+    assert(existsSync(pkgPath) && existsSync(manifestPath) && existsSync(checksumPath), 'artifact package/manifest/checksum files missing')
+    const packageBytes = readFileSync(pkgPath)
+    const unpacked = gunzipSync(packageBytes)
+    assert(unpacked.length > 1024, 'artifact package is not gzip/tar content')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    assert(manifest.files.length >= 6 && manifest.mock === true, 'artifact manifest files missing')
+    assert(readFileSync(checksumPath, 'utf8').includes(manifest.files[0].sha256), 'checksums do not cover manifest files')
     assert(pipeline.workitem.stage === 'cicd' && pipeline.workitem.next.includes('Stage 5 完成'), 'stage 5 ends without stage 6')
     const final = await by('dataops_shared_read_workitem').execute({ id }, { signal })
     assert(final.stage === 'cicd' && final.stages.develop.status === 'done', 'workitem persisted through stage 5')
