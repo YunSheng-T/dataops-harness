@@ -423,6 +423,51 @@ async function runUiDock() {
   }
 }
 
+async function runCommitterUi() {
+  const serverPort = await freePort()
+  const chromePort = await freePort()
+  const server = await startServer(serverPort, 'workspace-write')
+  const page = await startChrome(chromePort, server.url, join(root, '.tmp-p14-chrome-committer-' + runId))
+  try {
+    await ensureComposer(page.evaluate)
+    await dismissPreview(page.evaluate)
+    await ensureComposer(page.evaluate)
+    await sendPrompt(page, '只读展示工作项 2026-10-27-us-3821-demo 的开发验证卡，不要签收、不要合并。')
+    await waitFor(async () => (await currentCardText(page)).includes('开发验证'), 240000, 'committer stage 4 card')
+    await sleep(800)
+    const buttons = await page.evaluate(`[...document.querySelectorAll('.do-turn-card button')].map(b => (b.textContent || '').trim())`)
+    console.log('buttons:', JSON.stringify(buttons))
+    const clicked = await page.evaluate(`(() => { const b = [...document.querySelectorAll('.do-turn-card button')].find(b => (b.textContent || '').trim() === '记录合入'); if (!b) return false; b.click(); return true })()`)
+    if (!clicked) throw new Error('记录合入 button missing; buttons=' + JSON.stringify(buttons))
+    await waitFor(async () => (await bodyText(page)).includes('确认签收'), 10000, 'committer confirmation')
+    const preview = await page.evaluate(`document.querySelector('.do-signoff-host-preview')?.innerText || ''`)
+    if (!/gate=develop\.merge/.test(preview) || !/role=committer/.test(preview)) throw new Error('wrong committer preview: ' + preview)
+    await page.evaluate(`(() => { const b = [...document.querySelectorAll('.do-signoff-host-btn')].find(b => (b.textContent || '').trim() === '签收并提交'); b?.click() })()`)
+    await sleep(1000)
+    const afterSubmit = await bodyText(page)
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/committer-after-click.png'), Buffer.from(r.result.data, 'base64')) })
+    let item = null
+    for (let i = 0; i < 12; i++) {
+      await sleep(10000)
+      item = readWorkitems().find(x => x.name === '2026-10-27-us-3821-demo') || null
+      if (item && /stage:\s*cicd/.test(item.text)) break
+    }
+    const afterText = await bodyText(page)
+    console.log('after committer submit:', afterText.slice(-700))
+    check(Boolean(item && /gate:\s*develop\.merge/.test(item.text) && /role:\s*Committer/i.test(item.text)), 'committer signoff recorded')
+    check(Boolean(item && /stage:\s*cicd/.test(item.text)), 'committer advances to cicd')
+    check(!afterSubmit.includes('只在输入框'), 'not only filled composer')
+    check(page.errors.length === 0, 'no console exceptions: ' + page.errors.slice(-2).join(' | '))
+    notes.push({ scenario: 'committer-ui', buttons, stage: item && (item.text.match(/^stage:\s*(\S+)/m) || [])[1] })
+  } finally {
+    page.ws.close()
+    page.child.kill('SIGTERM')
+    server.child.kill('SIGTERM')
+    await sleep(800)
+    safeRemove(join(root, '.tmp-p14-chrome-committer-' + runId))
+  }
+}
+
 async function runStage4Ui() {
   const serverPort = await freePort()
   const chromePort = await freePort()
@@ -754,6 +799,7 @@ async function main() {
   else if (scenario === 'incident') await runIncident()
   else if (scenario === 'us-picker') await runUsPicker()
   else if (scenario === 'stage-flow') await runStageFlow()
+  else if (scenario === 'committer-ui') await runCommitterUi()
   else if (scenario === 'journey-ui') await runJourneyUi()
   else if (scenario === 'stage4-ui') await runStage4Ui()
   else if (scenario === 'stage45-ui') await runStage45Ui()

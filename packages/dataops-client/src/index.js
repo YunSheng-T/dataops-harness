@@ -131,15 +131,20 @@ function apply(ctx) {
             if (input && typeof input.setDraft === 'function') {
               input.setDraft(String(text))
               if (typeof input.focus === 'function') input.focus()
-              // The Lexical draft projection settles on the next paint. Calling
-              // submit in the same task submits the pre-edit draft (often empty),
-              // which is why the old version only filled the input.
-              if (typeof input.submit === 'function') {
-                window.setTimeout(function () {
-                  try { input.submit('queue', 'click') } catch (error) { /* keep the visible draft */ }
-                }, 60)
-                ok = true
-              }
+              // The Lexical draft projection settles on the next paint.
+              // Click the native send button after the draft is visible: this is
+              // the same path a human uses and works across Lexical versions.
+              window.setTimeout(function () {
+                try {
+                  var button = Array.prototype.slice.call(document.querySelectorAll('button')).reverse().find(function (candidate) {
+                    var label = ((candidate.getAttribute('aria-label') || '') + ' ' + (candidate.textContent || '')).trim()
+                    return /发送|send/i.test(label) && !candidate.disabled
+                  })
+                  if (button) button.click()
+                  else if (typeof input.submit === 'function') input.submit('queue', 'click')
+                } catch (error) { /* keep the visible draft */ }
+              }, 80)
+              ok = true
             }
           } catch (error) { ok = false }
           return ok
@@ -176,12 +181,22 @@ function apply(ctx) {
     if (!request) return null
     var text = '【签收】gate=' + request.gate + ' role=' + request.role + ' actionId=' + request.actionId + ' actor=' + request.actor + (request.comment ? ' comment=' + request.comment : '')
     function fill() {
-      var submitted = false
-      if (typeof window.__dataopsSubmit === 'function') submitted = window.__dataopsSubmit(text)
-      // If the native submit service is unavailable, fall back to a visible draft.
-      if (!submitted && typeof window.__dataopsCompose === 'function') window.__dataopsCompose(text)
-      else if (!submitted && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('dataops:compose', { detail: { text: text } }))
+      // First fill through the native composer bridge. Then click the composer's
+      // own send button. This is the same two-step path a human uses, and does
+      // not depend on a particular Lexical submit() implementation.
+      if (typeof window.__dataopsCompose === 'function') window.__dataopsCompose(text)
+      else if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('dataops:compose', { detail: { text: text } }))
       requestState[1](null)
+      window.setTimeout(function () {
+        try {
+          var button = Array.prototype.slice.call(document.querySelectorAll('button')).reverse().find(function (candidate) {
+            var label = ((candidate.getAttribute('aria-label') || '') + ' ' + (candidate.textContent || '')).trim()
+            return /发送|send/i.test(label) && !candidate.disabled
+          })
+          if (button) button.click()
+          else if (typeof window.__dataopsSubmit === 'function') window.__dataopsSubmit(text)
+        } catch (error) { /* leave the visible draft for manual Enter */ }
+      }, 140)
     }
     function copy() {
       if (navigator.clipboard) navigator.clipboard.writeText(text)
