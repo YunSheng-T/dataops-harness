@@ -5,6 +5,7 @@
  * cards render. Data access lives behind provider seams (mock / cli / http);
  * switching providers never changes the model-facing surface.
  */
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { normalizeConfig } from './config.js'
 import { buildPipelinePackage } from './pipeline-package.js'
@@ -12,7 +13,7 @@ import { buildDevelopArtifacts } from './develop-package.js'
 import { createMockProvider } from './providers/mock.js'
 import { createDevops } from './providers/devops.js'
 import { createCatalog } from './providers/catalog.js'
-import { ensureWorkitem, findWorkitemBySource, readWorkitem, stageComplete, stagePrepare, stageSignoff, updateWorkitem } from './workitem-store.js'
+import { ensureWorkitem, findWorkitemBySource, parseWorkitem, readWorkitem, stageComplete, stagePrepare, stageSignoff, updateWorkitem } from './workitem-store.js'
 import { US_AS_OF, listUs, usDetail } from './fixtures/us.js'
 import { readDatamap } from './fixtures/datamap.js'
 import { readLineageV2 } from './fixtures/lineage.js'
@@ -436,6 +437,30 @@ export function createTools(config, deps) {
     return { kind, stage: expectedStage, deliverable, status, gaps }
   }
 
+  async function runReadStage(args) {
+    if (!args.id) throw new Error('read_stage: id is required')
+    if (!args.stage) throw new Error('read_stage: stage is required')
+    const item = readWorkitem(config, { id: args.id })
+    const meta = item.stages && item.stages[args.stage]
+    if (!meta || !meta.deliverable) throw new Error('read_stage: no deliverable for stage ' + args.stage)
+    const path = resolve(config.workitemsDir, args.id, meta.deliverable)
+    const text = readFileSync(path, 'utf8')
+    let payload
+    try { payload = JSON.parse(text) } catch { payload = parseWorkitem(text) }
+    const kind = payload.kind || ({ requirement: 'requirement', design: 'design', scheme: 'analysis', develop: 'develop', cicd: 'cicd' })[args.stage]
+    return {
+      ...payload,
+      kind,
+      stage: args.stage,
+      deliverable: meta.deliverable,
+      status: payload.status || meta.status || item.status,
+      workitemId: item.id,
+      source: payload.source || 'workitem',
+      asOf: payload.asOf || item.updated_at,
+      presented: true
+    }
+  }
+
   async function runPresentDeliverable(args) {
     const checked = validateDeliverable(args)
     return {
@@ -626,6 +651,13 @@ export function createTools(config, deps) {
         return value
       },
       summary: value => 'CICD：' + value.pipelineRunId + '｜' + value.status + '｜' + value.artifact.package
+    }),
+    textTool({
+      name: 'dataops_shared_read_stage',
+      description: '读取某个工作项已完成阶段的交付物并返回卡片 payload；只读，用于恢复/演示历史阶段卡。',
+      parameters: parameterRoot({ id: { type: 'string' }, stage: { type: 'string', enum: ['requirement', 'design', 'scheme', 'develop', 'cicd'] } }),
+      execute: runReadStage,
+      summary: value => '阶段卡：' + value.workitemId + '｜' + value.stage + '｜' + value.deliverable
     }),
     textTool({
       name: 'dataops_shared_present_deliverable',

@@ -9,14 +9,16 @@ import { LEGACY_CONTENT_TOOL_NAMES } from '../src/tool-registry.js'
 const registered = []
 const temp = mkdtempSync(join(tmpdir(), 'dataops-smoke-'))
 mkdirSync(join(temp, 'smoke-item'), { recursive: true })
-writeFileSync(join(temp, 'smoke-item', 'item.yaml'), 'id: smoke-item\ntitle: smoke\ntype: delivery\nstatus: planning\nstage: requirement\nstages: {}\ndeliverables: []\nevidence: []\ngaps: []\napprovals: []\nnext: smoke\n', 'utf8')
+mkdirSync(join(temp, 'smoke-item', 'deliverables', 'requirement'), { recursive: true })
+writeFileSync(join(temp, 'smoke-item', 'deliverables', 'requirement', 'requirement.yaml'), 'kind: requirement\ntitle: smoke requirement\nstatus: draft\n', 'utf8')
+writeFileSync(join(temp, 'smoke-item', 'item.yaml'), 'id: smoke-item\ntitle: smoke\ntype: delivery\nstatus: planning\nstage: requirement\nstages:\n  requirement:\n    status: done\n    deliverable: deliverables/requirement/requirement.yaml\ndeliverables: []\nevidence: []\ngaps: []\napprovals: []\nnext: smoke\n', 'utf8')
 const ctx = { tools: { register: tool => { registered.push(tool) } } }
 apply(ctx, { disabledTools: LEGACY_CONTENT_TOOL_NAMES, workitemsDir: temp })
 
 const failures = []
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 
-expect(registered.length === 18, 'expected 18 active tool registrations, got ' + registered.length)
+expect(registered.length === 19, 'expected 19 active tool registrations, got ' + registered.length)
 expect(registered.every(tool => TOOLS.some(base => base.name === tool.name)), 'registered tool missing from base fixtures')
 
 const ARGS = {
@@ -46,6 +48,9 @@ const ARGS = {
   dataops_shared_read_us: {},
   dataops_shared_read_datamap: { usId: 'US-3821' },
   dataops_shared_ensure_workitem: { source: { system: 'edevops', id: 'US-SMOKE' }, title: 'smoke', initialStage: 'requirement' },
+  dataops_shared_read_develop: {},
+  dataops_cicd_pipeline: {},
+  dataops_shared_read_stage: { id: 'smoke-item', stage: 'requirement' },
   dataops_shared_stage: { action: 'status', id: 'smoke-item' }
 }
 

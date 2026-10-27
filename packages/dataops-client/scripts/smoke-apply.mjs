@@ -66,7 +66,7 @@ const byName = name => registrations.filter(item => item.options.name === name)
 const failures = []
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 
-expect(byName('tool.call.toolview').length === 13, 'expected 13 toolview registrations')
+expect(byName('tool.call.toolview').length === 14, 'expected 14 toolview registrations')
 expect(byName('conversation.session.header.actions').length === 1, 'expected 1 header chip')
 expect(byName('sidebar.right.pane.tab').length === 3, 'expected 3 right-sidebar tab bodies')
 expect(byName('conversation.chat.turnTail').length === 1, 'expected 1 turn brief')
@@ -76,12 +76,12 @@ expect(byName('sidebar.right.pane.tab').every(item => tabTypes.some(type => type
 expect(tabTypes.every(type => Array.isArray(type.guide) && type.guide.length === 1), 'tab types need guide entries')
 
 const toolKeys = byName('tool.call.toolview').map(item => item.options.key).sort()
-expect(JSON.stringify(toolKeys) === JSON.stringify(['dataops_cicd_compile', 'dataops_cicd_pipeline', 'dataops_cicd_release', 'dataops_cicd_scan', 'dataops_cicd_test', 'dataops_shared_present_deliverable', 'dataops_shared_read_develop', 'dataops_shared_read_evidence', 'dataops_shared_read_lineage', 'dataops_shared_read_profile', 'dataops_shared_read_table', 'dataops_shared_read_us', 'dataops_shared_stage']), 'unexpected toolview keys: ' + toolKeys.join(','))
+expect(JSON.stringify(toolKeys) === JSON.stringify(['dataops_cicd_compile', 'dataops_cicd_pipeline', 'dataops_cicd_release', 'dataops_cicd_scan', 'dataops_cicd_test', 'dataops_shared_present_deliverable', 'dataops_shared_read_develop', 'dataops_shared_read_evidence', 'dataops_shared_read_lineage', 'dataops_shared_read_profile', 'dataops_shared_read_stage', 'dataops_shared_read_table', 'dataops_shared_read_us', 'dataops_shared_stage']), 'unexpected toolview keys: ' + toolKeys.join(','))
 
 if (failures.length) {
   console.error('smoke-apply FAIL')
   for (const failure of failures) console.error(' - ' + failure)
   process.exit(1)
 }
-console.log('smoke-apply ok: 13 toolviews · 1 header chip · 3 tabs · 1 turn brief')
+console.log('smoke-apply ok: 14 toolviews · 1 header chip · 3 tabs · 1 turn brief')
 console.log('injections:', injections.join(', '))

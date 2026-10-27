@@ -13,7 +13,7 @@
  *
  * options: --keep (keep generated workitem on success), --timeout <ms>
  */
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -192,6 +192,10 @@ async function sendPrompt(page, prompt) {
 
 async function bodyText(page) {
   return page.evaluate('document.body.innerText || ""')
+}
+
+async function currentCardText(page) {
+  return page.evaluate(`document.querySelector('.do-turn-card')?.innerText || ''`)
 }
 
 async function waitForApproval(page, ms) {
@@ -419,6 +423,107 @@ async function runUiDock() {
   }
 }
 
+async function runStage4Ui() {
+  const serverPort = await freePort()
+  const chromePort = await freePort()
+  const server = await startServer(serverPort, 'workspace-write')
+  const page = await startChrome(chromePort, server.url, join(root, '.tmp-p14-chrome-stage4-' + runId))
+  try {
+    await ensureComposer(page.evaluate)
+    await dismissPreview(page.evaluate)
+    await ensureComposer(page.evaluate)
+    await sendPrompt(page, '只读展示：读取工作项 2026-10-27-us-3821-demo 的 develop 交付物，用 dataops_shared_stage prepare 展示开发验证卡；不要签收、不要合并、不要执行 pipeline。')
+    await waitFor(async () => (await currentCardText(page)).includes('开发验证'), 240000, 'stage 4 card')
+    await sleep(1000)
+    await page.evaluate(`document.querySelector('.do-turn-card')?.scrollIntoView({ block: 'start' })`)
+    await sleep(400)
+    const card = await currentCardText(page)
+    check(card.includes('开发验证') && card.includes('实现包'), 'stage 4 card visible')
+    check(card.includes('Build') && card.includes('Scan') && card.includes('Deploy'), 'stage 4 validation rows visible')
+    check(card.includes('manual') && card.includes('SE'), 'stage 4 manual test and SE review visible')
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-4-live.png'), Buffer.from(r.result.data, 'base64')) })
+    check(page.errors.length === 0, 'no console exceptions: ' + page.errors.slice(-2).join(' | '))
+    notes.push({ scenario: 'stage4-ui' })
+  } finally {
+    page.ws.close()
+    page.child.kill('SIGTERM')
+    server.child.kill('SIGTERM')
+    await sleep(800)
+    safeRemove(join(root, '.tmp-p14-chrome-stage4-' + runId))
+  }
+}
+
+async function runStage5Ui() {
+  const serverPort = await freePort()
+  const chromePort = await freePort()
+  const server = await startServer(serverPort, 'workspace-write')
+  const page = await startChrome(chromePort, server.url, join(root, '.tmp-p14-chrome-stage5-' + runId))
+  try {
+    await ensureComposer(page.evaluate)
+    await dismissPreview(page.evaluate)
+    await ensureComposer(page.evaluate)
+    await sendPrompt(page, '只读展示：读取工作项 2026-10-27-us-3821-demo 的 cicd 交付物，用 dataops_shared_stage prepare 展示数据 CICD 阶段卡；不要签收、不要部署、不要回滚。')
+    await waitFor(async () => (await currentCardText(page)).includes('数据 CICD'), 240000, 'stage 5 card')
+    await sleep(1000)
+    await page.evaluate(`document.querySelector('.do-turn-card')?.scrollIntoView({ block: 'start' })`)
+    await sleep(400)
+    const card = await currentCardText(page)
+    check(card.includes('数据 CICD') && card.includes('制品包'), 'stage 5 card visible')
+    check(/dev/i.test(card) && /sit/i.test(card) && /gamma/i.test(card), 'external environment strip visible')
+    check(!card.includes('允许一次') && !card.includes('回滚'), 'no DSH approval / rollback action in stage 5 card')
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-5-live.png'), Buffer.from(r.result.data, 'base64')) })
+    check(page.errors.length === 0, 'no console exceptions: ' + page.errors.slice(-2).join(' | '))
+    notes.push({ scenario: 'stage5-ui' })
+  } finally {
+    page.ws.close()
+    page.child.kill('SIGTERM')
+    server.child.kill('SIGTERM')
+    await sleep(800)
+    safeRemove(join(root, '.tmp-p14-chrome-stage5-' + runId))
+  }
+}
+
+async function runStage45Ui() {
+  const serverPort = await freePort()
+  const chromePort = await freePort()
+  const server = await startServer(serverPort, 'workspace-write')
+  const page = await startChrome(chromePort, server.url, join(root, '.tmp-p14-chrome-stage45-' + runId))
+  try {
+    await ensureComposer(page.evaluate)
+    await dismissPreview(page.evaluate)
+    await ensureComposer(page.evaluate)
+    await sendPrompt(page, '不要修改任何工作项或文件。读取工作项 2026-10-27-us-3821-demo，用 dataops_shared_stage prepare 展示 develop 阶段卡；只展示这一张卡，不要签收，不要执行 pipeline。')
+    await waitFor(async () => (await currentCardText(page)).includes('开发验证'), 240000, 'stage 4 card')
+    await sleep(1000)
+    await page.evaluate(`document.querySelector('.do-turn-card')?.scrollIntoView({ block: 'start' })`)
+    await sleep(400)
+    let card = await currentCardText(page)
+    check(card.includes('开发验证') && card.includes('实现包'), 'stage 4 card visible')
+    check(card.includes('Build') && card.includes('Scan'), 'stage 4 validation rows visible')
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-4-live.png'), Buffer.from(r.result.data, 'base64')) })
+    // Seed the isolated demo workitem to the completed Stage 5 state for the second card.
+    execFileSync(process.execPath, [join(root, 'scripts/seed-dataops-demo.mjs'), '--stage', 'cicd'], { stdio: 'ignore' })
+    await sendPrompt(page, '继续读取同一工作项的 cicd 交付物，用 dataops_shared_stage prepare 展示数据 CICD 阶段卡；只展示，不触发外部部署，不签收。')
+    await waitFor(async () => (await currentCardText(page)).includes('数据 CICD'), 240000, 'stage 5 card')
+    await sleep(1000)
+    await page.evaluate(`document.querySelector('.do-turn-card')?.scrollIntoView({ block: 'start' })`)
+    await sleep(400)
+    card = await currentCardText(page)
+    check(card.includes('数据 CICD') && card.includes('制品包'), 'stage 5 card visible')
+    check(/dev/i.test(card) && /sit/i.test(card) && /gamma/i.test(card), 'external environment strip visible')
+    check(!card.includes('允许一次') && !card.includes('回滚'), 'no DSH approval / rollback action in stage 5 card')
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-5-live.png'), Buffer.from(r.result.data, 'base64')) })
+    check(page.errors.length === 0, 'no console exceptions: ' + page.errors.slice(-2).join(' | '))
+    notes.push({ scenario: 'stage45-ui', bytes: text.length })
+  } finally {
+    page.ws.close()
+    page.child.kill('SIGTERM')
+    server.child.kill('SIGTERM')
+    await sleep(800)
+    safeRemove(join(root, '.tmp-p14-chrome-stage45-' + runId))
+  }
+}
+
 async function runStageFlow() {
   const before = new Set(workitemNames())
   const serverPort = await freePort()
@@ -581,6 +686,9 @@ async function main() {
   else if (scenario === 'incident') await runIncident()
   else if (scenario === 'us-picker') await runUsPicker()
   else if (scenario === 'stage-flow') await runStageFlow()
+  else if (scenario === 'stage4-ui') await runStage4Ui()
+  else if (scenario === 'stage45-ui') await runStage45Ui()
+  else if (scenario === 'stage5-ui') await runStage5Ui()
   else if (scenario === 'ui-dock') await runUiDock()
   else throw new Error('unknown scenario: ' + scenario)
   const report = { scenario, runId, at: new Date().toISOString(), failures, notes }

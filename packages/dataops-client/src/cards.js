@@ -1419,6 +1419,7 @@ export function createDataopsCards(React) {
       solution: SolutionCard,
       tech_plan: TechPlanCard,
       develop: DevelopCard,
+      cicd: PipelineCard,
       postmortem: PostmortemCard,
       incident: IncidentCard
     }

@@ -250,6 +250,8 @@ check('six-stage cards render their key facts', () => {
     block: block({ kind: 'cicd', target: 'dws.x', status: 'succeeded', pipelineRunId: 'run-1', commit: 'abc1234', artifact: { package: 'artifact/dataops-dws.x-1.0.0.tar.gz', digest: 'sha256:1', manifest: 'artifact/manifest.json', checksum: 'artifact/checksums.txt' }, pipeline: { build: 'passed', scan: 'passed', test: 'manual', package: 'passed' }, externalDeployment: { platform: 'company-release-platform', environments: [{ name: 'dev', status: 'deployed' }, { name: 'sit', status: 'pending' }] }, reports: [], gaps: [] })
   }))
   assert(pipeline.includes('数据 CICD') && pipeline.includes('dataops-dws.x-1.0.0.tar.gz') && pipeline.includes('外部环境'), 'pipeline card')
+  const cicdStage = text(Cards.StageResultCard({ block: block({ kind: 'cicd', status: 'succeeded', pipelineRunId: 'run-1', artifact: { package: 'a.tar.gz', digest: 'sha256:1' }, pipeline: { build: 'passed', scan: 'passed', test: 'manual', package: 'passed' }, externalDeployment: { environments: [{ name: 'dev', status: 'deployed' }] } }) }))
+  assert(cicdStage.includes('数据 CICD') && !cicdStage.includes('{"kind"'), 'stage result must render CICD card, not raw JSON')
   const test = text(Cards.TestCard({
     block: block({ kind: 'test', conclusion: 'pass', status: 'passed', target: 'dws.x', summary: { diff: '0.12%', quality: '99.98%', performance: '38s', sla: '04:40' }, cases: [{ name: '主键唯一', type: '唯一性', status: 'pass', detail: '0 重复' }], source: 'mock', asOf: '2026-10-25 15:10' })
   }))

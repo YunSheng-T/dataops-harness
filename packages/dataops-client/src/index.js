@@ -10,6 +10,7 @@
  */
 var TOOL_VIEWS = [
   ['dataops_shared_read_us', 'USPickerCard'],
+  ['dataops_shared_read_stage', 'StageResultCard'],
   ['dataops_shared_read_develop', 'DevelopCard'],
   ['dataops_shared_read_table', 'TableCard'],
   ['dataops_shared_read_lineage', 'LineageCard'],

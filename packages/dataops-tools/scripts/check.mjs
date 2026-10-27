@@ -35,12 +35,12 @@ function isLossless(value, ancestors = new Set()) {
 }
 
 
-check('twenty-six registry fixtures are in the expected order', () => {
+check('twenty-seven registry fixtures are in the expected order', () => {
   const names = tools.map(tool => tool.name)
   assert(JSON.stringify(names) === JSON.stringify([
     'dataops_requirement_extract_spec', 'dataops_design_compose_model', 'dataops_shared_read_table', 'dataops_shared_read_lineage', 'dataops_scheme_compose_tech_plan', 'dataops_shared_read_evidence',
     'dataops_shared_read_profile', 'dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_develop_generate_code',
-    'dataops_cicd_scan', 'dataops_cicd_compile', 'dataops_cicd_test', 'dataops_cicd_release', 'dataops_review_write_postmortem', 'dataops_incident_triage', 'dataops_shared_read_develop', 'dataops_cicd_pipeline', 'dataops_shared_present_deliverable', 'dataops_shared_read_workitem', 'dataops_shared_update_workitem', 'dataops_shared_read_logs', 'dataops_shared_read_us', 'dataops_shared_read_datamap', 'dataops_shared_ensure_workitem', 'dataops_shared_stage'
+    'dataops_cicd_scan', 'dataops_cicd_compile', 'dataops_cicd_test', 'dataops_cicd_release', 'dataops_review_write_postmortem', 'dataops_incident_triage', 'dataops_shared_read_develop', 'dataops_cicd_pipeline', 'dataops_shared_read_stage', 'dataops_shared_present_deliverable', 'dataops_shared_read_workitem', 'dataops_shared_update_workitem', 'dataops_shared_read_logs', 'dataops_shared_read_us', 'dataops_shared_read_datamap', 'dataops_shared_ensure_workitem', 'dataops_shared_stage'
   ]), 'unexpected tools: ' + names.join(','))
   for (const tool of tools) {
     assert(typeof tool.description === 'string' && tool.description.length > 20, tool.name + ': weak description')
@@ -50,9 +50,9 @@ check('twenty-six registry fixtures are in the expected order', () => {
   }
 })
 
-check('stage-0-5 active surface exposes 18 tools', () => {
+check('stage-0-5 active surface exposes 19 tools', () => {
   const active = createTools(normalizeConfig({ disabledTools: ['dataops_requirement_extract_spec', 'dataops_design_compose_model', 'dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_scheme_compose_tech_plan', 'dataops_develop_generate_code', 'dataops_review_write_postmortem', 'dataops_incident_triage'] }), {})
-  assert(active.length === 18, 'P3 should expose 18 tools, got ' + active.length)
+  assert(active.length === 19, 'P3 should expose 19 tools, got ' + active.length)
   assert(!active.some(tool => tool.name === 'dataops_requirement_extract_spec'), 'requirement content tool is hidden')
   assert(!active.some(tool => tool.name === 'dataops_design_compose_model'), 'design content tool is hidden')
   for (const name of ['dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_scheme_compose_tech_plan', 'dataops_develop_generate_code', 'dataops_review_write_postmortem', 'dataops_incident_triage']) assert(!active.some(tool => tool.name === name), name + ' is hidden')
@@ -356,6 +356,8 @@ check('stage 4 and stage 5 gates advance without DSH release approval', async ()
     assert(existsSync(join(dir, id, 'deliverables', 'develop', 'sql', 'etl.sql')), 'develop sql not materialized')
     const dev = await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'develop', stage: 'develop', deliverable: 'deliverables/develop/develop.yaml', payload: { target: 'dws.trade_channel_daily', artifacts: materialized.materialized, validation: materialized.validation } }, { signal })
     assert(dev.kind === 'develop' && dev.prepared === true, 'develop stage prepare')
+    const devCard = await by('dataops_shared_read_stage').execute({ id, stage: 'develop' }, { signal })
+    assert(devCard.kind === 'develop' && devCard.workitemId === id && devCard.artifacts.length >= 10, 'read stage returns develop card payload')
     const se = await by('dataops_shared_stage').execute({ action: 'signoff', id, gate: 'develop.code_review', role: 'se', via: 'ui', actionId: 'ui-dev-se', actor: '王工' }, { signal })
     assert(se.gateStatus === 'approved' && se.stage === 'develop', 'SE review keeps stage in develop')
     const merge = await by('dataops_shared_stage').execute({ action: 'signoff', id, gate: 'develop.merge', role: 'committer', via: 'ui', actionId: 'ui-dev-merge', actor: '代码平台' }, { signal })

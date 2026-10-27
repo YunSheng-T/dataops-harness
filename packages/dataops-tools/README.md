@@ -110,7 +110,7 @@ cd packages/dataops-tools
 npm run check
 ```
 
-契约断言（含 6 阶段/排障、presenter、workitem 和 lossless JSON）+ 26 个注册项 / 18 个活动工具 smoke + provider-check（本地 HTTP stub、fake CLI、401/404/超时、token 脱敏）。
+契约断言（含 6 阶段/排障、presenter、workitem 和 lossless JSON）+ 27 个注册项 / 19 个活动工具 smoke + provider-check（本地 HTTP stub、fake CLI、401/404/超时、token 脱敏）。
 
 ## 边界
 
