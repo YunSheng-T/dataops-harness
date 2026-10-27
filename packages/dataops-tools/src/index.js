@@ -8,6 +8,7 @@
 import { resolve } from 'node:path'
 import { normalizeConfig } from './config.js'
 import { buildPipelinePackage } from './pipeline-package.js'
+import { buildDevelopArtifacts } from './develop-package.js'
 import { createMockProvider } from './providers/mock.js'
 import { createDevops } from './providers/devops.js'
 import { createCatalog } from './providers/catalog.js'
@@ -603,9 +604,13 @@ export function createTools(config, deps) {
     }),
     textTool({
       name: 'dataops_shared_read_develop',
-      description: '读取 mock 开发验证事实：多产物清单、build/scan/deploy/test attempt、SE/Committer 状态；返回 develop payload。',
-      parameters: parameterRoot({}),
-      execute: async () => ({ ...DEVELOP, workitemMode: 'mock' }),
+      description: '读取 mock 开发验证事实：多产物清单、build/scan/deploy/test attempt、SE/Committer 状态；传 workitemId 会写入 mock 多产物文件。',
+      parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：把 mock 多产物写到该 workitem。' } }),
+      execute: async args => {
+        const value = { ...DEVELOP, workitemMode: 'mock' }
+        if (args.workitemId) value.materialized = buildDevelopArtifacts(resolve(config.workitemsDir), args.workitemId)
+        return value
+      },
       summary: value => '开发验证：' + value.target + '｜' + value.artifacts.length + ' 个产物'
     }),
     textTool({
