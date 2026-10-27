@@ -476,7 +476,14 @@ async function runJourneyUi() {
     await ensureComposer(page.evaluate)
     await dismissPreview(page.evaluate)
     await ensureComposer(page.evaluate)
-    await sendPrompt(page, '不要修改任何文件或状态。读取工作项 2026-10-27-us-3821-demo，依次调用 dataops_shared_read_stage 展示 requirement、design、scheme、develop、cicd 五个阶段卡，串成一条从需求到 Stage 5 的只读旅程；不要签收、不要部署。')
+    await sendPrompt(page, '查看待处理 US，只列出，不要接单、不要创建或推进工作项。')
+    await waitFor(async () => {
+      const text = await bodyText(page)
+      return text.includes('US-3821') && (text.includes('待我处理') || text.includes('待处理'))
+    }, 240000, 'US picker')
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-0-us-picker.png'), Buffer.from(r.result.data, 'base64')) })
+    check((await bodyText(page)).includes('US-3821'), 'US picker includes US-3821')
+    await sendPrompt(page, '现在只读展示这个 US-3821 的 demo 旅程：不要修改任何文件或状态。读取工作项 2026-10-27-us-3821-demo，依次调用 dataops_shared_read_stage 展示 requirement、design、scheme、develop、cicd 五个阶段卡，串成一条从需求到 Stage 5 的只读旅程；不要签收、不要部署。')
     await waitFor(async () => {
       const text = await bodyText(page)
       return text.includes('数据 CICD') && text.includes('开发验证') && (text.includes('需求') || text.includes('REQ-3821'))

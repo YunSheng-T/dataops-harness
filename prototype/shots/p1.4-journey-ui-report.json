@@ -1,12 +1,12 @@
 {
   "scenario": "journey-ui",
-  "runId": "p14-mvqign5c",
-  "at": "2026-10-27T09:56:48.599Z",
+  "runId": "p14-mvqioqt7",
+  "at": "2026-10-27T10:03:11.366Z",
   "failures": [],
   "notes": [
     {
       "scenario": "journey-ui",
-      "bytes": 4073
+      "bytes": 4207
     }
   ]
 }
