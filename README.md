@@ -1,5 +1,13 @@
 # DataOps Harness
 
+## 获取代码
+
+```sh
+git clone --recurse-submodules git@github.com:YunSheng-T/dataops-harness.git
+# 或者克隆后：
+git submodule update --init --recursive
+```
+
 基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的数据开发工作台。
 **独立项目，与 DeepSeek 不存在隶属、合作、授权或背书关系。**
 
