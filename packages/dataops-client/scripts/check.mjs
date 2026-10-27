@@ -246,6 +246,7 @@ check('six-stage cards render their key facts', () => {
     block: block({ kind: 'develop', target: 'dws.x', status: 'awaiting_merge', branch: 'feature/x', artifacts: [{ type: 'sql', path: 'deliverables/develop/sql/etl.sql' }, { type: 'ops_script', path: 'deliverables/develop/ops/deploy.sh' }], validation: { build: { status: 'passed', attempt: 2 }, scan: { status: 'failed', blocking: ['作业数 52 > 50'] }, deploy: { status: 'blocked', reason: '数据源缺失' }, test: { status: 'manual' } }, tasks: [{ name: '过滤订单', status: 'done', progress: 100, owner: '交易组' }], review: { se: { status: 'approved' }, committer: { status: 'waiting' } }, merge: { status: 'pending' }, source: 'mock', asOf: '2026-10-25 14:20' })
   }))
   assert(develop.includes('开发验证') && develop.includes('过滤订单') && develop.includes('sql') && develop.includes('数据源缺失'), 'develop card')
+  assert(develop.includes('记录合入'), 'committer waiting must expose the merge action')
   const reqEvidence = text(Cards.RequirementCard({ block: block({ kind: 'requirement', title: '需求', goal: '目标', owner: '交易组', evidence: [{ id: 'ev-1', query: 'select 1', env: 'mock', asOf: '2026-10-27' }] }) }))
   assert(reqEvidence.includes('ev-1'), 'requirement must render evidence objects as chips')
   const pipeline = text(Cards.PipelineCard({

@@ -414,7 +414,7 @@ export function createDataopsCards(React) {
         var st = typeof current === 'string' ? current : (current && current.status) || (key === 'se' || key === 'dev' ? 'deferred' : 'pending')
         return h('span', { key: key, className: 'do-kv', style: { gap: '4px' } },
           h('span', { className: 'do-pill', 'data-tone': st === 'approved' || st === 'signed' || st === 'advisory_ok' ? 'pass' : st === 'rejected' || st === 'advisory_object' ? 'warn' : undefined }, role.label + ' · ' + statusText(st)),
-          (st === 'pending' || st === 'advisory_pending')
+          (st === 'pending' || st === 'advisory_pending' || (role.key === 'committer' && st === 'waiting'))
             ? h(Btn, { variant: role.key === 'requester' ? 'primary' : 'ghost', onClick: function () { signoff(gate, role.key, role.actor, role.comment) } }, role.action || '签收')
             : null
         )

@@ -64,7 +64,7 @@ export const DEVELOP = {
   ],
   review: {
     se: { status: 'approved', approver: '王工', at: DEVELOP_AS_OF },
-    committer: { status: 'waiting', approver: '代码平台' },
+    committer: { status: 'pending', approver: '代码平台' },
     ba: 'advisory'
   },
   merge: { status: 'pending', commit: null, reviewer: '代码平台' },
