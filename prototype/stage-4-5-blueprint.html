@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DataOps Stage 4–5 实现蓝图</title>
+<style>
+:root{--bg:#f6f7f9;--layer:#fff;--text:#111827;--muted:#667085;--line:#e4e7ec;--brand:#315efb;--pass:#16a34a;--warn:#d97706;--fail:#dc2626;--soft:#eef2ff}
+@media(prefers-color-scheme:dark){:root{--bg:#111318;--layer:#191c22;--text:#f2f4f7;--muted:#98a2b3;--line:#2a2f3a;--soft:#1d2540}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:13px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 24px 60px}h1{font-size:26px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 10px}.sub{color:var(--muted);font-size:12px}
+.flow{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}.flow span{border:1px solid var(--line);background:var(--layer);padding:5px 8px;border-radius:6px;font-size:11px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--layer);border:1px solid var(--line);border-radius:10px;padding:14px}.card h3{font-size:13px;margin:0 0 8px;display:flex;justify-content:space-between;gap:8px}
+.pill{font-size:10px;padding:2px 6px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}.pill.pass{color:var(--pass);border-color:var(--pass)}.pill.warn{color:var(--warn);border-color:var(--warn)}.pill.fail{color:var(--fail);border-color:var(--fail)}
+.row{display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line);font-size:11px}.row:last-child{border-bottom:0}.row b{width:48px;flex:none}.muted{color:var(--muted)}
+.steps{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.steps span{border:1px solid var(--line);border-radius:6px;padding:4px 7px;font-size:11px}.steps span.ok{border-color:var(--pass);color:var(--pass)}.steps span.warn{border-color:var(--warn);color:var(--warn)}
+.pkg{border:1px solid var(--brand);background:var(--soft);border-radius:7px;padding:9px;margin-top:8px;font-size:11px}.pkg code{font-size:10.5px;word-break:break-all}
+.envs{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.env{border:1px solid var(--line);border-radius:6px;padding:4px 7px;min-width:58px;font-size:10px}.env em{display:block;font-size:9px;color:var(--muted);font-style:normal}.env.ok{border-color:var(--pass)}.env.pending{border-color:var(--warn)}
+.artifacts{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}.artifacts span{font-size:9.5px;border:1px solid var(--line);border-radius:4px;padding:2px 5px;color:var(--muted)}
+.boundary{border-left:3px solid var(--brand);padding:8px 10px;background:var(--soft);font-size:11px;border-radius:0 6px 6px 0}
+table{border-collapse:collapse;width:100%;font-size:11px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 5px}th{color:var(--muted);font-weight:600}
+footer{margin-top:28px;color:var(--muted);font-size:11px}
+</style></head><body><main class="wrap">
+<h1>DataOps Stage 4–5 实现蓝图</h1>
+<div class="sub">从开发验证循环到数据 CICD pipeline · mock-first · Stage 6 不实现 · 2026-10-27</div>
+<div class="flow"><span>US 接单</span><span>需求</span><span>设计 + DataMap</span><span>3a 分析</span><span>3b 方案</span><span>3c 技术方案</span><span><b>Stage 4 开发验证</b></span><span><b>Stage 5 数据 CICD</b></span></div>
+<div class="boundary"><b>边界：</b>DataOps 只 mock 记录；真实代码合入、部署、发布、回滚由外部系统负责。Stage 5 不使用 DSH approval；外部环境状态只读，不作为 DataOps 门禁。</div>
+
+<h2>Stage 4 · 开发验证循环</h2>
+<div class="grid">
+<div class="card"><h3>Before · P2 占位 <span class="pill">旧</span></h3>
+<div class="row"><b>产物</b><span>只有 develop.yaml / 单 SQL</span></div>
+<div class="row"><b>验证</b><span>单点 blocker，没有 attempt/回流</span></div>
+<div class="row"><b>评审</b><span>没有 SE / Committer 分离</span></div>
+<div class="row"><b>合入</b><span>未表达外部 Committer</span></div>
+<div class="artifacts"><span>sql</span><span>develop.yaml</span></div></div>
+<div class="card"><h3>After · 多产物 + 回流 <span class="pill pass">新</span></h3>
+<div class="row"><b>产物</b><span>3 SQL · etl · schedule · API · ops · tests</span></div>
+<div class="row"><b>Build</b><span class="pill pass">attempt 2 passed</span><span class="muted">类型失败→修复</span></div>
+<div class="row"><b>Scan</b><span class="pill pass">attempt 2 passed</span><span class="muted">并发/作业数回流</span></div>
+<div class="row"><b>Deploy</b><span class="pill pass">dev passed</span><span class="muted">补数据源后重部署</span></div>
+<div class="row"><b>Test</b><span class="pill warn">manual</span><span class="muted">平台无自动化</span></div>
+<div class="row"><b>评审</b><span>SE approved · Committer merged</span></div>
+<div class="artifacts"><span>sql/etl.sql</span><span>etl.yaml</span><span>schedule.yaml</span><span>api.yaml</span><span>ops/</span><span>tests/</span></div>
+<div class="steps"><span class="ok">Build</span><span class="ok">Scan</span><span class="ok">Deploy</span><span class="warn">Test manual</span><span class="ok">SE</span><span>Committer</span><span class="ok">CICD</span></div>
+</div></div>
+
+<h2>Stage 5 · 一条 pipeline，不是逐环节按钮</h2>
+<div class="card"><h3>数据 CICD · dws.trade_channel_daily <span class="pill pass">succeeded</span></h3>
+<div class="muted">run-20261027-001 · commit abc1234 · DataOps 只记录，不执行部署/发布/回滚</div>
+<div class="steps"><span class="ok">Build passed</span><span class="ok">Scan passed</span><span class="warn">Test manual</span><span class="ok">Package passed</span></div>
+<div class="pkg"><b>制品包</b><br><code>artifact/dataops-dws.trade_channel_daily-1.0.0.tar.gz</code><br><span class="muted">digest sha256:7f4a...mock · manifest.json · checksums.txt</span></div>
+<div class="envs"><div class="env ok">dev<em>deployed</em></div><div class="env ok">sit<em>deployed</em></div><div class="env pending">uat<em>pending</em></div><div class="env pending">beta<em>pending</em></div><div class="env pending">gamma<em>pending</em></div></div>
+<div class="muted" style="margin-top:7px">外部环境/审批由 company-release-platform 负责；DataOps pass 只看 pipeline + 制品包。</div>
+</div>
+
+<h2>契约与职责</h2>
+<table><tr><th>对象</th><th>Stage 4</th><th>Stage 5</th></tr>
+<tr><td>payload</td><td><code>develop.yaml</code> 清单 + validation</td><td><code>cicd.yaml</code> pipeline + artifact + externalDeployment</td></tr>
+<tr><td>gate</td><td>develop.code_review / develop.merge</td><td>pipeline succeeded + artifact；无 DSH approval</td></tr>
+<tr><td>工具</td><td>dataops_shared_read_develop</td><td>dataops_cicd_pipeline</td></tr>
+<tr><td>外部系统</td><td>代码平台 / Committer</td><td>公司发布平台 / 审批系统</td></tr></table>
+<footer>Full design: docs/design/user-journey/stage-4-develop.md · stage-5-cicd.md · ADR 0011</footer>
+</main></body></html>

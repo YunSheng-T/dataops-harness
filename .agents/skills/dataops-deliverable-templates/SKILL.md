@@ -22,7 +22,7 @@ P2.3 起，需求、设计、方案、开发、复盘正文不再由内容工具
 
 1. 先读工作项和事实：`dataops_shared_read_workitem`、`dataops_shared_read_table`、`dataops_shared_read_lineage`、`dataops_shared_read_evidence`。
 2. 内容由你写，不从旧内容工具取；不要调用 `dataops_requirement_extract_spec`、`dataops_design_compose_model`、`dataops_scheme_analyze_data`、`dataops_scheme_compose_solution`、`dataops_scheme_compose_tech_plan`、`dataops_develop_generate_code`、`dataops_review_write_postmortem`（P2.3 已从活动工具面移除）。
-3. 先写 `deliverables/<kind>.yaml`，再调 `dataops_shared_present_deliverable`。
+3. 先写 `deliverables/<stage>/<kind>.yaml`，再调 `dataops_shared_stage` 的 `prepare`；presenter 仅作兼容 fallback。
 4. 缺证据写 `gaps`，不编造；`gaps` 同时进工作项和 payload。
 5. 用户看的是卡和交付物，不是工具名。
 
@@ -71,6 +71,11 @@ P2.3 起，需求、设计、方案、开发、复盘正文不再由内容工具
 必填：`target.table`、`target.grain`、`target.partition`、`sources`、`steps`、`schedule`、`metrics`。
 `impact` 来自血缘；没读到就 `null` 并加 gap。
 
+
+## Develop / CICD payload
+
+- 开发：`deliverables/develop/develop.yaml` + `sql/`、`etl/`、`schedule/`、`api/`、`ops/`、`tests/`。`develop.yaml` 是清单 + validation 摘要，不是唯一产物；含 artifacts/validation/tasks/review/merge/mustNotChange/rollback/gaps。
+- CICD：`deliverables/cicd/cicd.yaml` + `artifact/`（tar.gz、manifest、checksums）、`reports/`、`release/deployment-status.yaml`；含 pipelineRunId、pipeline、artifact、externalDeployment、gaps。阶段 5 不出现 DSH approval。
 
 ## 方案 payload
 

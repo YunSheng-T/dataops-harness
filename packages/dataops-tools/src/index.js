@@ -9,11 +9,13 @@ import { normalizeConfig } from './config.js'
 import { createMockProvider } from './providers/mock.js'
 import { createDevops } from './providers/devops.js'
 import { createCatalog } from './providers/catalog.js'
-import { ensureWorkitem, findWorkitemBySource, readWorkitem, stagePrepare, stageSignoff, updateWorkitem } from './workitem-store.js'
+import { ensureWorkitem, findWorkitemBySource, readWorkitem, stageComplete, stagePrepare, stageSignoff, updateWorkitem } from './workitem-store.js'
 import { US_AS_OF, listUs, usDetail } from './fixtures/us.js'
 import { readDatamap } from './fixtures/datamap.js'
 import { readLineageV2 } from './fixtures/lineage.js'
 import { readEvidenceV2 } from './fixtures/evidence.js'
+import { DEVELOP } from './fixtures/develop.js'
+import { CICD_PIPELINE } from './fixtures/cicd.js'
 import {
   designPayload, evidencePayload, formatImpact, gap, lineagePayload, now,
   requirementPayload, stagePayload, tablePayload, techPlanPayload
@@ -399,6 +401,7 @@ export function createTools(config, deps) {
     if (args.action === 'prepare') return stagePrepare(config, args)
     if (args.action === 'signoff') return stageSignoff(config, args)
     if (args.action === 'status') return readWorkitem(config, { id: args.id })
+    if (args.action === 'complete') return stageComplete(config, args)
     throw new Error('stage: action must be prepare, signoff or status')
   }
 
@@ -597,11 +600,29 @@ export function createTools(config, deps) {
       summary: value => '排障：' + value.title + '｜' + value.severity + '｜' + value.status
     }),
     textTool({
+      name: 'dataops_shared_read_develop',
+      description: '读取 mock 开发验证事实：多产物清单、build/scan/deploy/test attempt、SE/Committer 状态；返回 develop payload。',
+      parameters: parameterRoot({}),
+      execute: async () => ({ ...DEVELOP, workitemMode: 'mock' }),
+      summary: value => '开发验证：' + value.target + '｜' + value.artifacts.length + ' 个产物'
+    }),
+    textTool({
+      name: 'dataops_cicd_pipeline',
+      description: '触发/读取一条 mock 数据 CICD pipeline：build/scan/test/package、制品包 manifest/checksum、外部环境只读状态；不执行真实部署。',
+      parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：完成后把 workitem cicd 阶段标为 done。' } }),
+      execute: async args => {
+        const value = { ...CICD_PIPELINE, mock: true }
+        if (args.workitemId) value.workitem = stageComplete(config, { id: args.workitemId })
+        return value
+      },
+      summary: value => 'CICD：' + value.pipelineRunId + '｜' + value.status + '｜' + value.artifact.package
+    }),
+    textTool({
       name: 'dataops_shared_present_deliverable',
       description: '展示桥：校验阶段交付物的 kind/stage/deliverable/payload，平铺 payload 返回给 DeliverableRenderer；不生成内容、不审批、不写工作项。',
       parameters: parameterRoot({
         kind: { type: 'string', enum: Object.keys(DELIVERABLE_KINDS) },
-        stage: { type: 'string', enum: ['requirement', 'design', 'scheme', 'develop', 'review', 'incident'] },
+        stage: { type: 'string', enum: ['requirement', 'design', 'scheme', 'develop', 'cicd', 'review', 'incident'] },
         deliverable: { type: 'string', description: '安全相对路径，例如 deliverables/tech-plan.yaml；兼容旧 artifacts/ 读取。' },
         status: { type: 'string', enum: DELIVERABLE_STATUSES },
         payload: { type: 'object', description: '交付物结构化内容，按 kind 交给现有卡片。' },
@@ -683,18 +704,18 @@ export function createTools(config, deps) {
       name: 'dataops_shared_stage',
       description: '阶段运行时：prepare 写交付物并更新 workitem；signoff 记录 UI 签收并推进 stage；status 读取工作项。',
       parameters: parameterRoot({
-        action: { type: 'string', enum: ['prepare', 'signoff', 'status'] },
+        action: { type: 'string', enum: ['prepare', 'signoff', 'status', 'complete'] },
         id: { type: 'string' },
-        kind: { type: 'string', enum: ['intake', 'requirement', 'design', 'analysis', 'solution', 'tech_plan', 'develop', 'postmortem', 'incident'] },
-        stage: { type: 'string', enum: ['requirement', 'design', 'scheme', 'develop', 'review', 'incident'] },
+        kind: { type: 'string', enum: ['intake', 'requirement', 'design', 'analysis', 'solution', 'tech_plan', 'develop', 'cicd', 'postmortem', 'incident'] },
+        stage: { type: 'string', enum: ['requirement', 'design', 'scheme', 'develop', 'cicd', 'review', 'incident'] },
         substage: { type: 'string', enum: ['analysis', 'solution', 'tech_plan'] },
         deliverable: { type: 'string' },
         payload: { type: 'object' },
         status: { type: 'string' },
         gaps: { type: 'array', items: { type: 'object' } },
         next: { type: 'string' },
-        gate: { type: 'string', enum: ['requirement', 'design', 'scheme.analysis', 'scheme.solution', 'scheme.tech_plan'] },
-        role: { type: 'string', enum: ['BA', 'requester', 'SE', 'Dev'] },
+        gate: { type: 'string', enum: ['requirement', 'design', 'scheme.analysis', 'scheme.solution', 'scheme.tech_plan', 'develop.code_review', 'develop.merge'] },
+        role: { type: 'string', enum: ['BA', 'requester', 'SE', 'Dev', 'Committer'] },
         actor: { type: 'string' },
         via: { type: 'string', enum: ['ui'] },
         actionId: { type: 'string' },

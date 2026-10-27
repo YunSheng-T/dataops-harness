@@ -187,6 +187,25 @@ export function createDataopsCards(React) {
     '.do-workbench-open{margin-top:6px;align-self:flex-start}',
 
     '.do-graph-legend span{display:inline-flex;align-items:center;gap:4px}',
+    '.do-dev-validation{margin-top:8px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));padding-top:6px}',
+    '.do-dev-row{display:flex;align-items:center;gap:6px;font-size:10.5px;line-height:23px;min-width:0}',
+    '.do-dev-label{width:46px;flex:none;font-weight:600;color:var(--dsw-alias-label-secondary,#61666b)}',
+    '.do-dev-attempt{font-size:9px;color:var(--dsw-alias-label-tertiary,#8b93a2);flex:none}',
+    '.do-dev-detail{min-width:0;color:var(--dsw-alias-label-secondary,#61666b);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.do-dev-artifacts{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:7px}',
+    '.do-cicd-pipeline{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0;padding:7px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));border-radius:8px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
+    '.do-cicd-step{display:flex;align-items:center;gap:4px;padding:2px 6px;border-radius:5px;background:var(--dsw-alias-bg-overlay,#fff);border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07))}',
+    '.do-cicd-step[data-state="passed"]{border-color:var(--dsw-alias-state-success-primary,#22c55e)}',
+    '.do-cicd-step[data-state="failed"]{border-color:var(--dsw-alias-state-warning-primary,#d97706)}',
+    '.do-cicd-step-name{font-size:10px;font-weight:600}',
+    '.do-cicd-artifact{margin-top:7px;padding:8px;border:1px solid var(--dsw-alias-state-business-primary,#4176e6);border-radius:7px;background:var(--dsw-alias-brand-primary-bg,rgba(77,107,254,.06))}',
+    '.do-cicd-env{margin-top:8px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));padding-top:6px}',
+    '.do-cicd-envs{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}',
+    '.do-cicd-envnode{display:flex;flex-direction:column;gap:1px;min-width:58px;padding:4px 6px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.08));border-radius:5px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
+    '.do-cicd-envname{font-size:9px;font-weight:600;text-transform:uppercase;color:var(--dsw-alias-label-secondary,#61666b)}',
+    '.do-cicd-envstatus{font-size:8.5px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-cicd-envnode[data-state="deployed"] .do-cicd-envstatus{color:var(--dsw-alias-state-success-primary,#22c55e)}',
+    '.do-cicd-envnode[data-state="pending"] .do-cicd-envstatus{color:var(--dsw-alias-state-warning-primary,#d97706)}',
     '.do-map-path{display:flex;align-items:stretch;gap:5px;flex-wrap:wrap;margin:7px 0;padding:8px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));border-radius:8px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
     '.do-map-node{display:flex;flex-direction:column;gap:2px;min-width:92px;max-width:190px;padding:5px 8px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.12));border-radius:7px;background:var(--dsw-alias-bg-overlay,#fff);font-size:10.5px;color:var(--dsw-alias-label-primary,#0f1115);overflow:hidden}',
     '.do-map-node b{font-size:8px;font-weight:700;color:var(--dsw-alias-label-tertiary,#8b93a2);text-transform:uppercase;letter-spacing:.04em}',
@@ -955,31 +974,76 @@ export function createDataopsCards(React) {
 
   function DevelopCard(props) {
     var m = parseModel(props.block, 'develop')
+    var artifact = React.useState(false)
     if (!m) return h(Fallback, props)
-    var done = (m.tasks || []).filter(function (task) { return task.status === 'done' }).length
+    var artifacts = Array.isArray(m.artifacts) ? m.artifacts : []
+    var validation = m.validation || {}
+    var tasks = Array.isArray(m.tasks) ? m.tasks : []
+    var review = m.review || {}
+    var merge = m.merge || {}
+    var status = m.status || 'in_progress'
+    var counts = {}
+    artifacts.forEach(function (a) { var t = a.type || 'artifact'; counts[t] = (counts[t] || 0) + 1 })
+    function stateTone(value) { return value === 'passed' || value === 'pass' || value === 'done' || value === 'merged' ? 'pass' : value === 'failed' || value === 'blocked' || value === 'rejected' ? 'fail' : value === 'manual' || value === 'not-automated' || value === 'fixing' ? 'warn' : 'brand' }
+    function stageRow(key, label) {
+      var v = validation[key]
+      if (!v) return null
+      var blockers = v.blocking || v.blockers || []
+      var detail = v.reason || v.note || (blockers.length ? blockers.join('；') : '') || v.log || '—'
+      return h('div', { key: key, className: 'do-dev-row' },
+        h('span', { className: 'do-dev-label' }, label),
+        h('span', { className: 'do-pill', 'data-tone': stateTone(v.status) }, statusText(v.status)),
+        h('span', { className: 'do-dev-attempt' }, v.attempt ? 'attempt ' + v.attempt : ''),
+        h('span', { className: 'do-dev-detail' }, detail)
+      )
+    }
     return h(Frame, {
-      title: '开发 · ' + (m.target || ''),
-      state: m.status === 'done' ? 'done' : 'running',
-      tone: m.status === 'done' ? 'pass' : 'brand',
-      pills: [h(Pill, { key: 's', tone: m.status === 'done' ? 'pass' : 'brand' }, m.status === 'done' ? '已完成' : '进行中')],
-      footer: [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'develop.yaml'))]
+      title: '开发验证 · ' + (m.target || ''),
+      state: status === 'done' ? 'done' : 'running',
+      tone: stateTone(status),
+      status: status,
+      pills: [
+        h(Pill, { key: 'loop', tone: 'brand' }, 'loop ' + (m.loop || m.attempt || 1)),
+        h(Pill, { key: 'branch' }, m.branch || '—'),
+        m.merge && m.merge.commit ? h(Pill, { key: 'commit' }, m.merge.commit) : null
+      ],
+      footer: [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'develop.yaml')),
+        h(Btn, { key: 'open', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看产物')]
     },
       h('dl', { className: 'do-grid' },
+        h('dt', null, '目标'), h('dd', null, m.target || '—'),
         h('dt', null, '分支'), h('dd', null, h('span', { className: 'do-code' }, m.branch || '—')),
-        h('dt', null, '任务'), h('dd', null, done + '/' + (m.tasks || []).length + ' 完成'),
-        h('dt', null, '阻塞'), h('dd', null, (m.blockers || []).map(function (b) { return b.message }).join('；') || '无')
+        h('dt', null, '产物'), h('dd', null, artifacts.length + ' 个 · ' + Object.keys(counts).map(function (k) { return counts[k] + ' ' + k }).join(' / ')),
+        h('dt', null, '任务'), h('dd', null, tasks.filter(function (t) { return t.status === 'done' }).length + '/' + tasks.length + ' 完成')
       ),
-      (m.tasks || []).length ? h('div', null,
-        h('div', { className: 'do-label' }, '任务进度'),
-        m.tasks.map(function (task, i) {
+      artifacts.length ? h('div', { className: 'do-dev-artifacts' },
+        h('div', { className: 'do-label' }, '实现包'),
+        artifacts.map(function (a, i) { return h('span', { key: i, className: 'do-chip', title: a.path || '' }, (a.type || 'artifact') + ' · ' + (a.path || '').split('/').pop()) })
+      ) : null,
+      Object.keys(validation).length ? h('div', { className: 'do-dev-validation' },
+        h('div', { className: 'do-label' }, '验证循环'),
+        stageRow('build', 'Build'), stageRow('scan', 'Scan'), stageRow('deploy', 'Deploy'), stageRow('test', 'Test')
+      ) : null,
+      tasks.length ? h('div', null,
+        h('div', { className: 'do-label' }, '任务'),
+        tasks.map(function (task, i) {
           return h('div', { key: i, className: 'do-task' },
-            h('span', { className: 'do-dot', 'data-tone': task.status === 'done' ? 'pass' : task.status === 'running' ? 'brand' : 'muted' }),
-            h('span', { className: 'do-task-name' }, task.name),
+            h('span', { className: 'do-dot', 'data-tone': task.status === 'done' ? 'pass' : task.status === 'running' ? 'brand' : 'warn' }),
+            h('span', { className: 'do-task-name' }, task.id ? task.id + ' · ' + task.name : task.name),
             h('span', { className: 'do-progress' }, h('i', { style: { width: (task.progress || 0) + '%' } })),
             h('span', { className: 'do-task-meta' }, task.owner || ''))
         })
       ) : null,
-      h(Gaps, { gaps: m.gaps })
+      (m.gaps || []).length ? h(Gaps, { gaps: m.gaps }) : null,
+      h('div', { className: 'do-review' },
+        h('span', { className: 'do-review-label' }, '评审/合入'),
+        h(Pill, { key: 'se', tone: (review.se && review.se.status === 'approved') ? 'pass' : 'warn' }, 'SE · ' + statusText((review.se && review.se.status) || 'pending')),
+        h(Pill, { key: 'committer', tone: merge.status === 'merged' ? 'pass' : 'warn' }, 'Committer · ' + statusText(merge.status || (review.committer && review.committer.status) || 'waiting')),
+        merge.commit ? h('span', { className: 'do-muted do-meta' }, merge.commit) : null
+      ),
+      h(SignoffPanel, { model: m, gate: 'develop.code_review', roles: [{ key: 'se', label: 'SE 评审', actor: (review.se && review.se.approver) || '王工', action: 'SE 通过' }] }),
+      h(SignoffPanel, { model: m, gate: 'develop.merge', roles: [{ key: 'committer', label: 'Committer', actor: (review.committer && review.committer.approver) || '代码平台', action: '记录合入' }] }),
+      h(ArtifactModal, { open: artifact[0], onClose: function () { artifact[1](false) }, artifact: deliverablePath(m), value: m })
     )
   }
 
@@ -1266,6 +1330,51 @@ export function createDataopsCards(React) {
     )
   }
 
+  function PipelineCard(props) {
+    var m = parseModel(props.block, 'cicd')
+    var artifact = React.useState(false)
+    if (!m) return h(Fallback, props)
+    var pipe = m.pipeline || {}
+    var pkg = m.artifact || {}
+    var ext = m.externalDeployment || {}
+    var environments = ext.environments || []
+    var stages = [
+      ['build', 'Build'], ['scan', 'Scan'], ['test', 'Test'], ['package', 'Package']
+    ]
+    function tone(v) { return v === 'passed' || v === 'pass' || v === 'succeeded' || v === 'deployed' ? 'pass' : v === 'failed' || v === 'blocked' ? 'fail' : v === 'manual' || v === 'pending' ? 'warn' : 'brand' }
+    return h(Frame, {
+      title: '数据 CICD · ' + (m.target || '制品流水线'),
+      state: m.status === 'succeeded' || m.status === 'done' ? 'done' : 'running',
+      tone: tone(m.status),
+      pills: [h(Pill, { key: 'run', tone: 'brand' }, m.pipelineRunId || 'run'), h(Pill, { key: 'status', tone: tone(m.status) }, statusText(m.status || 'running')), m.commit ? h(Pill, { key: 'commit' }, m.commit) : null],
+      footer: [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'cicd.yaml')),
+        h(Btn, { key: 'open', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看制品清单')]
+    },
+      h('div', { className: 'do-cicd-pipeline' }, stages.map(function (pair) {
+        return h('div', { key: pair[0], className: 'do-cicd-step', 'data-state': pipe[pair[0]] || 'queued' },
+          h('span', { className: 'do-cicd-step-name' }, pair[1]),
+          h('span', { className: 'do-pill', 'data-tone': tone(pipe[pair[0]]) }, statusText(pipe[pair[0]] || 'queued')))
+      })),
+      pkg.package ? h('div', { className: 'do-cicd-artifact' },
+        h('div', { className: 'do-label' }, '制品包'),
+        h('div', { className: 'do-code' }, pkg.package),
+        h('div', { className: 'do-muted' }, 'digest ' + (pkg.digest || '—') + ' · manifest ' + (pkg.manifest || '—') + ' · checksum ' + (pkg.checksum || '—'))
+      ) : null,
+      environments.length ? h('div', { className: 'do-cicd-env' },
+        h('div', { className: 'do-label' }, '外部环境（只读）'),
+        h('div', { className: 'do-cicd-envs' }, environments.map(function (env) {
+          return h('div', { key: env.name, className: 'do-cicd-envnode', 'data-state': env.status },
+            h('span', { className: 'do-cicd-envname' }, env.name),
+            h('span', { className: 'do-cicd-envstatus' }, env.status || 'pending'))
+        })),
+        h('div', { className: 'do-muted', style: { marginTop: '5px' } }, '部署与审批由 ' + (ext.platform || '外部发布平台') + ' 负责；DataOps 只记录状态' + (ext.approvalId ? ' · 外部审批 ' + ext.approvalId : ''))
+      ) : null,
+      (m.reports || []).length ? h('div', { className: 'do-dev-artifacts' }, h('div', { className: 'do-label' }, '流水线报告'), m.reports.map(function (r, i) { return h('span', { key: i, className: 'do-chip' }, r.type + ' · ' + r.path) })) : null,
+      h(Gaps, { gaps: m.gaps }),
+      h(ArtifactModal, { open: artifact[0], onClose: function () { artifact[1](false) }, artifact: deliverablePath(m) || pkg.manifest, value: m })
+    )
+  }
+
   function ScheduleCard(props) {
     var m = parseModel(props.block, 'schedule')
     var copied = React.useState(false)
@@ -1352,6 +1461,7 @@ export function createDataopsCards(React) {
     AnalysisCard: AnalysisCard,
     SolutionCard: SolutionCard,
     CicdCard: CicdCard,
+    PipelineCard: PipelineCard,
     ScheduleCard: ScheduleCard,
     DevelopCard: DevelopCard,
     TestCard: TestCard,

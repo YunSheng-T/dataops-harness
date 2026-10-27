@@ -16,7 +16,7 @@ apply(ctx, { disabledTools: LEGACY_CONTENT_TOOL_NAMES, workitemsDir: temp })
 const failures = []
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 
-expect(registered.length === 16, 'expected 16 active tool registrations, got ' + registered.length)
+expect(registered.length === 18, 'expected 18 active tool registrations, got ' + registered.length)
 expect(registered.every(tool => TOOLS.some(base => base.name === tool.name)), 'registered tool missing from base fixtures')
 
 const ARGS = {

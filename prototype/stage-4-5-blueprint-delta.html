@@ -1,0 +1,8 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>Stage 4–5 增量</title>
+<style>body{font:13px/1.6 -apple-system,BlinkMacSystemFont,sans-serif;max-width:1000px;margin:32px auto;padding:0 20px;background:#f6f7f9;color:#111827}h1{font-size:24px}h2{font-size:15px;margin-top:26px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}.card{background:#fff;border:1px solid #e4e7ec;border-radius:9px;padding:13px}li{margin:5px 0}.tag{font-size:10px;padding:1px 5px;border:1px solid #98a2b3;border-radius:99px;color:#667085}</style></head><body>
+<h1>Stage 4–5 增量蓝图</h1><p>只列相对 P1/P2 的变化；P1/P2 卡片与 0+1 → 3c 保持不变。</p>
+<h2>Before / After</h2><div class="grid"><div class="card"><b>Before</b><ul><li>DevelopCard 单点占位</li><li>CICDCard 单阶段 scan/release</li><li>release 使用 DSH approval</li><li>没有制品包、外部环境</li></ul></div><div class="card"><b>After</b><ul><li>DevelopCard 多产物 + attempt 回流</li><li>PipelineCard 一条 pipeline + 制品包</li><li>Stage 4 SE + Committer 双门禁</li><li>Stage 5 无 DSH approval；外部环境只读</li></ul></div></div>
+<h2>新增 / 保留 / 迁出 / 删除</h2><ul><li><b>新增</b> fetch/dataops_shared_read_develop、dataops_cicd_pipeline、DevelopCard v2、PipelineCard、fixtures/develop.js、fixtures/cicd.js</li><li><b>保留</b> P1/P2 卡片、Stage 0–3 runtime、workitem/presenter</li><li><b>迁出</b> 真实合入/部署/发布/回滚到外部系统；外部审批 ID 只读</li><li><b>删除</b> Stage 5 的 release gate / release 按钮 / DSH approval 路径</li></ul>
+<h2>不变边界</h2><ul><li>不接真实平台；不写生产；不伪造审批；不做 Stage 6。</li><li>Stage 4 只看开发验证；Stage 5 只看 pipeline + 制品包。</li></ul>
+<h2>迁移顺序</h2><ol><li>fixture/payload contract</li><li>DevelopCard / runtime gates</li><li>Pipeline tool / CICDCard</li><li>Stage 0–5 连续 e2e</li><li>截图与演示脚本</li></ol>
+</body></html>

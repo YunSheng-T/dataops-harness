@@ -204,6 +204,11 @@ export function createStageBrief(React, store, contextStore) {
       if (substage === 'tech_plan') return { gate: 'scheme.tech_plan', kind: 'tech_plan', label: '3c 技术方案', roles: [{ key: 'se', label: 'SE', action: 'SE 确认', actor: '王工' }] }
       return { gate: 'scheme.analysis', kind: 'analysis', label: '3a 分析', roles: [{ key: 'ba', label: 'BA', action: 'BA 签收', actor: '陈璐' }] }
     }
+    if (stage === 'develop') return { gate: 'develop.code_review', kind: 'develop', label: '开发验证', roles: [
+      { key: 'se', label: 'SE', action: 'SE 通过', actor: '王工' },
+      { key: 'committer', label: 'Committer', action: '记录合入', actor: '代码平台' }
+    ] }
+    if (stage === 'cicd') return { gate: 'cicd.pipeline', kind: 'cicd', label: '数据 CICD', roles: [] }
     return null
   }
 
@@ -227,7 +232,7 @@ export function createStageBrief(React, store, contextStore) {
     var signed = {}
     if (approval && Array.isArray(approval.signoffs)) approval.signoffs.forEach(function (s) { if (s && s.role) signed[s.role] = true })
     var pending = spec.roles.filter(function (role) { return !signed[role.key] })
-    if (!pending.length) return null
+    if (!pending.length && spec.gate !== 'cicd.pipeline') return null
     var blocking = (spec.gate === 'scheme.analysis' || spec.gate === 'scheme.solution') && (payload.status === 'blocked' || (Array.isArray(payload.gaps) && payload.gaps.some(function (g) { return g && g.severity === 'blocking' })))
     return { spec: spec, payload: payload, pending: pending, blocking: blocking, workitem: workitem }
   }
@@ -299,6 +304,8 @@ export function createStageBrief(React, store, contextStore) {
     if (stageKey === 'requirement') return [payloads.requirement].filter(Boolean)
     if (stageKey === 'design') return [payloads.design].filter(Boolean)
     if (stageKey === 'scheme') return [payloads.analysis, payloads.solution, payloads.tech_plan].filter(Boolean)
+    if (stageKey === 'develop') return [payloads.develop].filter(Boolean)
+    if (stageKey === 'cicd') return [payloads.cicd].filter(Boolean)
     return []
   }
 
@@ -334,7 +341,7 @@ export function createStageBrief(React, store, contextStore) {
       if (node && typeof node.scrollIntoView === 'function') node.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
     var stageDefs = [['requirement', '需求'], ['design', '设计'], ['scheme', '方案'], ['develop', '开发'], ['cicd', 'CICD'], ['review', '复盘']]
-    var cardLabels = { requirement: '需求', design: '设计', analysis: '3a 分析', solution: '3b 方案', tech_plan: '3c 技术方案' }
+    var cardLabels = { requirement: '需求', design: '设计', analysis: '3a 分析', solution: '3b 方案', tech_plan: '3c 技术方案', develop: '开发验证', cicd: '数据 CICD' }
     var subDefs = { scheme: ['数据挖掘', '数据分析', '需求方案设计', '技术方案输出'], cicd: ['扫描', '编译构建', '测试', '发布/部署'] }
     var activeCards = stageCards(payloads, selected)
     return h('div', { className: 'do-stagebar' },

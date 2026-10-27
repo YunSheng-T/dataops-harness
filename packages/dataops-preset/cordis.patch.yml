@@ -25,7 +25,8 @@
                 - requirement 要 BA + 需求方；design 要 BA（SE deferred 可推进）；3a/3b 要 BA；3c 要 SE（Dev deferred 可推进）。无签收不推进 stage。
                 - 3a 先按 pending 证据判断 blocking；blocking 未关闭时只显示“补充 mock 证据”，收到明确用户消息后才读 closed 证据重算，不能静默 pass。
                 - DataMap、独立血缘、独立质量分开调用、分开呈现；不要把血缘塞进 DataMap，也不要用 mock 结果冒充生产事实。
-                - 当前演示只到 3c 技术方案，不实现 Stage 4/5/6，不接真实发布。
+                - 当前演示到 Stage 5：3c 后进入开发验证循环（多产物 + build/scan/deploy/test 回流 + SE/Committer），再触发一条数据 CICD pipeline，产出制品包和外部环境只读状态。Stage 6 不实现。
+                - Stage 5 不使用 DSH 原生 approval，不执行真实部署/发布/回滚；外部审批/环境状态由公司发布平台负责。
 
                 逻辑混合角色：Lead 负责编排和记录；BA/SE/Dev 是阶段责任，不是签收人；activity worker 只产草稿。真实 Agent Teams 后置。
 

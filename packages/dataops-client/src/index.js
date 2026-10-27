@@ -10,6 +10,7 @@
  */
 var TOOL_VIEWS = [
   ['dataops_shared_read_us', 'USPickerCard'],
+  ['dataops_shared_read_develop', 'DevelopCard'],
   ['dataops_shared_read_table', 'TableCard'],
   ['dataops_shared_read_lineage', 'LineageCard'],
   ['dataops_shared_read_evidence', 'EvidenceCard'],
@@ -18,6 +19,7 @@ var TOOL_VIEWS = [
   ['dataops_cicd_compile', 'ScheduleCard'],
   ['dataops_cicd_test', 'TestCard'],
   ['dataops_cicd_release', 'ReleaseCard'],
+  ['dataops_cicd_pipeline', 'PipelineCard'],
   ['dataops_shared_present_deliverable', 'DeliverableRenderer'],
   ['dataops_shared_stage', 'StageResultCard']
 ]

@@ -57,3 +57,5 @@
 - `docs/design/stage-0-1-us-intake-requirement.md` → `user-journey/stage-0-1-us-intake-requirement.md`
 
 这样其他会话的旧链接不会断；新内容统一写在本目录。等迭代冻结后再决定是否移除旧链接。
+
+- [Stage 4–5 实现映射](stage-4-5-implementation.md)

@@ -17,7 +17,7 @@ git submodule update --init --recursive
 |---|---|
 | `packages/dataops-client` | 用户面插件：11 个活动 toolview（4 事实 + 4 CICD + USPicker + DeliverableRenderer + StageResultCard）、标题阶段 chip、轮末阶段/排障简报、右栏资产/血缘/证据 |
 | `packages/dataops-brand` | 品牌插件：∞ 标记 + `DataOps` 字标（侧栏 + 空会话 Hero） |
-| `packages/dataops-tools` | Host 工具：16 个活动原子能力（事实/CICD/工作项/日志/presenter/US/DataMap/ensure/stage）；provider 支持 `mock` / `cli` / `http` |
+| `packages/dataops-tools` | Host 工具：18 个活动原子能力（事实/CICD/工作项/日志/presenter/US/DataMap/ensure/stage）；provider 支持 `mock` / `cli` / `http` |
 | `packages/dataops-preset` | Agent preset `dataops-dev`：DataOps Lead persona、workflow/workitem 技能、文件/提问/待办工具、发布审批约束 |
 | `profiles/dataops` | 独立 profile 模板（基于 `dsh-base` + `dsh-web-app`，不碰 `desktop` profile） |
 | `.agents/skills` | 领域技能：SQL 评审、建模评审、管道排障、影响面、服务契约、工作项协议 |
@@ -96,3 +96,5 @@ cd packages/dataops-tools && npm run check    # 24 个注册工具（P3 活动�
 - **只加不改**：不新增侧栏、不改对话头、不加输入框；禁用插件后界面应与原版一致。
 - **产物优先**：卡片是产物的视图，结论必须带证据。
 - **品牌只换名字/Logo**：主题 token、`@deepseek-ai/*` 包名、`dsh` 命令、`DSH_*` 环境变量都不动。
+
+- [Stage 4–5 实现蓝图](prototype/stage-4-5-blueprint.html)

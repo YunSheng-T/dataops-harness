@@ -243,9 +243,13 @@ check('turn definition publishes a numeric turn', () => {
 
 check('six-stage cards render their key facts', () => {
   const develop = text(Cards.DevelopCard({
-    block: block({ kind: 'develop', target: 'dws.x', status: 'running', branch: 'feature/x', tasks: [{ name: '过滤订单', status: 'done', progress: 100, owner: '交易组' }], blockers: [{ message: '维表待发布' }], source: 'mock', asOf: '2026-10-25 14:20' })
+    block: block({ kind: 'develop', target: 'dws.x', status: 'awaiting_merge', branch: 'feature/x', artifacts: [{ type: 'sql', path: 'deliverables/develop/sql/etl.sql' }, { type: 'ops_script', path: 'deliverables/develop/ops/deploy.sh' }], validation: { build: { status: 'passed', attempt: 2 }, scan: { status: 'failed', blocking: ['作业数 52 > 50'] }, deploy: { status: 'blocked', reason: '数据源缺失' }, test: { status: 'manual' } }, tasks: [{ name: '过滤订单', status: 'done', progress: 100, owner: '交易组' }], review: { se: { status: 'approved' }, committer: { status: 'waiting' } }, merge: { status: 'pending' }, source: 'mock', asOf: '2026-10-25 14:20' })
   }))
-  assert(develop.includes('开发') && develop.includes('过滤订单') && develop.includes('维表待发布'), 'develop card')
+  assert(develop.includes('开发验证') && develop.includes('过滤订单') && develop.includes('sql') && develop.includes('数据源缺失'), 'develop card')
+  const pipeline = text(Cards.PipelineCard({
+    block: block({ kind: 'cicd', target: 'dws.x', status: 'succeeded', pipelineRunId: 'run-1', commit: 'abc1234', artifact: { package: 'artifact/dataops-dws.x-1.0.0.tar.gz', digest: 'sha256:1', manifest: 'artifact/manifest.json', checksum: 'artifact/checksums.txt' }, pipeline: { build: 'passed', scan: 'passed', test: 'manual', package: 'passed' }, externalDeployment: { platform: 'company-release-platform', environments: [{ name: 'dev', status: 'deployed' }, { name: 'sit', status: 'pending' }] }, reports: [], gaps: [] })
+  }))
+  assert(pipeline.includes('数据 CICD') && pipeline.includes('dataops-dws.x-1.0.0.tar.gz') && pipeline.includes('外部环境'), 'pipeline card')
   const test = text(Cards.TestCard({
     block: block({ kind: 'test', conclusion: 'pass', status: 'passed', target: 'dws.x', summary: { diff: '0.12%', quality: '99.98%', performance: '38s', sla: '04:40' }, cases: [{ name: '主键唯一', type: '唯一性', status: 'pass', detail: '0 重复' }], source: 'mock', asOf: '2026-10-25 15:10' })
   }))

@@ -18,7 +18,9 @@ Host 侧工具：把对话意图变成结构化阶段产物，客户端卡片负
 | `dataops_cicd_compile` | `scenario?` | `schedule` | 编译/YAML 卡 |
 | `dataops_develop_generate_code` | `scenario?` | `develop` | 开发卡（mock） |
 | `dataops_cicd_test` | `scenario?` | `test` | 测试卡（mock） |
-| `dataops_cicd_release` | `scenario?` | `release` | 发布卡（mock；DSH approval 硬门禁） |
+| `dataops_cicd_release` | `scenario?` | `release` | P2 legacy；**Stage 5 不使用**，不接 DSH approval |
+| `dataops_shared_read_develop` | — | `develop` | 开发验证多产物/attempt fixture |
+| `dataops_cicd_pipeline` | `workitemId?` | `cicd` | 一条 mock pipeline + 制品包 + 外部环境只读 |
 | `dataops_review_write_postmortem` | `scenario?` | `postmortem` | 复盘卡（mock） |
 | `dataops_incident_triage` | `scenario?` | `incident` | 排障卡（mock） |
 | `dataops_shared_present_deliverable` | `kind`/`stage`/`deliverable`/`payload` | 交付物 payload | `DeliverableRenderer` |
@@ -108,7 +110,7 @@ cd packages/dataops-tools
 npm run check
 ```
 
-契约断言（含 6 阶段/排障、presenter、workitem 和 lossless JSON）+ 24 个注册项 / 16 个活动工具 smoke + provider-check（本地 HTTP stub、fake CLI、401/404/超时、token 脱敏）。
+契约断言（含 6 阶段/排障、presenter、workitem 和 lossless JSON）+ 26 个注册项 / 18 个活动工具 smoke + provider-check（本地 HTTP stub、fake CLI、401/404/超时、token 脱敏）。
 
 ## 边界
 

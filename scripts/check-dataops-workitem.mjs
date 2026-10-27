@@ -26,7 +26,8 @@ for (const stage of stages) check(item.includes(stage + ':'), `template item.yam
 for (const status of ['pending', 'in_progress', 'blocked', 'awaiting_approval', 'done']) {
   check(item.includes(status), `template item.yaml missing stage status ${status}`)
 }
-check(item.includes('gate: release'), 'template item.yaml missing release gate')
+check(item.includes('gate: develop.code_review') && item.includes('gate: develop.merge'), 'template item.yaml missing develop gates')
+check(!item.includes('gate: release'), 'template item.yaml must not contain DSH release gate')
 check(item.includes('deliverable: null'), 'template item.yaml missing stage deliverable')
 
 const protocol = read('.agents/skills/workitem-protocol/SKILL.md')

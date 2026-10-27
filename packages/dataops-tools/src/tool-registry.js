@@ -89,6 +89,16 @@ export const TOOL_REGISTRY = [
     stages: ['incident'], payloadKind: 'incident', card: 'IncidentCard', skill: 'pipeline-debug', implemented: true
   },
   {
+    name: 'dataops_shared_read_develop',
+    scope: 'shared', action: 'read', object: 'develop', shared: true,
+    stages: ['develop', 'cicd'], payloadKind: 'develop', card: 'DevelopCard', skill: 'dataops-develop', implemented: true
+  },
+  {
+    name: 'dataops_cicd_pipeline',
+    scope: 'cicd', action: 'pipeline', shared: false,
+    stages: ['cicd'], payloadKind: 'cicd', card: 'PipelineCard', skill: 'dataops-cicd', implemented: true
+  },
+  {
     name: 'dataops_shared_present_deliverable',
     scope: 'shared', action: 'present', object: 'deliverable', shared: true,
     stages: ['requirement', 'design', 'scheme', 'develop', 'review', 'incident'], payloadKind: 'deliverable', card: 'DeliverableRenderer', skill: 'dataops-deliverable-templates', implemented: true

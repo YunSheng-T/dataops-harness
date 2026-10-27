@@ -1,6 +1,6 @@
 ---
 name: dataops-workflow
-description: 用户用业务语言提出数据需求、改表、建模、发布或验收时使用；从需求建立工作项，自动按 6 阶段推进并调用所需能力，遇到审批门禁停下，不要求用户说工具名。
+description: 用户用业务语言提出数据需求、改表、建模、发布或验收时使用；从需求建立工作项，自动按 0+1 → Stage 5 推进并调用所需能力，遇到审批门禁停下，不要求用户说工具名。
 ---
 
 # DataOps 工作流
@@ -17,7 +17,7 @@ description: 用户用业务语言提出数据需求、改表、建模、发布�
 | 用户意图 | 走到哪 |
 |---|---|
 | 只问一个事实/影响面 | 共享事实 + 证据，不建全流程 |
-| 一个完整需求 | 需求 → 设计 → 方案 → 开发 → CICD → 复盘 |
+| 一个完整需求 | 需求 → 设计 → 方案 → 开发 → CICD（Stage 6 不在本版） |
 | 已有设计，要求实现 | 从方案/开发开始，先核对上游产物 |
 | 发布/变更 | CICD + 审批门禁；不直接写生产 |
 | 故障/延迟/数据不对 | 排障旁路；read_logs → pipeline-debug → incident 交付物；先止血、再根因 |
@@ -52,9 +52,9 @@ decision.md    # 审批记录
 1. **需求**：加载 `dataops-requirement` 和 `dataops-deliverable-templates`；读用户描述/事实，提取目标、范围、验收、owner、时间；产 `deliverables/requirement.yaml` 并调 `dataops_shared_present_deliverable`。不要调用已下线的需求内容工具。缺关键项就问 1 个最关键的问题。
 2. **设计**：加载 `dataops-design`，用 `dataops-deliverable-templates` 产 `deliverables/design.yaml`，给粒度、主键、来源、分区、指标口径、影响面，再调 `dataops_shared_present_deliverable`。证据不足标 `gaps`，不编造。
 3. **方案**：加载 `dataops-analysis`、`dataops-solution`、`dataops-tech-plan`，按分析 → 需求方案 → 技术方案推进；分别产 `deliverables/analysis.yaml`、`solution.yaml`、`tech-plan.yaml` 并调 presenter。技术方案要包含任务、依赖、SLA、平台、回滚。不要调用已下线的方案内容工具。
-4. **开发**：加载 `dataops-deliverable-templates`，产 `deliverables/change.sql` 和 `deliverables/develop.yaml`，交 `sql-review` 自查，再调 presenter。只产出代码/草稿，不直接写生产；阻塞项必须有 owner。不要调用已下线的开发内容工具。
-5. **CICD**：扫描 → 编译构建 → 测试 → 发布/部署。release 工具会触发 **DSH 原生审批**；只有 `allowed-once` 才继续。拒绝/取消/审批不可用时都不发布，并把结果写回 `approvals`。不要自己传 `approved: true` 或 mock token；**到了 release 也不要先用 ask_user_question 问“是否发布”，直接调用 release，让 DSH approval 收口**。
-6. **复盘**：加载 `dataops-deliverable-templates`，产 `deliverables/postmortem.yaml`，写目标 vs 实际、问题、行动项 owner/期限、知识回写，再调 presenter。没有运行数据就写待确认；不要调用已下线的复盘内容工具。
+4. **开发验证**：加载 `dataops-develop`。先生成多产物（sql/etl/schedule/api/ops/tests），`develop.yaml` 只做清单+验证摘要。用 `dataops_shared_read_develop` 读 mock 事实；build/scan/deploy/test 失败要记录 attempt、回流和修复动作，不能只做 happy path。SE 评审用 gate=`develop.code_review`；Committer 合入用 gate=`develop.merge`，DataOps 不执行 merge。
+5. **数据 CICD**：加载 `dataops-cicd`。确认已合入后，调一次 `dataops_cicd_pipeline`；展示 pipeline run、制品包/manifest/checksum、日志和外部环境只读状态。**不使用 DSH 原生 approval，不执行部署/发布/回滚**；外部环境状态不是 DataOps 门禁。
+6. **Stage 6**：本版不实现，不展示复盘页面。
 
 ## 工具怎么用
 
@@ -64,17 +64,18 @@ decision.md    # 审批记录
 - 需求/设计：Agent + `dataops-deliverable-templates` 生成，presenter 展示
 - 方案：Agent + `dataops-deliverable-templates` 生成分析/需求方案/技术方案，presenter 展示
 - 开发：Agent + `dataops-deliverable-templates` + `sql-review` 生成代码/开发交付物，presenter 展示
-- 执行：扫描、编译、测试、发布
+- 开发验证：`dataops_shared_read_develop` + 多产物 + attempt
+- CICD：`dataops_cicd_pipeline` 一条 pipeline + 制品包；外部环境只读
 - 复盘：Agent + `dataops-deliverable-templates` 生成复盘交付物，presenter 展示
 - 排障：`dataops_shared_read_logs` + `pipeline-debug`，产 `deliverables/incident.yaml`，presenter 展示；不要调用已下线的 `dataops_incident_triage`
 
 `dataops_cicd_compile` 是 CICD 编译：mock 返回预编译 YAML，真实模式调内部 `dataops compile`；**tool 不回调 Agent**。
 
-`dataops_cicd_release` 的审批由 DSH approval 服务拥有，不是工作项文件自证。工作项 `approvals` 只记录请求和结果。
+`dataops_cicd_release` 是 P2 legacy，不得用于 Stage 5。Stage 5 不接 DSH approval；外部部署审批由公司发布平台负责。
 
 ## 什么时候停
 
-- 发布/部署、T3/T4 写操作：必须审批
+- 真实发布/部署、T3/T4 写操作：交外部系统，DataOps 不执行
 - 证据不足却要下结论：停下来要数据/口径
 - 上游产物缺失或冲突：先对齐，不硬做下游
 - 用户只问事实：给结论 + 证据，不擅自开全流程
@@ -88,6 +89,6 @@ decision.md    # 审批记录
 ## 反例
 
 - 用户说“帮我改渠道日报”，先回“请调用 dataops_xxx”。
-- 一上来把 16 个工具全部调用一遍。
+- 一上来把 18 个工具全部调用一遍。
 - 没有审批就发布。
 - 把 mock 数据当生产结论。

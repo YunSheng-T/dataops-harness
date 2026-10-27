@@ -501,6 +501,8 @@ function validateStageAdvance(raw, patch) {
   if (stage === 'scheme' && substage === 'solution' && !gates.has('scheme.analysis')) throw new Error('workitem: scheme.analysis gate is not approved')
   if (stage === 'scheme' && substage === 'tech_plan' && !gates.has('scheme.solution')) throw new Error('workitem: scheme.solution gate is not approved')
   if (stage === 'scheme' && patch.stages && patch.stages.scheme && patch.stages.scheme.status === 'done' && !gates.has('scheme.tech_plan')) throw new Error('workitem: scheme.tech_plan gate is not approved')
+  if (stage === 'develop' && !gates.has('scheme.tech_plan')) throw new Error('workitem: scheme.tech_plan gate is not approved')
+  if (stage === 'cicd' && !gates.has('develop.merge')) throw new Error('workitem: develop.merge gate is not approved')
 }
 
 function applyPatch(raw, patch) {
@@ -573,6 +575,7 @@ const STAGE_KINDS = {
   solution: 'scheme',
   tech_plan: 'scheme',
   develop: 'develop',
+  cicd: 'cicd',
   postmortem: 'review',
   incident: 'incident'
 }
@@ -581,7 +584,9 @@ const GATE_ROLES = {
   design: ['BA'],
   'scheme.analysis': ['BA'],
   'scheme.solution': ['BA'],
-  'scheme.tech_plan': ['SE']
+  'scheme.tech_plan': ['SE'],
+  'develop.code_review': ['SE'],
+  'develop.merge': ['Committer']
 }
 
 function writeItem(dir, raw, config, planText) {
@@ -610,6 +615,8 @@ function ensureStageAllowed(raw, stage, substage) {
   if (stage === 'scheme' && !gates.has('design')) throw new Error('stage: design gate is not approved')
   if (stage === 'scheme' && substage === 'solution' && !gates.has('scheme.analysis')) throw new Error('stage: scheme.analysis gate is not approved')
   if (stage === 'scheme' && substage === 'tech_plan' && !gates.has('scheme.solution')) throw new Error('stage: scheme.solution gate is not approved')
+  if (stage === 'develop' && !gates.has('scheme.tech_plan')) throw new Error('stage: scheme.tech_plan gate is not approved')
+  if (stage === 'cicd' && !gates.has('develop.merge')) throw new Error('stage: develop.merge gate is not approved')
 }
 
 export function stagePrepare(config, args) {
@@ -676,8 +683,22 @@ function advanceAfterSignoff(raw, gate) {
   }
   if (gate === 'scheme.tech_plan') {
     stage('scheme').status = 'done'
-    raw.next = '3c 技术方案已签收；Stage 4/5/6 不在本版'
-    return 'scheme.done'
+    raw.stage = 'develop'
+    stage('develop').status = 'in_progress'
+    raw.next = '开发验证：生成多产物，Build → Scan → Deploy → Test 回流，SE 评审 + Committer 合入'
+    return 'develop'
+  }
+  if (gate === 'develop.code_review') {
+    stage('develop').status = 'awaiting_merge'
+    raw.next = 'SE 评审通过；等待 Committer 外部合入，合入后才进 CICD'
+    return null
+  }
+  if (gate === 'develop.merge') {
+    stage('develop').status = 'done'
+    raw.stage = 'cicd'
+    stage('cicd').status = 'in_progress'
+    raw.next = '触发一条数据 CICD pipeline；产物是制品包 + manifest/checksum + 外部环境只读状态'
+    return 'cicd'
   }
   return null
 }
@@ -686,7 +707,8 @@ export function stageSignoff(config, args) {
   const id = args && args.id
   if (!id) throw new Error('stage: id is required')
   const gate = args.gate
-  const role = args.role
+  const requestedRole = String(args.role || '')
+  const role = ({ ba: 'BA', requester: 'requester', se: 'SE', committer: 'Committer', dev: 'Dev' })[requestedRole] || requestedRole
   const roles = GATE_ROLES[gate]
   if (!roles) throw new Error('stage: unknown gate ' + gate)
   if (!roles.includes(role)) throw new Error('stage: role ' + role + ' cannot sign ' + gate)
@@ -701,8 +723,14 @@ export function stageSignoff(config, args) {
     : gate === 'scheme.analysis' ? current === 'scheme' && substage === 'analysis'
     : gate === 'scheme.solution' ? current === 'scheme' && substage === 'solution'
     : gate === 'scheme.tech_plan' ? current === 'scheme' && substage === 'tech_plan'
+    : gate === 'develop.code_review' ? current === 'develop'
+    : gate === 'develop.merge' ? current === 'develop'
     : false
   if (!allowed) throw new Error('stage: ' + gate + ' is not the current stage gate')
+  if (gate === 'develop.merge') {
+    const review = (raw.approvals || []).find(a => a && a.gate === 'develop.code_review')
+    if (!review || review.status !== 'approved') throw new Error('stage: develop.code_review must be approved before merge')
+  }
   const stageKey = gate.startsWith('scheme.') ? 'scheme' : gate
   const pointer = raw.stages && raw.stages[stageKey] && raw.stages[stageKey].deliverable
   if ((gate === 'scheme.analysis' || gate === 'scheme.solution' || gate === 'scheme.tech_plan') && pointer) {
@@ -722,6 +750,22 @@ export function stageSignoff(config, args) {
   raw.updated_at = stamp()
   writeItem(dir, raw, config, `stage signoff · ${gate}/${role} · ${approval.status}${advanced ? ' · advanced=' + advanced : ''}`)
   return { ...publicItem(raw, id), advanced, gateStatus: approval.status }
+}
+
+export function stageComplete(config, args) {
+  const id = args && args.id
+  if (!id) throw new Error('stage: id is required')
+  const root = rootDir(config)
+  const dir = itemDir(root, id)
+  const raw = readRaw(root, id)
+  if (raw.stage !== 'cicd') throw new Error('stage: only cicd can be completed by pipeline')
+  raw.stages = raw.stages && typeof raw.stages === 'object' ? raw.stages : {}
+  raw.stages.cicd = raw.stages.cicd || {}
+  raw.stages.cicd.status = 'done'
+  raw.next = 'Stage 5 完成：pipeline 成功 + 制品包生成；Stage 6 不在本版'
+  raw.updated_at = stamp()
+  writeItem(dir, raw, config, 'stage complete · cicd · pipeline succeeded + artifact package')
+  return publicItem(raw, id)
 }
 
 export const _internals = { parseWorkitem, serializeWorkitem, normalize, validatePatch }
