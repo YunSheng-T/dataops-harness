@@ -17,6 +17,14 @@ node scripts/seed-dataops-demo.mjs --stage develop
 
 打开 dataops profile 的新会话，窗口 1440×900，暗色/亮色任选。
 
+可选彩排（真实浏览器、只读）：
+
+```sh
+node scripts/e2e/dataops-p1.4.mjs --scenario journey-ui --keep
+```
+
+它会在同一会话里从 USPicker 走到 Stage 5 卡，并截图；不代替真实签收。
+
 ## 1. US 接单
 
 输入：
@@ -140,3 +148,11 @@ Stage 5 结束即停；Stage 6（验收/复盘）本版不实现，不展示假�
 - Stage 4 build/scan 失败：展开 attempt，展示回流；
 - Stage 5 pipeline 失败：回 Stage 4 修后重新合入，再触发新 pipeline；
 - 外部环境 pending：只读展示，不改变 DataOps pipeline pass。
+
+
+## 证据截图
+
+- `prototype/shots/stage-0-us-picker.png`
+- `prototype/shots/stage-0-5-journey.png`
+- `prototype/shots/stage-4-live.png` / `stage-4-live-dark.png`
+- `prototype/shots/stage-5-live.png` / `stage-5-live-dark.png`
