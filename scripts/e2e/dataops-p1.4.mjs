@@ -467,6 +467,38 @@ async function runStage4Ui() {
   }
 }
 
+async function runJourneyUi() {
+  const serverPort = await freePort()
+  const chromePort = await freePort()
+  const server = await startServer(serverPort, 'workspace-write')
+  const page = await startChrome(chromePort, server.url, join(root, '.tmp-p14-chrome-journey-' + runId))
+  try {
+    await ensureComposer(page.evaluate)
+    await dismissPreview(page.evaluate)
+    await ensureComposer(page.evaluate)
+    await sendPrompt(page, '不要修改任何文件或状态。读取工作项 2026-10-27-us-3821-demo，依次调用 dataops_shared_read_stage 展示 requirement、design、scheme、develop、cicd 五个阶段卡，串成一条从需求到 Stage 5 的只读旅程；不要签收、不要部署。')
+    await waitFor(async () => {
+      const text = await bodyText(page)
+      return text.includes('数据 CICD') && text.includes('开发验证') && (text.includes('需求') || text.includes('REQ-3821'))
+    }, 300000, 'journey cards')
+    await sleep(1200)
+    const text = await bodyText(page)
+    check(/需求|REQ-3821/.test(text), 'journey includes requirement')
+    check(text.includes('开发验证'), 'journey includes stage 4')
+    check(text.includes('数据 CICD'), 'journey includes stage 5')
+    await page.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-0-5-journey-full.png'), Buffer.from(r.result.data, 'base64')) })
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-0-5-journey.png'), Buffer.from(r.result.data, 'base64')) })
+    check(page.errors.length === 0, 'no console exceptions: ' + page.errors.slice(-2).join(' | '))
+    notes.push({ scenario: 'journey-ui', bytes: text.length })
+  } finally {
+    page.ws.close()
+    page.child.kill('SIGTERM')
+    server.child.kill('SIGTERM')
+    await sleep(800)
+    safeRemove(join(root, '.tmp-p14-chrome-journey-' + runId))
+  }
+}
+
 async function runStage5Ui() {
   const serverPort = await freePort()
   const chromePort = await freePort()
@@ -715,6 +747,7 @@ async function main() {
   else if (scenario === 'incident') await runIncident()
   else if (scenario === 'us-picker') await runUsPicker()
   else if (scenario === 'stage-flow') await runStageFlow()
+  else if (scenario === 'journey-ui') await runJourneyUi()
   else if (scenario === 'stage4-ui') await runStage4Ui()
   else if (scenario === 'stage45-ui') await runStage45Ui()
   else if (scenario === 'stage5-ui') await runStage5Ui()

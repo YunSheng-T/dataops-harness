@@ -212,7 +212,7 @@ check('context store keeps the latest payload per kind and session', () => {
 
 check('turn brief maps tool payload and ingests context', () => {
   const brief = Brief._internals.briefFrom({ kind: 'design', status: 'draft', target: { table: 'dws.x' } })
-  assert(brief.index === 2 && brief.total === 6, 'wrong stage index')
+  assert(brief.index === 2 && brief.total === 5, 'wrong stage index')
   assert(brief.next === '进入方案', 'wrong next step')
   const payloads = {
     design: { kind: 'design', target: { table: 'dws.x' }, sources: [], steps: [] },
@@ -246,6 +246,8 @@ check('six-stage cards render their key facts', () => {
     block: block({ kind: 'develop', target: 'dws.x', status: 'awaiting_merge', branch: 'feature/x', artifacts: [{ type: 'sql', path: 'deliverables/develop/sql/etl.sql' }, { type: 'ops_script', path: 'deliverables/develop/ops/deploy.sh' }], validation: { build: { status: 'passed', attempt: 2 }, scan: { status: 'failed', blocking: ['作业数 52 > 50'] }, deploy: { status: 'blocked', reason: '数据源缺失' }, test: { status: 'manual' } }, tasks: [{ name: '过滤订单', status: 'done', progress: 100, owner: '交易组' }], review: { se: { status: 'approved' }, committer: { status: 'waiting' } }, merge: { status: 'pending' }, source: 'mock', asOf: '2026-10-25 14:20' })
   }))
   assert(develop.includes('开发验证') && develop.includes('过滤订单') && develop.includes('sql') && develop.includes('数据源缺失'), 'develop card')
+  const reqEvidence = text(Cards.RequirementCard({ block: block({ kind: 'requirement', title: '需求', goal: '目标', owner: '交易组', evidence: [{ id: 'ev-1', query: 'select 1', env: 'mock', asOf: '2026-10-27' }] }) }))
+  assert(reqEvidence.includes('ev-1'), 'requirement must render evidence objects as chips')
   const pipeline = text(Cards.PipelineCard({
     block: block({ kind: 'cicd', target: 'dws.x', status: 'succeeded', pipelineRunId: 'run-1', commit: 'abc1234', artifact: { package: 'artifact/dataops-dws.x-1.0.0.tar.gz', digest: 'sha256:1', manifest: 'artifact/manifest.json', checksum: 'artifact/checksums.txt' }, pipeline: { build: 'passed', scan: 'passed', test: 'manual', package: 'passed' }, externalDeployment: { platform: 'company-release-platform', environments: [{ name: 'dev', status: 'deployed' }, { name: 'sit', status: 'pending' }] }, reports: [], gaps: [] })
   }))
@@ -292,7 +294,6 @@ check('stage and incident briefs map to the right step', () => {
   assert(Brief._internals.briefFrom({ kind: 'develop' }).index === 4, 'develop stage')
   assert(Brief._internals.briefFrom({ kind: 'test' }).index === 5, 'test stage')
   assert(Brief._internals.briefFrom({ kind: 'release' }).index === 5, 'release stage')
-  assert(Brief._internals.briefFrom({ kind: 'postmortem' }).index === 6, 'postmortem stage')
   const incident = Brief._internals.briefFrom({ kind: 'incident', status: '处理中', target: 'dws.x', artifact: 'incident.yaml' })
   assert(incident.total === 0 && incident.label === '排障', 'incident brief')
   const body = text(Brief.TurnTail({ brief: incident, payloads: { incident: { kind: 'incident', target: 'dws.x' } }, sessionId: 's-incident' }))

@@ -18,8 +18,7 @@ export function createStageBrief(React, store, contextStore) {
     { key: 'design', label: '设计', short: '设计', next: '进入方案' },
     { key: 'scheme', label: '方案', short: '方案', next: '开始开发', subs: ['数据挖掘', '数据分析', '需求方案设计', '技术方案输出'] },
     { key: 'develop', label: '开发', short: '开发', next: '进入 CICD' },
-    { key: 'cicd', label: 'CICD', short: 'CICD', next: '进入复盘', subs: ['扫描', '编译构建', '测试', '发布/部署'] },
-    { key: 'review', label: '复盘', short: '复盘', next: '沉淀知识' }
+    { key: 'cicd', label: 'CICD', short: 'CICD', next: 'Stage 5 结束；Stage 6 不在本版', subs: ['扫描', '编译构建', '测试', '发布/部署'] }
   ]
   var KIND_STAGE = {
     intake: 'requirement',
@@ -340,7 +339,7 @@ export function createStageBrief(React, store, contextStore) {
       var node = nodes.length ? nodes[nodes.length - 1] : null
       if (node && typeof node.scrollIntoView === 'function') node.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
-    var stageDefs = [['requirement', '需求'], ['design', '设计'], ['scheme', '方案'], ['develop', '开发'], ['cicd', 'CICD'], ['review', '复盘']]
+    var stageDefs = [['requirement', '需求'], ['design', '设计'], ['scheme', '方案'], ['develop', '开发'], ['cicd', 'CICD']]
     var cardLabels = { requirement: '需求', design: '设计', analysis: '3a 分析', solution: '3b 方案', tech_plan: '3c 技术方案', develop: '开发验证', cicd: '数据 CICD' }
     var subDefs = { scheme: ['数据挖掘', '数据分析', '需求方案设计', '技术方案输出'], cicd: ['扫描', '编译构建', '测试', '发布/部署'] }
     var activeCards = stageCards(payloads, selected)

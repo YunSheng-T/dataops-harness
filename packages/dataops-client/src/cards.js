@@ -394,8 +394,9 @@ export function createDataopsCards(React) {
   function evidenceChips(ids) {
     var arr = Array.isArray(ids) ? ids : []
     if (!arr.length) return null
-    return h('div', { className: 'do-kv', style: { marginTop: '5px' } }, arr.slice(0, 8).map(function (id, i) {
-      return h('span', { key: i, className: 'do-chip' }, id)
+    return h('div', { className: 'do-kv', style: { marginTop: '5px' } }, arr.slice(0, 8).map(function (item, i) {
+      var label = typeof item === 'string' ? item : (item && (item.id || item.evidenceId || item.asOf || item.query || item.title)) || 'evidence'
+      return h('span', { key: i, className: 'do-chip', title: typeof item === 'object' && item ? JSON.stringify(item).slice(0, 240) : '' }, String(label))
     }))
   }
 
