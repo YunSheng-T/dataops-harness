@@ -1,0 +1,66 @@
+# DataOps delivery workitem v0.
+# Copy this directory to workitems/<YYYY-MM-DD>-<slug>/ and fill the real values.
+# `status` is the overall workitem lifecycle from workitem-protocol; `stage`
+# and `stages` track the 6-stage delivery projection.
+id: _template
+title: 示例需求
+type: delivery
+status: planning
+source: null
+stage: requirement
+substage: null
+owner: null
+created_at: 2026-10-26T00:00:00+08:00
+updated_at: 2026-10-26T00:00:00+08:00
+
+assets: []
+acceptance: []
+
+stages:
+  # stage status enum: pending | in_progress | blocked | awaiting_approval | done
+  requirement:
+    status: pending
+    deliverable: null
+  design:
+    status: pending
+    deliverable: null
+  scheme:
+    status: pending
+    substage: null
+    deliverable: null
+  develop:
+    status: pending
+    deliverable: null
+  cicd:
+    status: pending
+    deliverable: null
+  review:
+    status: pending
+    deliverable: null
+
+deliverables: []
+evidence: []
+gaps: []
+
+approvals:
+  - gate: requirement
+    status: pending
+    signoffs: []
+  - gate: design
+    status: pending
+    signoffs: []
+  - gate: scheme.analysis
+    status: pending
+    signoffs: []
+  - gate: scheme.solution
+    status: pending
+    signoffs: []
+  - gate: scheme.tech_plan
+    status: pending
+    signoffs: []
+  - gate: release
+    status: pending
+    approver: null
+    requested_at: null
+
+next: 补充需求目标、范围、验收标准和 owner

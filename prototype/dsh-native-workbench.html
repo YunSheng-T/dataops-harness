@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数据开发工作台 · 基于 DSH 原生界面追加</title>
+<style>
+/* ============================================================
+   DSH 原生界面 + 数据开发能力追加
+   结构：sidebar 280 / main 1fr / rightbar 360
+   所有追加元素带 data-addition，可一键标注查看
+   ============================================================ */
+:root {
+  --bg-app: #ffffff;
+  --bg-sidebar: #f5f6f7;
+  --bg-elevated: #ffffff;
+  --bg-hover: #eceef1;
+  --bg-selected: #e6e8ec;
+  --bg-composer: #f7f8fa;
+  --bg-bubble: #eef0f5;
+  --text: #15171c;
+  --text-2: #5f646b;
+  --text-3: #8b9098;
+  --text-4: #b8bcc4;
+  --border: rgba(0,0,0,.07);
+  --border-strong: rgba(0,0,0,.12);
+  --blue: #4176e6;
+  --blue-soft: rgba(65,118,230,.10);
+  --green: #16a34a;
+  --green-soft: rgba(34,197,94,.12);
+  --amber: #b45309;
+  --amber-soft: rgba(245,158,11,.16);
+  --red: #dc2626;
+  --red-soft: rgba(236,19,19,.10);
+  --primary: #0f1115;
+  --primary-text: #ffffff;
+  --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-panel: 28px;
+  --shadow: 0 1px 2px rgba(15,17,21,.04);
+  --shadow-panel: 0 1px 2px rgba(15,17,21,.06), 0 16px 44px rgba(15,17,21,.16);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+body[data-ds-dark-theme] {
+  --bg-app: #151517;
+  --bg-sidebar: #1b1b1d;
+  --bg-elevated: #232326;
+  --bg-hover: #2a2a2d;
+  --bg-selected: #2f2f33;
+  --bg-composer: #232326;
+  --bg-bubble: #2a2a2d;
+  --text: #f2f3f5;
+  --text-2: #a6aab2;
+  --text-3: #7b8089;
+  --text-4: #55595f;
+  --border: rgba(255,255,255,.07);
+  --border-strong: rgba(255,255,255,.14);
+  --blue: #7aaaff;
+  --blue-soft: rgba(122,170,255,.14);
+  --green: #34d399;
+  --green-soft: rgba(52,211,153,.14);
+  --amber: #fbbf24;
+  --amber-soft: rgba(251,191,36,.16);
+  --red: #f87171;
+  --red-soft: rgba(248,113,113,.14);
+  --primary: #f2f3f5;
+  --primary-text: #151517;
+  --shadow-panel: 0 2px 4px rgba(0,0,0,.4), 0 24px 60px rgba(0,0,0,.55);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; font-family: var(--font); font-size: 13px; line-height: 20px;
+  color: var(--text); background: var(--bg-app); -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; font-size: inherit; color: inherit; cursor: pointer; }
+::selection { background: var(--blue-soft); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(127,127,127,.25); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.app { height: 100%; display: grid; grid-template-columns: 280px minmax(0,1fr) 360px; overflow: hidden; }
+
+/* ================= 左：原生侧栏 ================= */
+.sidebar { background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+.brand-row { display: flex; align-items: center; gap: 8px; padding: 14px 14px 10px; }
+.brand-mark { width: 18px; height: 18px; color: var(--text); flex: none; }
+.brand-name { font-size: 14px; font-weight: 650; letter-spacing: -.01em; flex: 1; white-space: nowrap; }
+.brand-name span { font-size: 8px; font-weight: 700; letter-spacing: .08em; border: 1px solid var(--border-strong); border-radius: 3px; padding: 1px 3px; margin-left: 3px; vertical-align: 2px; color: var(--text-2); }
+.icon-btn { width: 26px; height: 26px; border: 0; background: transparent; border-radius: var(--r-sm); color: var(--text-3); display: grid; place-items: center; }
+.icon-btn:hover { background: var(--bg-hover); color: var(--text); }
+.new-session { margin: 2px 12px 12px; height: 38px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--bg-elevated); color: var(--text); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: var(--shadow); }
+.new-session:hover { background: var(--bg-hover); }
+.new-session kbd { font-family: var(--font); font-size: 11px; color: var(--text-4); margin-left: 2px; }
+.ws-head { display: flex; align-items: center; padding: 6px 14px; font-size: 11px; color: var(--text-3); gap: 6px; }
+.ws-head .spacer { flex: 1; }
+.ws-head .icon-btn { width: 22px; height: 22px; }
+.ws-list { flex: 1; min-height: 0; overflow: auto; padding: 0 8px 8px; }
+.ws-row { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: var(--r-sm); color: var(--text); font-size: 13px; }
+.ws-row:hover { background: var(--bg-hover); }
+.ws-row .folder { color: var(--text-3); width: 16px; display: grid; place-items: center; }
+.ws-row .count { margin-left: auto; font-size: 11px; color: var(--text-4); }
+.session-row { display: flex; align-items: center; gap: 6px; width: calc(100% - 22px); height: 30px; margin: 1px 0 1px 22px; padding: 0 8px; border: 0; background: transparent; border-radius: var(--r-sm); color: var(--text-2); font-size: 12.5px; text-align: left; }
+.session-row:hover { background: var(--bg-hover); color: var(--text); }
+.session-row[data-active="true"] { background: var(--bg-selected); color: var(--text); }
+.session-row .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-row .when { font-size: 10.5px; color: var(--text-4); flex: none; }
+.stage-badge { flex: none; font-size: 10px; line-height: 15px; padding: 0 5px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+.stage-badge[data-tone="warn"] { background: var(--amber-soft); color: var(--amber); }
+.stage-badge[data-tone="muted"] { background: var(--bg-hover); color: var(--text-3); }
+.sidebar-foot { padding: 6px 8px 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 1px; }
+.foot-row { display: flex; align-items: center; gap: 9px; width: 100%; height: 32px; padding: 0 8px; border: 0; background: transparent; border-radius: var(--r-sm); color: var(--text-2); font-size: 13px; text-align: left; }
+.foot-row:hover { background: var(--bg-hover); color: var(--text); }
+.foot-row .glyph { width: 16px; text-align: center; color: var(--text-3); }
+
+/* ================= 中：原生对话 ================= */
+.main { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg-app); }
+.conv-header { flex: none; padding: 10px 20px 0; border-bottom: 1px solid var(--border); }
+.h-row1 { display: flex; align-items: center; gap: 8px; height: 30px; }
+.h-title { font-size: 14px; font-weight: 600; margin: 0; }
+.h-chip { font-size: 11px; color: var(--text-3); background: var(--bg-hover); border-radius: 999px; padding: 0 7px; line-height: 17px; }
+.h-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.log-pill { height: 26px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-2); font-size: 11px; }
+.log-pill:hover { background: var(--bg-hover); color: var(--text); }
+.h-row2 { display: flex; align-items: flex-end; gap: 14px; height: 34px; }
+.h-tab { height: 34px; padding: 0 2px; border: 0; background: transparent; color: var(--text-3); font-size: 12.5px; position: relative; }
+.h-tab[data-active="true"] { color: var(--text); font-weight: 600; }
+.h-tab[data-active="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--text); border-radius: 2px; }
+.h-row2 .spacer { flex: 1; }
+
+.transcript { flex: 1; min-height: 0; overflow: auto; }
+.t-inner { max-width: 780px; margin: 0 auto; padding: 22px 24px 10px; }
+.msg { display: flex; margin-bottom: 18px; }
+.msg.user { justify-content: flex-end; }
+.bubble { max-width: 72%; background: var(--bg-bubble); border-radius: 14px 4px 14px 14px; padding: 8px 12px; font-size: 14px; line-height: 22px; }
+.msg.assistant { gap: 10px; }
+.assistant-avatar { width: 24px; height: 24px; border-radius: 7px; background: var(--bg-hover); color: var(--text-2); display: grid; place-items: center; font-size: 10px; font-weight: 700; flex: none; margin-top: 2px; }
+.assistant-body { min-width: 0; flex: 1; font-size: 14px; line-height: 23px; }
+.assistant-body p { margin: 0 0 8px; }
+.tool-row { display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 12px; padding: 3px 0; margin: 2px 0 6px; }
+.tool-row .glyph { width: 14px; text-align: center; }
+.ev { border: 0; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 600; border-radius: 999px; padding: 0 6px; line-height: 17px; vertical-align: 1px; }
+.ev:hover { filter: brightness(.97); }
+
+/* ================= 追加：阶段卡 ================= */
+.card { margin: 8px 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-elevated); box-shadow: var(--shadow); overflow: hidden; }
+.card[data-state="running"] { border-style: dashed; }
+.card-head { display: flex; align-items: center; gap: 7px; padding: 9px 12px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex: none; }
+.dot[data-tone="pass"] { background: var(--green); }
+.dot[data-tone="warn"] { background: var(--amber); }
+.dot[data-tone="muted"] { background: var(--text-4); }
+.card-title { font-size: 12.5px; font-weight: 600; }
+.card-head .spacer { flex: 1; }
+.pill { font-size: 10.5px; line-height: 16px; padding: 0 6px; border-radius: 999px; background: var(--bg-hover); color: var(--text-2); white-space: nowrap; }
+.pill[data-tone="brand"] { background: var(--blue-soft); color: var(--blue); }
+.pill[data-tone="pass"] { background: var(--green-soft); color: var(--green); }
+.pill[data-tone="warn"] { background: var(--amber-soft); color: var(--amber); }
+.card-body { padding: 0 12px 10px; }
+.card-foot { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--bg-elevated) 60%, var(--bg-hover)); }
+.card-foot .meta { margin-right: auto; font-size: 10.5px; color: var(--text-3); }
+.btn { height: 26px; padding: 0 9px; border-radius: var(--r-sm); border: 1px solid var(--border-strong); background: var(--bg-elevated); color: var(--text); font-size: 11.5px; }
+.btn:hover { background: var(--bg-hover); }
+.btn.primary { background: var(--primary); color: var(--primary-text); border-color: transparent; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.btn.ghost:hover { background: var(--bg-hover); color: var(--text); }
+.btn:focus-visible, .ev:focus-visible, .h-tab:focus-visible, .foot-row:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 5px 9px; font-size: 12px; line-height: 18px; }
+.grid2 dt { color: var(--text-3); }
+.grid2 dd { margin: 0; min-width: 0; }
+.code { font-family: var(--mono); font-size: 10.5px; background: var(--bg-hover); padding: 1px 4px; border-radius: var(--r-xs); color: var(--text-2); }
+.section-label { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); margin: 9px 0 4px; }
+.steps { display: flex; flex-direction: column; }
+.step { display: flex; gap: 7px; padding: 5px 0; border-top: 1px solid var(--border); }
+.step:first-child { border-top: 0; }
+.step-idx { width: 14px; height: 14px; border-radius: 50%; flex: none; margin-top: 2px; display: grid; place-items: center; font-size: 9px; font-weight: 700; font-family: var(--mono); background: var(--blue-soft); color: var(--blue); }
+.step-title { font-size: 11.5px; }
+.step-logic { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); word-break: break-word; }
+.kv { display: flex; gap: 5px; flex-wrap: wrap; }
+
+/* 阶段简报（turnTail） */
+.brief { margin: 10px 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-elevated); padding: 11px 13px; box-shadow: var(--shadow); }
+.brief-head { display: flex; align-items: center; gap: 7px; }
+.brief-title { font-size: 12px; font-weight: 600; }
+.brief-sub { margin-left: auto; font-size: 10.5px; color: var(--text-3); }
+.stages { display: flex; align-items: center; gap: 0; margin: 10px 0 8px; }
+.stage { display: flex; align-items: center; gap: 4px; font-size: 10.5px; color: var(--text-3); white-space: nowrap; }
+.stage .sd { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--text-4); display: grid; place-items: center; font-size: 8px; color: transparent; }
+.stage[data-s="done"] { color: var(--text-2); }
+.stage[data-s="done"] .sd { background: var(--green); border-color: var(--green); color: #fff; }
+.stage[data-s="active"] { color: var(--text); font-weight: 600; }
+.stage[data-s="active"] .sd { border-color: var(--blue); box-shadow: 0 0 0 2.5px var(--blue-soft); }
+.stage-line { width: 14px; height: 1px; background: var(--border-strong); margin: 0 4px; }
+.stage[data-s="done"] + .stage-line { background: var(--green); opacity: .45; }
+.brief-next { font-size: 11.5px; color: var(--text-2); display: flex; gap: 6px; align-items: baseline; }
+.brief-next b { color: var(--text); font-weight: 600; }
+.brief-foot { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center; font-size: 10.5px; color: var(--text-3); }
+.brief-foot .link { color: var(--blue); }
+
+/* ================= 输入框（原生） ================= */
+.composer-wrap { flex: none; padding: 6px 24px 12px; }
+.composer { max-width: 780px; margin: 0 auto; border: 1px solid var(--border-strong); border-radius: var(--r-xl); background: var(--bg-composer); padding: 10px 12px 8px; }
+.composer input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font-family: inherit; font-size: 14px; padding: 2px 2px 10px; }
+.composer input::placeholder { color: var(--text-3); }
+.composer-bar { display: flex; align-items: center; gap: 6px; }
+.c-btn { height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-2); font-size: 11px; display: flex; align-items: center; gap: 4px; }
+.c-btn:hover { background: var(--bg-hover); }
+.c-btn.plus { width: 26px; padding: 0; justify-content: center; font-size: 15px; }
+.composer-bar .spacer { flex: 1; }
+.send { width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--primary); color: var(--primary-text); display: grid; place-items: center; font-size: 13px; }
+.stats { max-width: 780px; margin: 7px auto 0; text-align: center; font-size: 10.5px; color: var(--text-3); }
+
+
+
+/* ================= 右：原生右栏 + 追加标签 ================= */
+.rightbar { background: var(--bg-app); border-left: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+.tabstrip { display: flex; align-items: center; gap: 3px; height: 40px; padding: 0 8px; border-bottom: 1px solid var(--border); overflow: hidden; }
+.rtab { height: 26px; padding: 0 8px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent; color: var(--text-3); font-size: 11.5px; white-space: nowrap; }
+.rtab:hover { background: var(--bg-hover); color: var(--text); }
+.rtab[data-active="true"] { background: var(--bg-selected); border-color: var(--border); color: var(--text); }
+.rtab .x { margin-left: 4px; color: var(--text-4); font-size: 10px; }
+.rtab-group { display: flex; gap: 3px; border-radius: var(--r-sm); }
+.session-group { border-radius: var(--r-sm); }
+body.annotate .session-group { margin-top: 18px; }
+.tabstrip .spacer { flex: 1; }
+.tabstrip .icon-btn { width: 24px; height: 24px; }
+.rbody { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
+.ctx-card { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-elevated); padding: 10px 11px; margin-bottom: 8px; }
+.ctx-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+.ctx-sub { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
+.fields { margin-top: 7px; border-top: 1px solid var(--border); }
+.field-row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; font-size: 10.5px; border-bottom: 1px solid var(--border); }
+.field-row:last-child { border-bottom: 0; }
+.field-row .name { font-family: var(--mono); }
+.field-row .type { color: var(--text-3); }
+.lineage { display: flex; flex-direction: column; gap: 6px; }
+.lin-node { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elevated); font-size: 10.5px; }
+.lin-node .name { font-family: var(--mono); }
+.lin-node[data-target="true"] { border-color: var(--blue); background: var(--blue-soft); }
+.lin-arrow { color: var(--text-4); font-size: 10px; padding-left: 8px; }
+.ev-item { display: flex; gap: 7px; padding: 7px 0; border-top: 1px solid var(--border); font-size: 10.5px; }
+.ev-item:first-child { border-top: 0; }
+.ev-item .t { font-size: 11.5px; color: var(--text); }
+.ev-item .s { color: var(--text-3); }
+
+/* ================= 追加标注模式 ================= */
+body.annotate [data-addition] { outline: 1.5px dashed var(--blue); outline-offset: 2px; border-radius: 4px; position: relative; }
+body.annotate [data-addition]::after {
+  content: attr(data-addition); position: absolute; top: -18px; left: -1px; z-index: 6;
+  font-size: 9px; line-height: 14px; padding: 0 5px; border-radius: 3px 3px 3px 0;
+  background: var(--blue); color: #fff; white-space: nowrap; font-weight: 600; pointer-events: none;
+}
+body.annotate [data-addition-pos="right"]::after {
+  top: 50%; left: calc(100% + 6px); transform: translateY(-50%); border-radius: 3px;
+}
+.annotate-toggle { position: fixed; right: 18px; bottom: 16px; z-index: 50; display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--bg-elevated); color: var(--text-2); font-size: 11px; box-shadow: var(--shadow); }
+.annotate-toggle[data-on="true"] { background: var(--blue); color: #fff; border-color: transparent; }
+.annotate-toggle .n { font-size: 9px; opacity: .75; }
+
+/* ================= 画布 / 证据 / toast ================= */
+.overlay { position: fixed; inset: 0; background: rgba(15,17,21,.42); display: none; align-items: center; justify-content: center; padding: 28px; z-index: 30; }
+.overlay.open { display: flex; }
+.canvas { width: min(1040px,100%); max-height: 86vh; background: var(--bg-app); border-radius: var(--r-panel); box-shadow: var(--shadow-panel); display: flex; flex-direction: column; overflow: hidden; }
+.canvas-head { display: flex; align-items: center; gap: 9px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.canvas-head .title { font-weight: 600; }
+.canvas-head .sub { font-size: 10.5px; color: var(--text-3); }
+.canvas-body { padding: 18px; overflow: auto; display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 14px; }
+.col-label { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); text-transform: uppercase; margin-bottom: 6px; }
+.node-card { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-elevated); padding: 9px 11px; margin-bottom: 8px; }
+.node-card .name { font-family: var(--mono); font-size: 11.5px; font-weight: 600; }
+.node-card .meta { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
+.flow { display: flex; align-items: center; color: var(--text-4); font-size: 10px; margin: 2px 0 8px; }
+.connector { height: 1px; flex: 1; background: var(--border-strong); margin: 0 8px; }
+.canvas-foot { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--border); background: var(--bg-sidebar); }
+.canvas-foot .meta { margin-right: auto; font-size: 10.5px; color: var(--text-3); }
+.accept { display: flex; gap: 6px; align-items: flex-start; font-size: 11px; padding: 3px 0; }
+.ev-pop { position: fixed; width: 330px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-panel); padding: 12px 13px; z-index: 40; display: none; }
+.ev-pop.open { display: block; }
+.ev-pop h4 { margin: 0 0 7px; font-size: 11.5px; }
+.ev-pop .row { display: flex; gap: 8px; padding: 3px 0; font-size: 10.5px; }
+.ev-pop .row .k { color: var(--text-3); flex: none; width: 54px; }
+.ev-pop pre { margin: 7px 0 0; padding: 8px 9px; background: var(--bg-hover); border-radius: var(--r-sm); font-family: var(--mono); font-size: 10px; line-height: 15px; white-space: pre-wrap; color: var(--text-2); }
+.ev-pop .actions { display: flex; gap: 5px; margin-top: 9px; }
+.toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(8px); background: var(--primary); color: var(--primary-text); font-size: 11.5px; padding: 8px 14px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease; z-index: 60; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+body.rightbar-off .app { grid-template-columns: 280px minmax(0,1fr); }
+body.rightbar-off .rightbar { display: none; }
+@media (max-width: 1200px) { .app { grid-template-columns: 280px minmax(0,1fr); } .rightbar { display: none; } }
+@media (max-width: 900px) { .app { grid-template-columns: minmax(0,1fr); } .sidebar { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ========== 原生侧栏（保留） ========== -->
+  <aside class="sidebar">
+    <div class="brand-row">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3.5 12.5c2.4-3.9 6.1-5.8 9.8-5.4 2.6.3 4.6 1.6 5.9 3.2-1.9.4-3.4 1.4-4.4 2.7 1.5.5 2.7 1.5 3.5 2.7-2.1 1.7-4.9 2.2-7.7 1.5-3.1-.8-5.5-2.5-7.1-4.7Z" fill="currentColor" opacity=".92"/>
+        <circle cx="8.4" cy="11.3" r=".9" fill="var(--bg-sidebar)"/>
+        <path d="M19 9.6l2.2-2.1-.2 3.9-2-.4" fill="currentColor" opacity=".7"/>
+      </svg>
+      <div class="brand-name">deepseek <span>HARNESS</span></div>
+      <button class="icon-btn" title="收起侧栏" aria-label="收起侧栏">◧</button>
+    </div>
+
+    <button class="new-session">＋ 新会话 <kbd>⌘N</kbd></button>
+
+    <div class="ws-head">工作区 <span class="spacer"></span>
+      <button class="icon-btn" title="搜索">⌕</button>
+      <button class="icon-btn" title="筛选">☰</button>
+      <button class="icon-btn" title="打开文件夹">▢+</button>
+    </div>
+
+    <div class="ws-list">
+      <div class="ws-row"><span class="folder">▾</span> 数据开发 <span class="count">3</span></div>
+      <div class="session-group" data-addition="会话阶段标记">
+        <button class="session-row" data-active="true">
+          <span class="title">渠道日报改造</span>
+          <span class="stage-badge">设计</span>
+        </button>
+        <button class="session-row">
+          <span class="title">排障 #3821 支付失败</span>
+          <span class="stage-badge" data-tone="warn">排障</span>
+        </button>
+      </div>
+      <button class="session-row">
+        <span class="title">取数 · 渠道转化</span>
+        <span class="when">2 天前</span>
+      </button>
+
+      <div class="ws-row"><span class="folder">▸</span> Agents-Anywhere</div>
+      <div class="ws-row"><span class="folder">▸</span> dsh</div>
+      <div class="ws-row"><span class="folder">▸</span> local</div>
+    </div>
+
+    <div class="sidebar-foot">
+      <button class="foot-row"><span class="glyph">▦</span> 插件市场</button>
+      <button class="foot-row"><span class="glyph">⚙</span> 设置</button>
+    </div>
+  </aside>
+
+  <!-- ========== 原生对话（保留） ========== -->
+  <main class="main">
+    <header class="conv-header">
+      <div class="h-row1">
+        <h1 class="h-title">渠道日报改造</h1>
+        <span class="h-chip">标准模式</span>
+        <span class="h-chip" data-addition="阶段指示">设计 · 2/7</span>
+        <div class="h-right">
+          <button class="log-pill">Session log ↓</button>
+          <button class="icon-btn" title="打开右栏" data-addition="右栏入口">▤</button>
+        </div>
+      </div>
+      <div class="h-row2">
+        <button class="h-tab" data-active="true">对话</button>
+        <button class="h-tab">轨迹</button>
+        <span class="spacer"></span>
+      </div>
+    </header>
+
+    <div class="transcript">
+      <div class="t-inner">
+        <div class="msg user">
+          <div class="bubble">渠道日报要改成支付口径，源表 dwd.orders，按渠道按天汇总。帮我把设计做出来，顺便评估影响。</div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="assistant-avatar">A</div>
+          <div class="assistant-body">
+            <div class="tool-row"><span class="glyph">▤</span> 读取 requirement.yaml · 需求 #3821</div>
+            <div class="tool-row"><span class="glyph">◈</span> 查询血缘 · dws.trade_channel_daily</div>
+            <p>先核了三件事：数据规模、下游、口径。dwd.orders 近 7 天日均 200 万行，user_id 空值 0.3% <button class="ev" data-ev="1">证据 1</button>；目标表有 3 个下游 <button class="ev" data-ev="2">证据 2</button>，其中 1 个是 API。</p>
+            <p>设计草稿如下，粒度我按「渠道 × 日期」收敛。</p>
+
+            <!-- 追加：需求卡 -->
+            <div class="card" data-addition="需求卡">
+              <div class="card-head">
+                <span class="dot" data-tone="pass"></span>
+                <span class="card-title">需求 #3821 · 渠道日报改造</span>
+                <span class="pill" data-tone="brand">devops</span>
+                <span class="pill">P2</span>
+                <span class="spacer"></span>
+                <button class="btn ghost" data-toggle="reqCard">收起</button>
+              </div>
+              <div class="card-body" id="reqBody">
+                <dl class="grid2">
+                  <dt>目标</dt><dd>渠道日报从下单口径改为支付口径，按渠道按天输出。</dd>
+                  <dt>范围</dt><dd><span class="code">dws.trade_channel_daily</span> + 1 张报表，不动上游明细。</dd>
+                  <dt>验收</dt><dd>差异 &lt; 0.5%；05:00 前产出；空渠道占比 &lt; 0.1%。</dd>
+                </dl>
+                <div class="section-label">影响资产</div>
+                <div class="kv">
+                  <span class="pill">报表 · ads.channel_report</span>
+                  <span class="pill">API · api.channel_metrics</span>
+                  <span class="pill">报表 · rpt.funnel</span>
+                </div>
+              </div>
+              <div class="card-foot"><span class="meta">requirement.yaml · 2 小时前确认</span><button class="btn ghost">查看产物</button></div>
+            </div>
+
+            <!-- 追加：设计卡 -->
+            <div class="card" data-state="running" data-addition="设计卡">
+              <div class="card-head">
+                <span class="dot"></span>
+                <span class="card-title">数据设计 · dws.trade_channel_daily</span>
+                <span class="pill" data-tone="brand">进行中</span>
+                <span class="spacer"></span>
+                <button class="btn ghost" data-toggle="designCard">收起</button>
+              </div>
+              <div class="card-body" id="designBody">
+                <dl class="grid2">
+                  <dt>粒度</dt><dd>渠道 × 日期 <span class="pill" data-tone="pass">已校验唯一</span></dd>
+                  <dt>来源</dt><dd><span class="code">dwd.orders</span> ⋈ <span class="code">dim.channel</span></dd>
+                  <dt>分区</dt><dd><span class="code">dt</span> · 保留 730 天</dd>
+                  <dt>调度</dt><dd><span class="code">0 3 * * *</span> · 依赖 dwd.orders@dt-1 · SLA 05:00</dd>
+                </dl>
+                <div class="section-label">加工逻辑</div>
+                <div class="steps">
+                  <div class="step"><span class="step-idx">1</span><div><div class="step-title">过滤有效订单</div><div class="step-logic">status in ('paid','shipped') and amount &gt; 0</div></div></div>
+                  <div class="step"><span class="step-idx">2</span><div><div class="step-title">按渠道聚合</div><div class="step-logic">count(distinct order_id), sum(amount)</div></div></div>
+                  <div class="step"><span class="step-idx">3</span><div><div class="step-title">补全渠道名</div><div class="step-logic">left join dim.channel on channel_id</div></div></div>
+                </div>
+                <div class="section-label">口径</div>
+                <div class="kv"><span class="pill" data-tone="brand">order_cnt · 支付订单数（去重）</span><span class="pill">owner 交易组</span></div>
+              </div>
+              <div class="card-foot">
+                <span class="meta">design.yaml · 未提交</span>
+                <button class="btn" id="openCanvas">打开画布</button>
+                <button class="btn ghost" id="showLineage">查看血缘</button>
+                <button class="btn primary" id="submitPlan">提交技术方案</button>
+              </div>
+            </div>
+
+            <!-- 追加：阶段简报（turnTail 模式） -->
+            <div class="brief" data-addition="阶段简报（turnTail）">
+              <div class="brief-head"><span class="dot"></span><span class="brief-title">阶段简报</span><span class="brief-sub">2/7 · 设计进行中</span></div>
+              <div class="stages">
+                <span class="stage" data-s="done"><span class="sd">✓</span>需求</span><span class="stage-line"></span>
+                <span class="stage" data-s="active"><span class="sd">●</span>设计</span><span class="stage-line"></span>
+                <span class="stage"><span class="sd">●</span>方案</span><span class="stage-line"></span>
+                <span class="stage"><span class="sd">●</span>开发</span><span class="stage-line"></span>
+                <span class="stage"><span class="sd">●</span>测试</span><span class="stage-line"></span>
+                <span class="stage"><span class="sd">●</span>发布</span>
+              </div>
+              <div class="brief-next"><span>下一步</span><b>生成技术方案</b><span>· 建模 1 张表 / ETL 2 个任务 / 调度日更</span></div>
+              <div class="brief-foot"><span>留档 design.yaml · 17:42</span><span class="link">打开设计画布</span><span class="link">查看证据 5</span></div>
+            </div>
+
+            <p>设计确认后我建议直接进入技术方案：建模平台建 1 张表、ETL 平台 2 个任务、调度日更。要我现在生成 tech-plan 草稿吗？</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <input placeholder="给智能体发消息" aria-label="消息">
+        <div class="composer-bar">
+          <button class="c-btn plus" title="添加附件">＋</button>
+          <button class="c-btn">◉ Full access ⌄</button>
+          <span class="spacer"></span>
+          <button class="c-btn">DeepSeek-V4-Flash High ⌄</button>
+          <button class="c-btn" title="停止">○</button>
+          <button class="send" title="发送">↑</button>
+        </div>
+      </div>
+      <div class="stats">1 轮 · 1 步 | LLM 1.7s | 首 token 平均 0.9s · 121 tok/s | 缓存命中 0% | 输入 7.8K tok · 输出 102 tok</div>
+    </div>
+  </main>
+
+  <!-- ========== 原生右栏 + 追加标签 ========== -->
+  <aside class="rightbar">
+    <div class="tabstrip">
+      <button class="rtab">◇ 指南</button>
+      <button class="rtab">▤ 文件</button>
+      <span class="rtab-group" data-addition="新增右栏标签">
+        <button class="rtab" data-active="true">资产 <span class="x">×</span></button>
+        <button class="rtab">血缘 <span class="x">×</span></button>
+        <button class="rtab">证据 <span class="x">×</span></button>
+      </span>
+      <span class="spacer"></span>
+      <button class="icon-btn" title="添加标签">＋</button>
+      <button class="icon-btn" title="分屏">◫</button>
+      <button class="icon-btn" title="全屏">⤢</button>
+    </div>
+    <div class="rbody">
+      <div data-panel="asset">
+        <div class="ctx-card">
+          <div class="ctx-title"><span class="dot"></span>dws.trade_channel_daily</div>
+          <div class="ctx-sub">交易域 · dws 层 · owner 交易组</div>
+          <div class="fields">
+            <div class="field-row"><span class="name">dt</span><span class="type">date · 分区</span></div>
+            <div class="field-row"><span class="name">channel_id</span><span class="type">string</span></div>
+            <div class="field-row"><span class="name">channel_name</span><span class="type">string</span></div>
+            <div class="field-row"><span class="name">order_cnt</span><span class="type">bigint</span></div>
+            <div class="field-row"><span class="name">gmv</span><span class="type">decimal(18,2)</span></div>
+          </div>
+        </div>
+        <div class="ctx-card">
+          <div class="ctx-title">表卡</div>
+          <div class="ctx-sub">粒度 渠道 × 日期 · 日增 1.2 万行</div>
+          <div class="ctx-sub">最近更新 2026-10-24 03:12</div>
+        </div>
+      </div>
+      <div data-panel="lineage" hidden>
+        <div class="lineage">
+          <div class="lin-node"><span class="dot" data-tone="muted"></span><span class="name">dwd.orders</span><span class="pill">源表</span></div>
+          <div class="lin-arrow">↓ dt = ${bizdate}</div>
+          <div class="lin-node" data-target="true"><span class="dot"></span><span class="name">dws.trade_channel_daily</span><span class="pill" data-tone="brand">本次</span></div>
+          <div class="lin-arrow">↓</div>
+          <div class="lin-node"><span class="dot" data-tone="muted"></span><span class="name">ads.channel_report</span><span class="pill">报表</span></div>
+          <div class="lin-node"><span class="dot" data-tone="warn"></span><span class="name">api.channel_metrics</span><span class="pill" data-tone="warn">API</span></div>
+          <div class="lin-node"><span class="dot" data-tone="muted"></span><span class="name">rpt.funnel</span><span class="pill">报表</span></div>
+        </div>
+        <div class="ctx-card" style="margin-top:8px"><div class="ctx-sub">影响面：3 个下游，其中 API 需提前通知调用方。</div></div>
+      </div>
+      <div data-panel="evidence" hidden>
+        <div class="ev-item"><span class="dot" data-tone="pass"></span><div><div class="t">数据规模与空值</div><div class="s">证据 1 · 1.2 GB · 3.4s</div></div></div>
+        <div class="ev-item"><span class="dot" data-tone="pass"></span><div><div class="t">下游清单（3 个）</div><div class="s">证据 2 · 血缘查询</div></div></div>
+        <div class="ev-item"><span class="dot" data-tone="pass"></span><div><div class="t">渠道维表覆盖率 99.98%</div><div class="s">证据 3 · 采样 1 万行</div></div></div>
+        <div class="ev-item"><span class="dot" data-tone="warn"></span><div><div class="t">历史口径对比</div><div class="s">证据 4 · 待跑</div></div></div>
+        <div class="ev-item"><span class="dot" data-tone="pass"></span><div><div class="t">调度依赖可用</div><div class="s">证据 5 · 上游 SLA 04:30</div></div></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<button class="annotate-toggle" id="annotateBtn" data-on="false">标注新增 <span class="n" id="annotateCount">0</span></button>
+
+<!-- 设计画布（保留，用户认可） -->
+<div class="overlay" id="canvasOverlay" role="dialog" aria-modal="true" aria-label="设计画布">
+  <div class="canvas">
+    <div class="canvas-head">
+      <span class="dot"></span><span class="title">设计画布</span>
+      <span class="sub">dws.trade_channel_daily · 自动保存于 17:42</span>
+      <span style="flex:1"></span>
+      <button class="btn ghost" id="closeCanvas">关闭</button>
+    </div>
+    <div class="canvas-body">
+      <div>
+        <div class="col-label">来源</div>
+        <div class="node-card"><div class="name">dwd.orders</div><div class="meta">200 万行/天 · dt=${bizdate}</div></div>
+        <div class="node-card"><div class="name">dim.channel</div><div class="meta">1.2 万行 · 全量维表</div></div>
+        <div class="node-card" style="border-style:dashed;background:transparent"><div class="meta">+ 添加来源</div></div>
+      </div>
+      <div>
+        <div class="col-label">加工</div>
+        <div class="node-card"><div class="name">filter 有效订单</div><div class="meta">status in ('paid','shipped')</div></div>
+        <div class="flow"><span class="connector"></span>↓<span class="connector"></span></div>
+        <div class="node-card"><div class="name">aggregate 渠道 × 日期</div><div class="meta">count(distinct order_id), sum(amount)</div></div>
+        <div class="flow"><span class="connector"></span>↓<span class="connector"></span></div>
+        <div class="node-card"><div class="name">enrich 渠道名</div><div class="meta">left join dim.channel</div></div>
+      </div>
+      <div>
+        <div class="col-label">目标</div>
+        <div class="node-card">
+          <div class="name">dws.trade_channel_daily</div>
+          <div class="meta">渠道 × 日期 · dt 分区</div>
+          <div class="fields">
+            <div class="field-row"><span class="name">dt</span><span class="type">date</span></div>
+            <div class="field-row"><span class="name">channel_id</span><span class="type">string</span></div>
+            <div class="field-row"><span class="name">order_cnt</span><span class="type">bigint</span></div>
+            <div class="field-row"><span class="name">gmv</span><span class="type">decimal</span></div>
+          </div>
+        </div>
+        <div class="col-label" style="margin-top:10px">验收</div>
+        <div class="accept"><span class="dot" data-tone="warn"></span><span>与旧口径差异 &lt; 0.5% · 待跑</span></div>
+        <div class="accept"><span class="dot" data-tone="warn"></span><span>空渠道占比 &lt; 0.1% · 待跑</span></div>
+      </div>
+    </div>
+    <div class="canvas-foot">
+      <span class="meta">design.yaml · 5 个字段 · 3 步加工</span>
+      <button class="btn ghost" id="closeCanvas2">返回对话</button>
+      <button class="btn primary" id="canvasSubmit">生成技术方案</button>
+    </div>
+  </div>
+</div>
+
+<!-- 证据浮层 -->
+<div class="ev-pop" id="evPop" role="dialog" aria-label="证据详情">
+  <h4>证据 #1 · 数据规模与空值</h4>
+  <div class="row"><span class="k">结论</span><span>近 7 天日均 200 万行，user_id 空值 0.3%</span></div>
+  <div class="row"><span class="k">范围</span><span>2026-10-17 ~ 2026-10-24</span></div>
+  <div class="row"><span class="k">环境</span><span>prod 只读</span></div>
+  <div class="row"><span class="k">成本</span><span>扫描 1.2 GB · 3.4s</span></div>
+  <pre>SELECT dt, count(*) AS rows, sum(if(user_id IS NULL,1,0)) AS nulls
+FROM dwd.orders
+WHERE dt BETWEEN '2026-10-17' AND '2026-10-24'
+GROUP BY dt;</pre>
+  <div class="actions"><button class="btn">复制 SQL</button><button class="btn ghost">在编辑器打开</button></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var body = document.body
+  var params = new URLSearchParams(location.search)
+  if (params.get('theme') === 'dark') body.setAttribute('data-ds-dark-theme', '')
+  if (params.get('rightbar') === '0') body.classList.add('rightbar-off')
+
+  // ---- 追加标注 ----
+  var additions = document.querySelectorAll('[data-addition]')
+  var annotateBtn = document.getElementById('annotateBtn')
+  document.getElementById('annotateCount').textContent = String(additions.length)
+  function setAnnotate(on) {
+    body.classList.toggle('annotate', on)
+    annotateBtn.setAttribute('data-on', String(on))
+  }
+  annotateBtn.addEventListener('click', function () {
+    setAnnotate(!body.classList.contains('annotate'))
+  })
+  if (params.get('annotate') === '1') setAnnotate(true)
+
+  // ---- 收起/展开 ----
+  document.querySelectorAll('[data-toggle]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-toggle')
+      var bodyEl = document.getElementById(id === 'reqCard' ? 'reqBody' : 'designBody')
+      var collapsed = bodyEl.style.display === 'none'
+      bodyEl.style.display = collapsed ? '' : 'none'
+      btn.textContent = collapsed ? '收起' : '展开'
+    })
+  })
+
+  // ---- 右栏标签 ----
+  var rtabDefs = [
+    { key: 'asset', el: Array.from(document.querySelectorAll('.rtab')).find(function (t) { return t.textContent.indexOf('资产') === 0 }) },
+    { key: 'lineage', el: Array.from(document.querySelectorAll('.rtab')).find(function (t) { return t.textContent.indexOf('血缘') === 0 }) },
+    { key: 'evidence', el: Array.from(document.querySelectorAll('.rtab')).find(function (t) { return t.textContent.indexOf('证据') === 0 }) }
+  ]
+  function selectRtab(key) {
+    document.querySelectorAll('.rtab').forEach(function (t) { t.removeAttribute('data-active') })
+    rtabDefs.forEach(function (d) { if (d.key === key) d.el.setAttribute('data-active', 'true') })
+    document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== key })
+  }
+  rtabDefs.forEach(function (d) { d.el.addEventListener('click', function () { selectRtab(d.key) }) })
+  if (params.get('tab')) selectRtab(params.get('tab'))
+  document.getElementById('showLineage').addEventListener('click', function () { selectRtab('lineage') })
+
+  // ---- 证据浮层 ----
+  var pop = document.getElementById('evPop')
+  document.querySelectorAll('.ev').forEach(function (chip) {
+    chip.addEventListener('click', function (e) {
+      e.stopPropagation()
+      var r = chip.getBoundingClientRect()
+      pop.classList.add('open')
+      var w = 330, h = pop.offsetHeight || 260
+      pop.style.left = Math.min(Math.max(12, r.left - 40), window.innerWidth - w - 12) + 'px'
+      pop.style.top = Math.min(r.bottom + 8, window.innerHeight - h - 12) + 'px'
+    })
+  })
+  document.addEventListener('click', function (e) {
+    if (!pop.contains(e.target) && !e.target.classList.contains('ev')) pop.classList.remove('open')
+  })
+
+  // ---- 画布 ----
+  var overlay = document.getElementById('canvasOverlay')
+  function openCanvas() { overlay.classList.add('open') }
+  function closeCanvas() { overlay.classList.remove('open') }
+  document.getElementById('openCanvas').addEventListener('click', openCanvas)
+  document.getElementById('closeCanvas').addEventListener('click', closeCanvas)
+  document.getElementById('closeCanvas2').addEventListener('click', closeCanvas)
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeCanvas() })
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeCanvas(); pop.classList.remove('open') }
+  })
+
+  // ---- 提交动作：阶段推进 ----
+  var toastEl = document.getElementById('toast'); var timer
+  function toast(text) {
+    toastEl.textContent = text; toastEl.classList.add('show')
+    clearTimeout(timer); timer = setTimeout(function () { toastEl.classList.remove('show') }, 2200)
+  }
+  function submitPlan() {
+    var design = document.querySelector('.card[data-addition="设计卡"]')
+    design.setAttribute('data-state', 'done')
+    design.querySelector('.dot').setAttribute('data-tone', 'pass')
+    design.querySelector('.pill').textContent = '已提交'
+    design.querySelector('.pill').setAttribute('data-tone', 'pass')
+    var stages = document.querySelectorAll('.brief .stage')
+    stages[1].setAttribute('data-s', 'done'); stages[1].querySelector('.sd').textContent = '✓'
+    stages[2].setAttribute('data-s', 'active')
+    document.querySelector('.brief-sub').textContent = '3/7 · 方案进行中'
+    document.querySelector('[data-addition="阶段指示"]').textContent = '方案 · 3/7'
+    document.querySelector('[data-addition="会话阶段标记"] .stage-badge').textContent = '方案'
+    toast('已生成 tech-plan 草稿，进入方案阶段')
+  }
+  document.getElementById('submitPlan').addEventListener('click', submitPlan)
+  document.getElementById('canvasSubmit').addEventListener('click', function () { closeCanvas(); submitPlan() })
+
+  if (params.get('scroll') === 'bottom') {
+    var tr = document.querySelector('.transcript')
+    tr.scrollTop = tr.scrollHeight
+  }
+  if (params.get('canvas') === '1') openCanvas()
+  if (params.get('ev') === '1') document.querySelector('.ev').click()
+})()
+</script>
+</body>
+</html>

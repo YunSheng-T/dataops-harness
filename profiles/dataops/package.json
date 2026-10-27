@@ -1,0 +1,16 @@
+{
+  "name": "dsh-profile-dataops",
+  "private": true,
+  "dependencies": {
+    "@dataops/dsh-dataops-preset": "file:../../packages/dataops-preset"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@dataops/dsh-dataops-preset"
+      ]
+    }
+  }
+}

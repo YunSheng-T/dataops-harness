@@ -1,0 +1,217 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DataOps 用户旅程：US 驱动的多角色交付",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "US 到关闭",
+        "focus": [
+          "us_start",
+          "ba_req",
+          "ba_design",
+          "se_plan",
+          "dev_build",
+          "dev_release",
+          "release_acceptance"
+        ],
+        "note": "从 EDevOps US 接单，到发布、验收和关闭的主路径。"
+      },
+      {
+        "id": "gates",
+        "label": "角色与门禁",
+        "focus": [
+          "ba_design",
+          "se_plan",
+          "dev_build",
+          "release_acceptance"
+        ],
+        "note": "每个节点标注谁签收；发布审批与验收合并为最后一道门禁。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ba",
+      "label": "BA · US / 需求 / 设计"
+    },
+    {
+      "id": "se",
+      "label": "SE · 技术方案 / 评审"
+    },
+    {
+      "id": "dev",
+      "label": "数据开发 · 实现 / 测试 / 发布"
+    },
+    {
+      "id": "gate",
+      "label": "发布审批 / 验收"
+    }
+  ],
+  "phases": [
+    {
+      "id": "intake",
+      "label": "US 接单",
+      "fromCol": 0,
+      "toCol": 0
+    },
+    {
+      "id": "req",
+      "label": "需求",
+      "fromCol": 1,
+      "toCol": 1
+    },
+    {
+      "id": "design",
+      "label": "设计",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "scheme",
+      "label": "技术方案",
+      "fromCol": 3,
+      "toCol": 3
+    },
+    {
+      "id": "build",
+      "label": "编码 / 测试",
+      "fromCol": 4,
+      "toCol": 4
+    },
+    {
+      "id": "release",
+      "label": "发布 / 验收",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "groups": [],
+  "mainPath": [
+    "us_start",
+    "ba_req",
+    "ba_design",
+    "se_plan",
+    "dev_build",
+    "dev_release",
+    "release_acceptance"
+  ],
+  "nodes": [
+    {
+      "id": "us_start",
+      "lane": "ba",
+      "col": 0,
+      "type": "external",
+      "label": "US 分配给 BA",
+      "sublabel": "v1 唯一起点；状态来自 EDevOps",
+      "tag": "轮到我处理",
+      "width": 148
+    },
+    {
+      "id": "ba_req",
+      "lane": "ba",
+      "col": 1,
+      "type": "frontend",
+      "label": "需求澄清",
+      "sublabel": "目标 / 范围 / 验收 / owner",
+      "width": 148
+    },
+    {
+      "id": "ba_design",
+      "lane": "ba",
+      "col": 2,
+      "type": "frontend",
+      "label": "设计交付",
+      "sublabel": "粒度 / 来源 / 指标 / 影响面",
+      "tag": "需 BA 签收",
+      "width": 148
+    },
+    {
+      "id": "se_plan",
+      "lane": "se",
+      "col": 3,
+      "type": "frontend",
+      "label": "技术方案",
+      "sublabel": "分析 / 取舍 / 任务 / 回滚",
+      "tag": "SE 签收 + Dev 确认",
+      "width": 148
+    },
+    {
+      "id": "dev_build",
+      "lane": "dev",
+      "col": 4,
+      "type": "backend",
+      "label": "编码与自查",
+      "sublabel": "SQL / 任务 / 测试草稿",
+      "tag": "SE 代码评审",
+      "width": 148
+    },
+    {
+      "id": "dev_release",
+      "lane": "dev",
+      "col": 5,
+      "type": "cloud",
+      "label": "测试 / 发布",
+      "sublabel": "扫描 / 编译 / 测试 / 发布",
+      "tag": "发布审批",
+      "width": 148
+    },
+    {
+      "id": "release_acceptance",
+      "lane": "gate",
+      "col": 5,
+      "type": "security",
+      "label": "审批 / 验收 / 关 US",
+      "sublabel": "allowed-once 发布；BA 验收后关 US",
+      "tag": "US 状态回写",
+      "width": 172
+    }
+  ],
+  "edges": [
+    {
+      "from": "us_start",
+      "to": "ba_req",
+      "label": "读取 US",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "ba_req",
+      "to": "ba_design",
+      "label": "需求确认",
+      "role": "main"
+    },
+    {
+      "from": "ba_design",
+      "to": "se_plan",
+      "label": "设计 + 影响面 + gaps",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "se_plan",
+      "to": "dev_build",
+      "label": "任务 + 回滚",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "dev_build",
+      "to": "dev_release",
+      "label": "代码 + 测试",
+      "role": "main"
+    },
+    {
+      "from": "dev_release",
+      "to": "release_acceptance",
+      "label": "测试 / 发布 → 审批 / 验收",
+      "variant": "emphasis",
+      "role": "main"
+    }
+  ]
+}

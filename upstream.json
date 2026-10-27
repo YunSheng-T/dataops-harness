@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/deepseek-ai/deepseek-harness.git",
+  "channel": "developer-preview",
+  "runtimeVersion": "0.2.1-rc.3",
+  "sourceCommit": "1f81c047fc48fa190a683e469daa699857e9afe8",
+  "sourceCheckout": "deepseek-harness",
+  "verifiedAt": "2026-10-24",
+  "notes": {
+    "runtimeVersion": "所有 @deepseek-ai/dsh-* 依赖必须写这个精确版本，不用 ^ 或 ~",
+    "sourceCommit": "仅用于对照源码；升级时和 runtimeVersion 一起改，且独立提交",
+    "channel": "developer-preview 表示上游不承诺 API 稳定；升级前先跑 docs/p0-setup.md 的验证清单",
+    "compatibleRuntimeRange": "桌面端自带 0.2.1-rc.2，本仓参考源码是 0.2.1-rc.3；插件 engines 用这个范围，两个版本都能装"
+  },
+  "compatibleRuntimeRange": ">=0.2.1-rc.2 <0.3.0"
+}

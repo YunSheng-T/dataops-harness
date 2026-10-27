@@ -1,0 +1,32 @@
+# DataOps profile overlay.
+# Mounts the two client packages and disables the official brand occupant so
+# the DataOps brand can own the single-occupant brand seats.
+- id: ui-brand-official
+  disabled: true
+- insert:
+    - id: dataops-tools
+      name: '@dataops/dsh-dataops-tools'
+      config:
+        provider: mock
+        timeoutMs: 8000
+        maxDepth: 3
+        disabledTools:
+          - dataops_requirement_extract_spec
+          - dataops_design_compose_model
+          - dataops_scheme_analyze_data
+          - dataops_scheme_compose_solution
+          - dataops_scheme_compose_tech_plan
+          - dataops_develop_generate_code
+          - dataops_review_write_postmortem
+          - dataops_incident_triage
+    - id: dataops-brand
+      name: '@dataops/dsh-dataops-brand'
+    - id: dataops-client
+      name: '@dataops/dsh-dataops-client'
+
+# DataOps profile: make the DataOps Lead the default agent composition.
+# Users can still switch presets; explicit selection is stored in settings.
+- id: agent-preset-registry
+  name: '@deepseek-ai/dsh-agent-preset-registry'
+  config:
+    default: dataops-dev

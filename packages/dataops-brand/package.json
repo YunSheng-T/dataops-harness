@@ -1,0 +1,39 @@
+{
+  "name": "@dataops/dsh-dataops-brand",
+  "version": "0.0.1",
+  "private": true,
+  "description": "DataOps brand occupants for the DSH sidebar and empty-session hero: infinity mark + DataOps wordmark",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "assets",
+    "README.md"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs && node scripts/smoke-apply.mjs && node --check lib/client.js && node --check lib/index.js",
+    "smoke": "node scripts/smoke-apply.mjs"
+  }
+}

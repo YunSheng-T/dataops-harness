@@ -1,0 +1,15 @@
+{
+  "scenario": "incident",
+  "runId": "p14-mvpe7ll7",
+  "at": "2026-10-26T15:11:52.791Z",
+  "failures": [],
+  "notes": [
+    {
+      "scenario": "incident",
+      "workitems": [
+        "2026-10-26-trade-channel-daily-0500-fail"
+      ],
+      "tail": "时后自动重试一次\", owner: 数据运维, status: 待做 }\n48\n+\n49\n+\nevidence:\n50\n+\n  query: |\n51\n+\n    -- mock 只读信号，非生产 SQL\n52\n+\n    日志：dws.trade_channel_daily，2026-10-25 00:00 ~ 2026-10-26 08:00\n53\n+\n    血缘：dws.trade_channel_daily（down, depth=2）、dwd.orders（up, depth=2）\n54\n+\n  timeRange: 2026-10-26 05:00 ~ 08:00\n55\n+\n  env: prod-ro（mock）\n56\n+\n  cost: 1 次日志查询 + 2 次血缘查询，只读\n57\n+\n58\n+\ngaps:\n59\n+\n  - id: G-CLOCK\n60\n+\n    severity: blocking\n61\n+\n    message: PARTITION_LATE 记录「比 SLA 晚 42 分钟」但生成时间为 05:03:40，与 05:02:11 已判定超时矛盾，分区实际到达时间未确认 [ev-20261026-002]\n62\n+\n    owner: 调度平台\n63\n+\n    action: 取分区实际到达时间戳与该告警的延迟计算逻辑\n64\n+\n  - id: G-UPSTREAM\n65\n+\n    severity: blocking\n66\n+\n    message: dwd.orders 上游血缘 0 条边、元数据最后更新停在 2026-10-25 02:40，无法定位是哪个产出任务延迟 [ev-20261026-005]\n67\n+\n    owner: 交易组\n68\n+\n    action: 提供 dwd.orders 当日产出任务 run id、开始时间与延迟原因\n69\n+\n  - id: G-ACTION\n70\n+\n    severity: warning\n71\n+\n    message: 重跑与补数为写操作，当前无审批记录；重跑前需确认任务幂等，避免重复写入\n72\n+\n    owner: 数据运维\n73\n+\n    action: 提交重跑申请（run-20261026-0500）并附幂等说明\n74\n+\n  - id: G-DOWNSTREAM\n75\n+\n    severity: warning\n76\n+\n    message: 下游是否已在空数据状态下完成当日消费（尤其 api.channel_metrics 是否已返回空结果）未确认 [ev-20261026-003]\n77\n+\n    owner: 数据服务组\n78\n+\n    action: 确认 API 与报表当日消费状态，必要时下发延迟说明"
+    }
+  ]
+}

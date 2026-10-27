@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DesignCard v0 · DataMap 证据链</title>
+<style>
+  :root{
+    --bg:#f3f5f9; --panel:#fff; --panel2:#f7f8fb; --panel3:#eef1f6;
+    --text:#11151d; --muted:#5f6877; --faint:#8c95a5;
+    --line:#dfe4ed; --line2:#cfd6e2;
+    --brand:#4f6bed; --brand-bg:#eef2ff; --brand-line:#d8e0ff;
+    --pass:#0b7a6d; --pass-bg:#e9f8f4; --pass-line:#b8e2d8;
+    --warn:#a96812; --warn-bg:#fff4e2; --warn-line:#efd2a5;
+    --fail:#b42318; --fail-bg:#fff0ee; --fail-line:#f2c7c1;
+    --slate:#596273; --slate-bg:#eef1f5;
+    --shadow:0 1px 2px rgba(15,23,42,.04),0 18px 48px rgba(15,23,42,.06);
+    color-scheme:light;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;line-height:1.45}
+  .page{max-width:1240px;margin:0 auto;padding:26px 28px 44px}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-size:12px;color:var(--faint)}
+  .mark{display:inline-flex;width:22px;height:22px;border-radius:6px;background:#101318;color:#fff;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+  .top b{color:var(--text);font-size:13px}
+  .top .tag{border:1px solid var(--line);border-radius:999px;padding:1px 7px;background:var(--panel);font-size:10px}
+  .top .spacer{flex:1}
+  .theme{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:6px;font:inherit;font-size:11px;padding:5px 8px;cursor:pointer}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .card-head{display:flex;gap:16px;align-items:flex-start;padding:22px 24px 17px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel))}
+  .card-head .grow{flex:1;min-width:0}
+  .eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:750}
+  h1{font-size:23px;letter-spacing:-.025em;line-height:1.2;margin:6px 0 5px}
+  .meta{font-size:11px;color:var(--muted);display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .meta i{width:3px;height:3px;border-radius:50%;background:var(--line2);display:inline-block}
+  .status{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--warn-line);background:var(--warn-bg);color:var(--warn);border-radius:999px;padding:4px 9px;font-size:10px;font-weight:700;white-space:nowrap}
+  .status:before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+  .summary .stat{padding:13px 16px;border-right:1px solid var(--line);min-width:0}
+  .summary .stat:last-child{border:0}
+  .summary label{display:block;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:750;margin-bottom:3px}
+  .summary b{font-size:12px;font-weight:650;letter-spacing:-.01em}
+  .summary code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;color:var(--muted)}
+  .body{padding:20px 24px 18px}
+  .section-head{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+  .section-head .idx{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+  .section-head h2{font-size:13px;letter-spacing:-.01em;margin:0;font-weight:700}
+  .section-head .spacer{flex:1}
+  .section-head .hint{font-size:10px;color:var(--faint)}
+  .link{color:var(--brand);font-size:10px;text-decoration:none;font-weight:650;white-space:nowrap}
+  .dmpath{display:flex;gap:4px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:7px;background:var(--panel);padding:7px 9px;margin-bottom:8px;font-size:9px;color:var(--muted)}
+  .dmpath b{font-size:8px;color:var(--faint);font-weight:750;text-transform:uppercase;letter-spacing:.08em;margin-right:2px}
+  .dmpath span{color:var(--text)}
+  .dmpath i{color:var(--faint);font-style:normal}
+  .datamap{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:12px 13px;margin-bottom:18px}
+  .map{display:grid;grid-template-columns:1fr 28px 1.25fr 28px 1fr;align-items:center;gap:4px;padding:4px 0 11px}
+  .asset-mini{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:7px 8px;min-width:0}
+  .asset-mini b{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .asset-mini span{display:block;font-size:8.5px;color:var(--faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .asset-mini.target{border-color:#c9d5ff;background:#f7f9ff}
+  .asset-mini.target b{font-size:10.5px}
+  .arrow{color:var(--faint);text-align:center;font-size:15px}
+  .source-cards{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .source{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:8px 9px}
+  .source .row{display:flex;align-items:center;gap:6px}
+  .source .name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;font-weight:650;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .source .ok{margin-left:auto;font-size:8px;color:var(--pass);background:var(--pass-bg);border:1px solid var(--pass-line);border-radius:999px;padding:1px 5px;white-space:nowrap}
+  .source p{font-size:9px;line-height:1.5;color:var(--muted);margin:4px 0 0}
+  .source .fields{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px}
+  .chip{display:inline-flex;align-items:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8px;border:1px solid var(--line);border-radius:3px;padding:0 4px;color:var(--muted);background:var(--panel2);white-space:nowrap}
+  .chip.ev{color:var(--brand);border-color:var(--brand-line);background:var(--brand-bg)}
+  .analysis{margin-bottom:17px}
+  .steps{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+  .step{display:grid;grid-template-columns:28px 1fr auto;gap:9px;align-items:start;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .step:last-child{border:0}
+  .step .n{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;color:var(--faint);padding-top:1px}
+  .step .title{font-size:10.5px;font-weight:650;display:flex;align-items:center;gap:5px}
+  .step .dot{width:5px;height:5px;border-radius:50%;background:var(--pass);flex:none}
+  .step.warn .dot{background:var(--warn)}
+  .step .detail{font-size:9px;line-height:1.45;color:var(--muted);margin-top:2px}
+  .step .chips{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;max-width:190px}
+  .step .chips .chip{font-size:7.5px}
+  .two{display:grid;grid-template-columns:1.05fr .95fr;gap:12px;margin-bottom:17px}
+  .box{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:11px 12px;min-width:0}
+  .box h3{font-size:11px;margin:0 0 7px;font-weight:700}
+  .metric{display:grid;grid-template-columns:82px 1fr;gap:6px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:9px}
+  .metric:last-child{border:0}
+  .metric b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;font-weight:650}
+  .metric span{color:var(--muted);line-height:1.5}
+  .quality{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+  .quality .q{font-size:8px;border:1px solid var(--pass-line);background:var(--pass-bg);color:var(--pass);border-radius:3px;padding:1px 5px}
+  .quality .q.warn{border-color:var(--warn-line);background:var(--warn-bg);color:var(--warn)}
+  .impact-list{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+  .impact-row{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--muted);border-bottom:1px dashed var(--line);padding:4px 0}
+  .impact-row:last-child{border:0}
+  .impact-row code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .impact-row .owner{margin-left:auto;font-size:8px;color:var(--faint);white-space:nowrap}
+  .gaps{border:1px solid var(--fail-line);background:var(--fail-bg);border-radius:8px;padding:10px 12px;margin-bottom:14px}
+  .gaps h3{font-size:10.5px;margin:0 0 5px;color:var(--fail)}
+  .gap{display:flex;gap:7px;align-items:flex-start;font-size:9px;color:#6f302d;line-height:1.45;padding:3px 0}
+  .gap b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8px;color:var(--fail);white-space:nowrap}
+  .footer{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:12px 0 0;flex-wrap:wrap}
+  .footer .summaryline{font-size:9px;color:var(--muted)}
+  .footer .spacer{flex:1}
+  .btn{border:1px solid var(--line2);background:var(--panel);border-radius:5px;padding:5px 9px;font:inherit;font-size:10px;font-weight:600;color:var(--text);cursor:default;white-space:nowrap}
+  .btn.primary{border-color:#405dd8;background:var(--brand);color:#fff}
+  .btn.ghost{border-color:var(--line);background:var(--panel2);color:var(--muted)}
+  .note{font-size:9px;color:var(--faint);margin-top:12px}
+  :root[data-theme="dark"]{
+    --bg:#0d1118; --panel:#151b25; --panel2:#111722; --panel3:#1d2634;
+    --text:#eef2f8; --muted:#aab4c3; --faint:#7f8b9d;
+    --line:#293446; --line2:#3a475c;
+    --brand:#9bb0ff; --brand-bg:#1c2948; --brand-line:#2e4370;
+    --pass:#72d9c6; --pass-bg:#102b28; --pass-line:#235448;
+    --warn:#f2c575; --warn-bg:#2c2415; --warn-line:#5d4a24;
+    --fail:#ff9d93; --fail-bg:#2e1818; --fail-line:#6b2d2a;
+    --slate:#aab4c3; --slate-bg:#1d2634;
+    --shadow:0 18px 48px rgba(0,0,0,.32);
+    color-scheme:dark;
+  }
+  :root[data-theme="dark"] .card-head{background:linear-gradient(180deg,#111722,#151b25)}
+  :root[data-theme="dark"] .asset-mini.target{background:#1a2440;border-color:#2e4370}
+  :root[data-theme="dark"] .gaps{color:#ffd5d0}
+  @media (max-width:900px){
+    .page{padding:16px}
+    .summary{grid-template-columns:1fr 1fr}
+    .summary .stat:nth-child(2){border-right:0}
+    .summary .stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+    .map{grid-template-columns:1fr}
+    .arrow{transform:rotate(90deg)}
+    .source-cards,.two{grid-template-columns:1fr}
+    .step{grid-template-columns:24px 1fr}
+    .step .chips{grid-column:2;justify-content:flex-start;max-width:none}
+    .card-head{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <span class="mark">∞</span><b>DataOps</b><span>DesignCard v0</span><span class="tag">静态设计稿 · mock</span>
+    <span class="spacer"></span>
+    <button class="theme" id="theme" type="button">切换明暗</button>
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <div class="grow">
+        <div class="eyebrow">Design · dws.trade_channel_daily</div>
+        <h1>渠道日报支付口径 · 数据设计</h1>
+        <div class="meta"><span>US-3821</span><i></i><span>requirement 已确认</span><i></i><span>BA 陈璐</span><i></i><span>更新 10:42</span></div>
+      </div>
+      <span class="status">待确认</span>
+    </div>
+
+    <div class="summary">
+      <div class="stat"><label>粒度</label><b>渠道 × 日期</b></div>
+      <div class="stat"><label>主键</label><code>dt + channel_id</code></div>
+      <div class="stat"><label>分区</label><code>dt=${bizdate}</code></div>
+      <div class="stat"><label>产出 / SLA</label><b>05:00 / 05:10</b></div>
+    </div>
+
+    <div class="body">
+      <div class="section-head">
+        <span class="idx">01</span><h2>DataMap 寻源 · 数据来源</h2><span class="spacer"></span>
+        <span class="hint">2 个物理资产 · asOf 04:12</span><a class="link" href="#">独立血缘 →</a>
+      </div>
+      <div class="datamap">
+        <div class="dmpath"><b>DataMap</b><span>场景：渠道日报支付口径</span><i>→</i><span>主题：渠道运营</span><i>→</i><span>业务对象：订单/支付/渠道</span><i>→</i><span>逻辑实体：订单事实/渠道维度</span><i>→</i><span>物理资产：dwd.orders / dim.channel</span></div>
+        <div class="map">
+          <div class="asset-mini"><b>dwd.orders</b><span>warehouse_table · 交易组 · 2.1M 行</span></div>
+          <div class="arrow">→</div>
+          <div class="asset-mini target"><b>dws.trade_channel_daily</b><span>渠道 × 日期 · 目标</span></div>
+          <div class="arrow">←</div>
+          <div class="asset-mini"><b>dim.channel</b><span>warehouse_table · 维度组 · 1.2K 行</span></div>
+        </div>
+        <div class="source-cards">
+          <div class="source">
+            <div class="row"><span class="name">dwd.orders</span><span class="ok">DataMap 元数据</span></div>
+            <p>字段来自 DataMap；使用 order_id / channel_id / amount / status；无 pay_time，跨日支付归到下单日。</p>
+            <div class="fields"><span class="chip">4/5 字段</span><span class="chip">2.1M</span><span class="chip">null 0.01%</span><span class="chip ev">ev-001</span></div>
+          </div>
+          <div class="source">
+            <div class="row"><span class="name">dim.channel</span><span class="ok">DataMap 元数据</span></div>
+            <p>字段来自 DataMap；使用 channel_id / channel_name；3/18 渠道未登记，空渠道 0.18%。</p>
+            <div class="fields"><span class="chip">2/2 字段</span><span class="chip">1.2K</span><span class="chip warn">缺 3 渠道</span><span class="chip ev">ev-002</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analysis">
+        <div class="section-head"><span class="idx">02</span><h2>设计证据链</h2><span class="spacer"></span><span class="hint">设计所需核验 · 6 条证据</span><a class="link" href="#">查看全部 →</a></div>
+        <div class="steps">
+          <div class="step"><div class="n">01</div><div><div class="title"><span class="dot"></span>资产发现</div><div class="detail">6 个候选；选 dwd.orders + dim.channel；淘汰 4 个（口径/时效/owner 不匹配）。</div></div><div class="chips"><span class="chip ev">ev-001</span></div></div>
+          <div class="step"><div class="n">02</div><div><div class="title"><span class="dot"></span>数据画像</div><div class="detail">2.1M 行；order_id 0 重复；status 4 个枚举；分区 2026-10-26 覆盖正常。</div></div><div class="chips"><span class="chip ev">ev-003</span><span class="chip">prod-ro</span></div></div>
+          <div class="step"><div class="n">03</div><div><div class="title"><span class="dot"></span>关联验证</div><div class="detail">channel_id join 覆盖率 99.2%；未匹配 0.8% 归 unknown；空渠道 0.18%。</div></div><div class="chips"><span class="chip ev">ev-004</span></div></div>
+          <div class="step"><div class="n">04</div><div><div class="title"><span class="dot"></span>口径映射</div><div class="detail">order_cnt 定义、时间语义与 acceptance 已映射；完整口径对比放到方案阶段分析。</div></div><div class="chips"><span class="chip ev">ev-005</span></div></div>
+          <div class="step warn"><div class="n">05</div><div><div class="title"><span class="dot"></span>设计决策</div><div class="detail">口径改在 dws；备选只在 ads 改，影响面小但下游 API 继续旧口径。缺 pay_time 记 blocking gap。</div></div><div class="chips"><span class="chip warn">G-PAYTIME</span><span class="chip ev">ev-006</span></div></div>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="box">
+          <h3>口径与质量</h3>
+          <div class="metric"><b>order_cnt</b><span>支付成功订单数 · count(distinct order_id) · 按 支付日期</span></div>
+          <div class="metric"><b>gmv</b><span>支付成功金额 · sum(amount) · 按下单日期，待确认</span></div>
+          <div class="quality"><span class="q">主键唯一 ✓</span><span class="q">分区覆盖 ✓</span><span class="q">空值 ✓</span><span class="q warn">join 99.2%</span><span class="q warn">对账待跑</span></div>
+        </div>
+        <div class="box">
+          <h3>影响面</h3>
+          <div class="impact-list">
+            <div class="impact-row"><code>ads.channel_report</code><span class="owner">报表组</span></div>
+            <div class="impact-row"><code>rpt.funnel</code><span class="owner">报表组</span></div>
+            <div class="impact-row"><code>api.channel_metrics</code><span class="owner">数据服务组</span></div>
+          </div>
+          <div class="note">3 个下游 · 未知消费方 0 · 独立血缘 2026-10-27 04:12</div>
+        </div>
+      </div>
+
+      <div class="gaps">
+        <h3>缺口与决策</h3>
+        <div class="gap"><b>G-PAYTIME</b><span>dwd.orders 无 pay_time，跨日支付会归到下单日；blocking，需交易组确认支付流水或时间锚点。</span></div>
+        <div class="gap"><b>G-STATUS</b><span>status 枚举未登记；当前按 paid 过滤，退款/取消是否回退未定义。</span></div>
+        <div class="gap"><b>DECISION</b><span>口径改在 dws；备选“只在 ads 改”影响面更小，但下游 API 继续旧口径，不采用。</span></div>
+      </div>
+
+      <div class="footer">
+        <span class="summaryline">证据 6 · 缺口 2 · SE 可行性 <b>deferred</b></span>
+        <span class="spacer"></span>
+        <button class="btn ghost" type="button">查看完整交付物</button>
+        <button class="btn ghost" type="button">查看证据日志</button>
+        <button class="btn" type="button">退回修改</button>
+        <button class="btn primary" type="button">确认设计</button>
+      </div>
+      <div class="note">交互示意：DataMap 寻源显示语义路径；字段/owner/行数来自 DataMap；血缘/质量来自独立系统；证据 chip 打开查询/时间范围/结果摘要/as_of；设计证据链可展开；完整数据挖掘/分析在方案阶段。</div>
+    </div>
+  </section>
+</div>
+<script>
+  (function(){
+    var root=document.documentElement, button=document.getElementById('theme');
+    var saved=null; try{saved=localStorage.getItem('dataops-design-card-theme')}catch(e){}
+    if(saved) root.setAttribute('data-theme',saved);
+    function label(){var dark=root.getAttribute('data-theme')==='dark'||(!root.getAttribute('data-theme')&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);button.textContent=dark?'切换为浅色':'切换为深色'}
+    label();
+    button.addEventListener('click',function(){var dark=root.getAttribute('data-theme')==='dark'||(!root.getAttribute('data-theme')&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var next=dark?'light':'dark';root.setAttribute('data-theme',next);try{localStorage.setItem('dataops-design-card-theme',next)}catch(e){};label()});
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "scenario": "full-allow",
+  "runId": "p14-mvpdxs11",
+  "at": "2026-10-26T15:04:30.349Z",
+  "failures": [],
+  "notes": [
+    {
+      "scenario": "allow",
+      "workitem": "2026-10-26-channel-report-pay-caliber-v2",
+      "text": "、主键 0 重复、SLA 04:40；但空渠道 0.18% > 验收阈值 0.1% → 记入 G-CHANNEL，属阻断。\n发布：DSH 原生审批返回 allowed-once，mock 环境记为 released（变更 CHG-20261025-01，灰度 10%→50%→100%，回滚切 dws.trade_channel_daily_v1）。这是 mock 结果，不是生产发布；工作项 approvals 已记录审批来源与结果。\n\n证据 / 产物\n\n开发：change.sql · sql-review.md · develop.yaml\n工作项：item.yaml（stage=cicd / status=applied，8 个缺口，approvals=approved）· plan.md\n\n阻塞 / 待确认（真正上线前必须解决）\n\nG-SCHED（阻断）：编译 03:00 + ${bizdate-1} 与设计 05:00 + ${bizdate} 冲突，直接决定日报日期归属与 SLA。\nG-CHANNEL（阻断）：空渠道 0.18% > 验收 0.1%，测试与编译双重复现。\nG-PAYTIME / G-STATUS / G-DUP：仍为 mock 默认假设（dt 归属、paid/shipped、按 order_id 去重）。\nG-COLS：ads.channel_report 仍 0 字段，列级兼容性未知。\n\n下一步：先对齐调度 spec 与渠道映射，再跑订单级对账；评审阶段（复盘）尚未开始，需要运行数据后再写目标 vs 实际。\n\n阶段简报\n5/6 · CICD · 发布/部署进行中\n✓\n需求\n✓\n设计\n✓\n方案\n✓\n开发\n●\nCICD\n●\n复盘\n方案\n数据挖掘\n数据分析\n需求方案设计\n技术方案输出\nCICD\n扫描\n编译构建\n测试\n发布/部署\n下一步 进入复盘\n留档 release.yaml\n已编辑 3 个文件\n+88\n-0\nworkitems/2026-10-26-channel-report-pay-caliber-v2/deliverables/change.sql\n+52\n-0\nworkitems/2026-10-26-channel-report-pay-caliber-v2/deliverables/develop.yaml\n+18\n-0\nworkitems/2026-10-26-channel-report-pay-caliber-v2/deliverables/sql-review.md\n+18\n-0\n用量 470K tok\n23:04\n发消息或创建任务, / 调用指令, @ 文件或对话\n工作区内修改\nDeepSeek-V4.1-Flash\n1017\nHigh\n2 轮 28 步·246 tok/s\n985K tok·缓存命中 97%\n6%"
+    }
+  ]
+}

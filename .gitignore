@@ -1,0 +1,33 @@
+# External upstream / reference repositories.
+# They have their own .git and remotes; never add them to this repository.
+/deepseek-harness/
+/dsh-desktop/
+
+# Local browser / DSH runtime scratch dirs.
+/.tmp-*/
+/.dsh/
+/tmp/
+/incidents/*
+/incidents/README.md
+
+# Installed dependencies.
+node_modules/
+**/node_modules/
+
+# Runtime workitems. Keep only the template and README in git.
+/workitems/*
+!/workitems/README.md
+!/workitems/_template/
+!/workitems/_template/**
+
+# OS / editor / secrets.
+.DS_Store
+**/.DS_Store
+.env
+.env.*
+*.local
+
+# Generated client bundles are rebuilt by scripts/build.mjs.
+# Keep them out of the source repo so a stale bundle cannot be committed.
+**/lib/client.js
+**/lib/index.js

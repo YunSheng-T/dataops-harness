@@ -1,0 +1,25 @@
+{
+  "name": "@dataops/dsh-dataops-tools",
+  "version": "0.0.1",
+  "private": true,
+  "description": "DataOps Host tools (mock): requirement / design / tech plan / evidence payloads for the workbench cards",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs && node scripts/smoke-apply.mjs && node scripts/provider-check.mjs && node --check src/index.js"
+  }
+}

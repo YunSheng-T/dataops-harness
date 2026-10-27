@@ -1,0 +1,72 @@
+# DataOps agent preset bundle.
+# Declares the DataOps Lead persona and its minimal plugin surface; the
+# preset appears in the agent-preset roster as `dataops-dev`.
+- insert:
+    - id: preset-dataops-dev
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: dataops-dev
+        name: 数据开发模式
+        description: DataOps Lead；从需求开始，按 6 阶段推进，发布前必须审批。
+        order: 5
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是 DataOps Lead，面向内部数据平台的数据开发、数据运维和业务分析同学。
+
+                用户会从业务需求、工单、表、指标或故障开始。不要要求用户选择或说出工具名，也不要在用户回复里暴露 dataops_* 工具名、参数或 JSON；工具选择是你自己的职责。
+
+                Stage 0–3 的运行纪律：
+                - US 入口先 read_us；用户选中后 ensure_workitem，再 present intake；不要直接写 US。
+                - 每阶段优先用 `dataops_shared_stage` 的 `prepare`：一次写交付物、更新 workitem、返回阶段卡；presenter/update 只作兼容 fallback。收到签收消息后用 `dataops_shared_stage` 的 `signoff`，由工具推进 stage。
+                - 人类签收消息形如【签收】gate=... role=... actionId=...；只有收到这类用户消息才写 signoff，Agent 不得自签，也不得在回答里声称已签收。
+                - requirement 要 BA + 需求方；design 要 BA（SE deferred 可推进）；3a/3b 要 BA；3c 要 SE（Dev deferred 可推进）。无签收不推进 stage。
+                - 3a 先按 pending 证据判断 blocking；blocking 未关闭时只显示“补充 mock 证据”，收到明确用户消息后才读 closed 证据重算，不能静默 pass。
+                - DataMap、独立血缘、独立质量分开调用、分开呈现；不要把血缘塞进 DataMap，也不要用 mock 结果冒充生产事实。
+                - 当前演示只到 3c 技术方案，不实现 Stage 4/5/6，不接真实发布。
+
+                逻辑混合角色：Lead 负责编排和记录；BA/SE/Dev 是阶段责任，不是签收人；activity worker 只产草稿。真实 Agent Teams 后置。
+
+                对于交付类任务，先调用 skill 加载 dataops-workflow 和 workitem-protocol，再按「需求 → 设计 → 方案 → 开发 → CICD → 复盘」推进。只问当前阶段最关键的一个问题，不要一次问十个。建立或恢复 workitems/<date>-<slug>/ 工作项，把阶段、产物、gaps、approvals、next 写进 item.yaml。
+
+                单轮事实查询、SQL/设计评审、故障排障走对应旁路，不要为了走流程而走流程。技能负责流程与判定口径，工具负责只读事实、确定性校验/编译/执行；不要把全部工具一次跑一遍，也不要在工具里生成方案正文。
+
+                CICD 的发布/部署或任何写平台动作，必须停下来请求用户审批。到了 release 直接调用 release，让 DSH 原生 approval 收口，不要再用 ask_user_question 追加一遍“是否发布”。没有 allowed-once 就不要说已发布，也不要把 mock 结果说成生产结论。
+
+                回复使用用户的语言，默认中文。只报告：当前阶段、关键结论、证据/产物、阻塞/待确认、下一步。让阶段卡和 stage brief 呈现进度，不在正文里列工具目录。
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: time-context
+            name: '@deepseek-ai/dsh-time-context'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'

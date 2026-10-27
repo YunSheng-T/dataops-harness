@@ -1,0 +1,13 @@
+{
+  "scenario": "ui-dock",
+  "runId": "p14-mvqbt2zq",
+  "at": "2026-10-27T06:54:24.859Z",
+  "failures": [],
+  "notes": [
+    {
+      "scenario": "ui-dock",
+      "workitem": "2026-10-27-us-3821",
+      "draft": "equirement role=ba actionId=ui-mvqbx36r8q39er actor=陈璐（BA / 需求跟踪）；数据实现 owner 待指派"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+#!/bin/sh
+# Run the dsh CLI bundled with DSH Desktop, without installing it globally.
+#
+# usage:
+#   ./scripts/dsh --version
+#   ./scripts/dsh --profile dataops --dump-config
+#   ./scripts/dsh --profile dataops
+#
+# Override the application location when it is not in /Applications:
+#   DSH_APP_PATH="/path/to/DSH Desktop.app/Contents/Resources/app" ./scripts/dsh ...
+set -eu
+
+find_app() {
+  if [ -n "${DSH_APP_PATH:-}" ]; then
+    printf '%s\n' "$DSH_APP_PATH"
+    return 0
+  fi
+  for candidate in \
+    "/Applications/DSH Desktop.app/Contents/Resources/app" \
+    "$HOME/Applications/DSH Desktop.app/Contents/Resources/app"
+  do
+    if [ -f "$candidate/node_modules/@deepseek-ai/dsh/lib/bin.js" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+if ! APP="$(find_app)"; then
+  echo "scripts/dsh: DSH Desktop not found." >&2
+  echo "Set DSH_APP_PATH to '<DSH Desktop.app>/Contents/Resources/app' and retry." >&2
+  exit 1
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "scripts/dsh: node is required on PATH (the app bundles its own runtime, but this wrapper uses your node)." >&2
+  echo "Alternatively open DSH Desktop's own terminal, where the dsh shim is already on PATH." >&2
+  exit 1
+fi
+
+exec node "$APP/node_modules/@deepseek-ai/dsh/lib/bin.js" "$@"

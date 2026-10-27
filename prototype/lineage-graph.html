@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataOps · 血缘图谱</title>
+<script src="vendor/cytoscape.min.js"></script>
+<script src="vendor/dagre.min.js"></script>
+<script src="vendor/cytoscape-dagre.js"></script>
+<style>
+  :root{
+    --bg:var(--dsw-alias-bg-l1,#f7f7f8);
+    --panel:var(--dsw-alias-bg-overlay,#fff);
+    --panel2:var(--dsw-alias-bg-l2,#f4f5f7);
+    --text:var(--dsw-alias-label-primary,#0f1115);
+    --muted:var(--dsw-alias-label-secondary,#61666b);
+    --faint:var(--dsw-alias-label-tertiary,#8b9098);
+    --line:var(--dsw-alias-border-l1,rgba(0,0,0,.06));
+    --line2:var(--dsw-alias-border-l2,rgba(0,0,0,.1));
+    --brand:var(--dsw-alias-brand-primary,#4d6bfe);
+    --brand-bg:var(--dsw-alias-brand-primary-bg,#eef2ff);
+    --purple:#7c5cff; --purple-bg:#f3f0ff;
+    --teal:#0f8a7b; --teal-bg:#e9f8f4;
+    --orange:#b45309; --orange-bg:#fff7ea;
+    --green:#067647; --green-bg:#ecfdf3;
+    --red:#b42318; --red-bg:#fef3f2;
+    --radius:8px;
+    --shadow:0 8px 24px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:12px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+  .app{height:100%;display:flex;flex-direction:column}
+  .top{flex:none;background:var(--panel);border-bottom:1px solid var(--line);padding:8px 14px 0}
+  .crumb{display:flex;align-items:center;gap:6px;color:var(--faint);font-size:11px;height:24px}
+  .crumb .brand{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-weight:600}
+  .crumb .mark{width:15px;height:15px;color:var(--brand)}
+  .crumb b{color:var(--text);font-weight:600}
+  .bar{display:flex;align-items:center;gap:10px;height:38px}
+  .title{display:flex;align-items:center;gap:8px;min-width:0}
+  .title h1{font-size:13px;line-height:1;margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tag{font-size:10px;line-height:1;color:var(--muted);border:1px solid var(--line2);border-radius:999px;padding:3px 7px;background:var(--panel2);font-weight:600;white-space:nowrap}
+  .tag.target{color:var(--brand);border-color:#c7d2fe;background:var(--brand-bg)}
+  .spacer{flex:1}
+  .tabs{display:flex;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px}
+  .tab{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:5px;cursor:pointer;white-space:nowrap}
+  .tab[data-active="true"]{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+  .tool{border:1px solid var(--line2);background:var(--panel);color:var(--muted);font:inherit;font-size:11px;font-weight:600;height:26px;padding:0 8px;border-radius:6px;cursor:pointer;white-space:nowrap}
+  .tool:hover{color:var(--text);border-color:#c8cedb}
+  .tool.primary{color:var(--brand);border-color:#c7d2fe;background:var(--brand-bg)}
+  .legend{display:flex;align-items:center;gap:12px;height:26px;color:var(--faint);font-size:10.5px;overflow:hidden;white-space:nowrap}
+  .lg{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:7px;height:7px;border-radius:2px;display:inline-block;flex:none}
+  .dot.bo{background:var(--purple)} .dot.le{background:var(--teal)}
+  .dot.table{background:#fff;border:1.3px solid #94a3b8}
+  .dot.task{background:var(--orange-bg);border:1.3px dashed var(--orange)}
+  .dot.job{background:var(--orange)}
+  .dot.api{background:#fff;border:1.3px solid var(--purple)} .dot.report{background:var(--green)}
+  .line-sample{display:inline-block;width:14px;height:0;border-top:1.3px solid #98a2b3}
+  .line-sample.control{border-top:1.3px dashed var(--orange)}
+  .line-sample.call{border-top:1.3px dotted var(--purple)}
+  .body{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
+  .canvas-wrap{position:relative;min-width:0;min-height:0;background:
+    radial-gradient(circle at 1px 1px, rgba(15,23,42,.08) 1px, transparent 0) 0 0/20px 20px,
+    var(--bg)}
+  #cy{position:absolute;inset:0}
+  .hint{position:absolute;left:12px;bottom:10px;color:var(--faint);font-size:10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 7px;pointer-events:none}
+  .tip{position:absolute;z-index:5;pointer-events:none;background:var(--text);color:var(--panel);font-size:10px;line-height:1.4;border-radius:5px;padding:4px 7px;opacity:0;transform:translateY(2px);transition:opacity .12s;max-width:220px}
+  .tip.show{opacity:1}
+  .detail{background:var(--panel);border-left:1px solid var(--line);min-height:0;display:flex;flex-direction:column}
+  .detail-head{padding:14px 14px 10px;border-bottom:1px solid var(--line);flex:none}
+  .detail-eyebrow{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .detail-head h2{font-size:14px;line-height:1.35;margin:6px 0 3px;font-weight:600;word-break:break-all}
+  .detail-sub{font-size:10.5px;color:var(--muted);line-height:1.45}
+  .pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .pill{font-size:9.5px;line-height:1;font-weight:600;border:1px solid var(--line2);border-radius:999px;padding:3px 6px;color:var(--muted);background:var(--panel2)}
+  .pill.brand{color:var(--brand);border-color:#c7d2fe;background:var(--brand-bg)}
+  .detail-tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line);flex:none}
+  .dt{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:600;padding:5px 8px 7px;border-bottom:2px solid transparent;cursor:pointer}
+  .dt[data-active="true"]{color:var(--text);border-bottom-color:var(--brand)}
+  .detail-body{padding:12px 14px 20px;overflow:auto;min-height:0}
+  .desc{color:var(--muted);font-size:11.5px;line-height:1.6;margin:0 0 10px}
+  .kv{display:grid;grid-template-columns:74px minmax(0,1fr);gap:7px 10px;margin:0;font-size:11px;line-height:1.5}
+  .kv dt{color:var(--faint)}
+  .kv dd{margin:0;color:var(--text);word-break:break-all}
+  .section-title{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:14px 0 6px}
+  .fields{width:100%;border-collapse:collapse;font-size:10.5px}
+  .fields th{text-align:left;color:var(--faint);font-weight:600;padding:4px 4px;border-bottom:1px solid var(--line)}
+  .fields td{padding:4px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+  .fields td:first-child{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);white-space:nowrap}
+  .fields td:nth-child(2){color:var(--muted);white-space:nowrap}
+  .fields td:last-child{color:var(--faint)}
+  .sql{margin:0;padding:9px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);font:10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:240px;overflow:auto}
+  .jobs{display:flex;flex-direction:column;gap:5px}
+  .job-row{display:flex;align-items:center;gap:7px;font-size:11px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+  .job-row .idx{width:16px;height:16px;border-radius:4px;background:var(--panel2);color:var(--muted);font-size:9px;display:flex;align-items:center;justify-content:center;flex:none}
+  .job-row .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .job-row .kind{font-size:9px;color:var(--faint);flex:none}
+  .detail-foot{padding:9px 14px;border-top:1px solid var(--line);display:flex;gap:6px;flex:none}
+  .empty{color:var(--muted);font-size:11.5px;line-height:1.7}
+  .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--text);color:var(--panel);font-size:11px;border-radius:6px;padding:6px 10px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:20}
+  .toast.show{opacity:1}
+  @media (max-width:980px){.body{grid-template-columns:1fr}.detail{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="crumb">
+      <span class="brand"><svg class="mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>DataOps</span>
+      <span>/</span><span>渠道日报</span><span>/</span><b>血缘图谱</b>
+      <span class="tag" style="margin-left:4px">MOCK · DataMap</span>
+    </div>
+    <div class="bar">
+      <div class="title"><h1 id="title">dws.trade_channel_daily</h1><span class="tag target" id="targetTag">本次目标</span></div>
+      <div class="spacer"></div>
+      <div class="tabs" role="tablist">
+        <button class="tab" data-view="design" data-active="true">设计视图</button>
+        <button class="tab" data-view="production">生产视图</button>
+        <button class="tab" data-view="schedule">调度视图</button>
+      </div>
+      <button class="tool" id="fit">适应</button>
+      <button class="tool" id="stress">100 节点</button>
+    </div>
+    <div class="legend">
+      <span class="lg"><i class="dot bo"></i>业务对象</span>
+      <span class="lg"><i class="dot le"></i>逻辑实体</span>
+      <span class="lg"><i class="dot table"></i>物理表</span>
+      <span class="lg"><i class="dot task"></i>调度任务</span>
+      <span class="lg"><i class="dot job"></i>作业</span>
+      <span class="lg"><i class="dot api"></i>API / 缓存</span>
+      <span class="lg"><i class="dot report"></i>报表</span>
+      <span class="lg"><i class="line-sample"></i>数据流</span>
+      <span class="lg"><i class="line-sample control"></i>调度依赖</span>
+      <span class="lg"><i class="line-sample call"></i>调用</span>
+      <span class="lg" style="margin-left:auto">点击节点查看详情 · 滚轮缩放 · 拖拽平移</span>
+    </div>
+  </header>
+  <main class="body">
+    <section class="canvas-wrap">
+      <div id="cy"></div>
+      <div class="hint">节点可点击，右侧查看库/schema/字段、调度和加工 SQL</div>
+      <div class="tip" id="tip"></div>
+    </section>
+    <aside class="detail">
+      <div class="detail-head" id="detailHead"></div>
+      <div class="detail-tabs" id="detailTabs"></div>
+      <div class="detail-body" id="detailBody"></div>
+      <div class="detail-foot" id="detailFoot"></div>
+    </aside>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  wheelSensitivity: 0.18,
+  style: [
+    { selector: 'node', style: {
+      shape: 'round-rectangle', width: 178, height: 46,
+      'background-color': '#ffffff', 'border-width': 1.2, 'border-color': '#d5dae4',
+      label: 'data(label)', 'font-size': 9.5, 'font-weight': 600, color: '#1f2937',
+      'text-valign': 'center', 'text-halign': 'center', 'text-wrap': 'wrap',
+      'text-max-width': 158, 'line-height': 1.22, 'text-justification': 'center',
+      'overlay-opacity': 0, 'transition-property': 'border-color, background-color',
+      'transition-duration': '120ms'
+    }},
+    { selector: 'node[type="business_object"]', style: { 'background-color': '#f4f1ff', 'border-color': '#c9b8ff', color: '#5b3ec8' }},
+    { selector: 'node[type="logical_entity"]', style: { 'background-color': '#e9f8f4', 'border-color': '#a7e3d8', color: '#0b6b5e' }},
+    { selector: 'node[type="table"]', style: { 'background-color': '#ffffff', 'border-color': '#d5dae4', color: '#1f2937' }},
+    { selector: 'node[type="table"][layer="ods"]', style: { 'border-color': '#f2c56b', 'background-color': '#fffaf0' }},
+    { selector: 'node[type="table"][layer="dwd"]', style: { 'border-color': '#a9c6ff', 'background-color': '#f5f8ff' }},
+    { selector: 'node[type="table"][layer="dws"]', style: { 'border-color': '#b7b9ff', 'background-color': '#f7f7ff' }},
+    { selector: 'node[type="table"][layer="ads"]', style: { 'border-color': '#a7dfbd', 'background-color': '#f4fdf8' }},
+    { selector: 'node[type="table"][layer="dim"]', style: { 'border-color': '#c9b8ff', 'background-color': '#faf8ff' }},
+    { selector: 'node[type="table"][?target]', style: { 'border-width': 2, 'border-color': '#4d6bfe', 'background-color': '#f3f6ff', color: '#1d4ed8' }},
+    { selector: 'node[type="task"]', style: { 'background-color': '#fffaf0', 'border-color': '#f0b35a', 'border-style': 'dashed', 'border-width': 1.4, color: '#8a4b0f' }},
+    { selector: 'node[type="job"]', style: { 'background-color': '#fff8ed', 'border-color': '#f0c28b', color: '#7c3d0e' }},
+    { selector: 'node[jobType="api"]', style: { shape: 'hexagon', 'background-color': '#f4f1ff', 'border-color': '#c9b8ff', color: '#5b3ec8' }},
+    { selector: 'node[jobType="db_script"]', style: { 'background-color': '#fff1f2', 'border-color': '#f2b8c0', color: '#9f1239' }},
+    { selector: 'node[type="api"]', style: { shape: 'hexagon', 'background-color': '#f4f1ff', 'border-color': '#c9b8ff', color: '#5b3ec8' }},
+    { selector: 'node[type="cache"]', style: { shape: 'barrel', 'background-color': '#e9f8f4', 'border-color': '#8ed8c9', color: '#0b6b5e' }},
+    { selector: 'node[type="report"]', style: { 'background-color': '#effaf4', 'border-color': '#9de0b8', color: '#096c43' }},
+    { selector: 'node[type="source"]', style: { 'background-color': '#f8fafc', 'border-color': '#cfd8e3', color: '#334155' }},
+    { selector: 'node:parent', style: {
+      shape: 'round-rectangle', 'background-color': 'rgba(255,247,234,.65)', 'background-opacity': 1,
+      'border-style': 'dashed', 'border-width': 1.3, 'border-color': '#f0b35a',
+      label: 'data(label)', 'text-valign': 'top', 'text-halign': 'left', 'text-margin-x': 10, 'text-margin-y': 7,
+      'font-size': 9.5, 'font-weight': 700, color: '#8a4b0f', padding: '20px'
+    }},
+    { selector: 'node.hover', style: { 'border-width': 1.8, 'border-color': '#4d6bfe' }},
+  { selector: 'node:selected', style: { 'border-width': 2.2, 'border-color': '#4d6bfe', 'overlay-color': '#4d6bfe', 'overlay-padding': 2, 'overlay-opacity': .08 }},
+    { selector: 'edge', style: {
+      width: 1.15, 'line-color': '#a3adbd', 'target-arrow-color': '#a3adbd',
+      'target-arrow-shape': 'triangle', 'arrow-scale': .7, 'curve-style': 'bezier',
+      label: 'data(label)', 'font-size': 7, color: '#7b8494',
+      'text-background-color': '#f7f7f8', 'text-background-opacity': 1, 'text-background-padding': '2px',
+      'text-rotation': 'autorotate'
+    }},
+    { selector: 'edge[type="maps_to"]', style: { 'line-style': 'dashed', 'line-color': '#b3a1e8', 'target-arrow-color': '#b3a1e8' }},
+    { selector: 'edge[type="control"]', style: { 'line-style': 'dashed', 'line-color': '#d89a3c', 'target-arrow-color': '#d89a3c' }},
+    { selector: 'edge[type="call"]', style: { 'line-style': 'dotted', 'line-color': '#9a7cf0', 'target-arrow-color': '#9a7cf0' }},
+    { selector: 'edge[type="reads"]', style: { 'line-color': '#7d99ea', 'target-arrow-color': '#7d99ea' }},
+    { selector: 'edge[type="writes"]', style: { 'line-color': '#4d7fe8', 'target-arrow-color': '#4d7fe8' }},
+    { selector: '.faded', style: { opacity: .16 }}
+  ],
+  layout: { name: 'preset' }
+});
+if (window.cytoscapeDagre) cytoscape.use(window.cytoscapeDagre);
+
+const N = (id, name, type, meta, extra) => Object.assign({ id, name, type, meta }, extra || {});
+const E = (id, source, target, type, label) => ({ data: { id, source, target, type, label } });
+
+const VIEWS = {
+  design: {
+    title: 'dws.trade_channel_daily',
+    subtitle: '设计视图 · 目标表从资产地图取数，继承上游字段，由日调度控制',
+    nodes: [
+      N('bo:trade_order', '交易订单', 'business_object', '业务对象 · 交易域'),
+      N('le:order_fact', '订单事实', 'logical_entity', '逻辑实体 · 粒度 订单'),
+      N('table:dwd.orders', 'dwd.orders', 'table', 'DWD · 交易组', { layer: 'dwd', owner: '交易组' }),
+      N('table:dim.channel', 'dim.channel', 'table', 'DIM · 交易组', { layer: 'dim', owner: '交易组' }),
+      N('task:daily', 'task 渠道日报', 'task', 'daily · 03:00', { cycle: 'daily', cron: '0 3 * * *', sla: '05:00' }),
+      N('job:etl_channel', 'ETL 渠道聚合', 'job', '数据平台作业 · 交易组', { jobType: 'data_platform', owner: '交易组' }),
+      N('table:dws.trade_channel_daily', 'dws.trade_channel_daily', 'table', 'DWS · 本次目标', { layer: 'dws', target: true, owner: '交易组' }),
+      N('report:ads.channel_report', 'ads.channel_report', 'report', '报表 · 报表组')
+    ],
+    edges: [
+      E('e1', 'bo:trade_order', 'le:order_fact', 'maps_to', '映射'),
+      E('e2', 'le:order_fact', 'table:dwd.orders', 'maps_to', '落物理表'),
+      E('e3', 'table:dwd.orders', 'job:etl_channel', 'reads', '读'),
+      E('e4', 'table:dim.channel', 'job:etl_channel', 'reads', 'join channel_id'),
+      E('e5', 'job:etl_channel', 'table:dws.trade_channel_daily', 'writes', '写'),
+      E('e6', 'task:daily', 'job:etl_channel', 'control', '触发'),
+      E('e7', 'table:dws.trade_channel_daily', 'report:ads.channel_report', 'reads', '下游')
+    ]
+  },
+  production: {
+    title: 'dws.trade_channel_daily',
+    subtitle: '生产视图 · 源系统 → 集成 → ODS → ETL → DWD/DWS/ADS → API/缓存/报表',
+    nodes: [
+      N('src:orders', '交易库.orders', 'source', '源系统 · 交易库'),
+      N('job:integration_orders', '集成 orders', 'job', '数据平台作业 · 贴源', { jobType: 'data_platform' }),
+      N('table:ods.orders', 'ods.orders', 'table', 'ODS · 贴源', { layer: 'ods' }),
+      N('job:etl_dwd', 'ETL 清洗订单', 'job', '数据平台作业 · 清洗', { jobType: 'data_platform' }),
+      N('table:dwd.orders', 'dwd.orders', 'table', 'DWD · 交易组', { layer: 'dwd', owner: '交易组' }),
+      N('job:etl_dws', 'ETL 渠道聚合', 'job', '数据平台作业 · 聚合', { jobType: 'data_platform' }),
+      N('table:dws.trade_channel_daily', 'dws.trade_channel_daily', 'table', 'DWS · 本次目标', { layer: 'dws', target: true, owner: '交易组' }),
+      N('job:etl_ads', 'ETL 日报汇总', 'job', '数据平台作业 · 汇总', { jobType: 'data_platform' }),
+      N('table:ads.channel_report', 'ads.channel_report', 'table', 'ADS · 报表组', { layer: 'ads', owner: '报表组' }),
+      N('job:api_report', 'API 刷新缓存', 'job', 'API 作业 · 报表组', { jobType: 'api' }),
+      N('api:report_service', '报表系统 API', 'api', 'API · 报表组'),
+      N('cache:report_cache', '报表缓存', 'cache', '缓存 · 报表组'),
+      N('job:db_script', 'DB 脚本归档', 'job', 'DB 脚本 · 交易组', { jobType: 'db_script' }),
+      N('table:archive.channel_report', 'archive.channel_report', 'table', 'ADS 归档 · 交易组', { layer: 'ads' }),
+      N('report:channel_dashboard', '渠道日报看板', 'report', '报表 · 报表组')
+    ],
+    positions: {
+      'src:orders': { x: 30, y: 200 },
+      'job:integration_orders': { x: 220, y: 130 }, 'table:ods.orders': { x: 220, y: 260 },
+      'job:etl_dwd': { x: 410, y: 130 }, 'table:dwd.orders': { x: 410, y: 260 },
+      'job:etl_dws': { x: 600, y: 130 }, 'table:dws.trade_channel_daily': { x: 600, y: 260 },
+      'job:etl_ads': { x: 790, y: 130 }, 'table:ads.channel_report': { x: 790, y: 260 },
+      'job:api_report': { x: 980, y: 130 }, 'job:db_script': { x: 980, y: 260 },
+      'api:report_service': { x: 1170, y: 50 }, 'cache:report_cache': { x: 1170, y: 180 },
+      'report:channel_dashboard': { x: 1170, y: 310 }, 'table:archive.channel_report': { x: 1170, y: 440 }
+    },
+    edges: [
+      E('p1', 'src:orders', 'job:integration_orders', 'reads', '抽取'),
+      E('p2', 'job:integration_orders', 'table:ods.orders', 'writes', '贴源'),
+      E('p3', 'table:ods.orders', 'job:etl_dwd', 'reads', '清洗'),
+      E('p4', 'job:etl_dwd', 'table:dwd.orders', 'writes', '明细'),
+      E('p5', 'table:dwd.orders', 'job:etl_dws', 'reads', '聚合'),
+      E('p6', 'job:etl_dws', 'table:dws.trade_channel_daily', 'writes', '汇总'),
+      E('p7', 'table:dws.trade_channel_daily', 'job:etl_ads', 'reads', '汇总'),
+      E('p8', 'job:etl_ads', 'table:ads.channel_report', 'writes', '报表层'),
+      E('p9', 'table:ads.channel_report', 'job:api_report', 'reads', '读'),
+      E('p10', 'job:api_report', 'api:report_service', 'call', '调用'),
+      E('p11', 'job:api_report', 'cache:report_cache', 'writes', '刷新'),
+      E('p12', 'table:ads.channel_report', 'job:db_script', 'reads', '归档'),
+      E('p13', 'job:db_script', 'table:archive.channel_report', 'writes', '写'),
+      E('p14', 'cache:report_cache', 'report:channel_dashboard', 'reads', '供数')
+    ]
+  },
+  schedule: {
+    title: '渠道日报 · 调度链路',
+    subtitle: '调度视图 · schedule-task 包含多个 schedule-job，按顺序/依赖执行',
+    nodes: [
+      N('task:daily', 'task 渠道日报', 'task', 'daily · 03:00', { cycle: 'daily', cron: '0 3 * * *', sla: '05:00' }),
+      N('job:int', '集成 贴源', 'job', '数据平台 · 1', { jobType: 'data_platform', parent: 'task:daily', order: 1 }),
+      N('job:etl_dwd', 'ETL 清洗', 'job', '数据平台 · 2', { jobType: 'data_platform', parent: 'task:daily', order: 2 }),
+      N('job:etl_dws', 'ETL 聚合', 'job', '数据平台 · 3', { jobType: 'data_platform', parent: 'task:daily', order: 3 }),
+      N('job:db', 'DB 脚本 归档', 'job', 'DB 脚本 · 4', { jobType: 'db_script', parent: 'task:daily', order: 4 }),
+      N('task:api', 'task 缓存刷新', 'task', 'daily · 05:00', { cycle: 'daily', cron: '0 5 * * *', sla: '05:30' }),
+      N('job:api', 'API 刷新缓存', 'job', 'API · 1', { jobType: 'api', parent: 'task:api', order: 1 }),
+      N('api:report', '报表系统 API', 'api', 'API · 报表组'),
+      N('cache:report', '报表缓存', 'cache', '缓存 · 报表组')
+    ],
+    positions: {
+      'job:int': { x: 90, y: 145 }, 'job:etl_dwd': { x: 90, y: 220 },
+      'job:etl_dws': { x: 90, y: 295 }, 'job:db': { x: 90, y: 370 },
+      'job:api': { x: 380, y: 220 }
+    },
+    edges: [
+      E('s1', 'job:int', 'job:etl_dwd', 'control', '1→2'),
+      E('s2', 'job:etl_dwd', 'job:etl_dws', 'control', '2→3'),
+      E('s3', 'job:etl_dws', 'job:db', 'control', '3→4'),
+      E('s4', 'job:etl_dws', 'job:api', 'control', '产出就绪'),
+      E('s5', 'job:api', 'api:report', 'call', '调用'),
+      E('s6', 'job:api', 'cache:report', 'writes', '刷新')
+    ]
+  }
+};
+
+const INFO = {
+  'table:dws.trade_channel_daily': {
+    kind: '物理表 · DWS', subtitle: 'dws 层 · 交易域 · owner 交易组',
+    badges: ['本次目标', '日分区', '元数据完整'],
+    desc: '渠道日报目标表：按渠道 × 日期聚合支付订单，供报表/API/漏斗消费。',
+    rows: [['库', 'dw'], ['schema', 'dws'], ['表名', 'trade_channel_daily'], ['粒度', '渠道 × 日期'], ['分区', 'dt'], ['更新周期', 'daily'], ['行数', '约 1.2 万'], ['owner', '交易组']],
+    fields: [
+      ['dt', 'date', '分区日期'],
+      ['channel_id', 'string', '渠道 ID'],
+      ['channel_name', 'string', '渠道名'],
+      ['order_cnt', 'bigint', '支付订单数（去重）'],
+      ['gmv', 'decimal(18,2)', '成交额']
+    ],
+    schedule: { cycle: 'daily', cron: '0 3 * * *', sla: '05:00', task: 'task 渠道日报', depends: ['dwd.orders@T-1', 'dim.channel'] }
+  },
+  'table:dwd.orders': {
+    kind: '物理表 · DWD', subtitle: 'dwd 层 · 交易域 · owner 交易组',
+    badges: ['上游', '日分区', '元数据完整'],
+    desc: '订单明细，渠道日报的上游；支付口径由 status in (paid, shipped) 过滤。',
+    rows: [['库', 'dw'], ['schema', 'dwd'], ['表名', 'orders'], ['粒度', '订单'], ['分区', 'dt'], ['更新周期', 'daily'], ['行数', '约 200 万'], ['owner', '交易组']],
+    fields: [
+      ['order_id', 'string', '订单号'],
+      ['channel_id', 'string', '渠道 ID'],
+      ['user_id', 'string', '用户 ID'],
+      ['amount', 'decimal(18,2)', '订单金额'],
+      ['status', 'string', '订单状态'],
+      ['pay_time', 'timestamp', '支付时间'],
+      ['dt', 'date', '分区日期']
+    ],
+    schedule: { cycle: 'daily', cron: '0 2 * * *', task: 'task 订单清洗', depends: ['ods.orders@T-1'] }
+  },
+  'table:dim.channel': {
+    kind: '物理表 · DIM', subtitle: 'dim 层 · 交易域 · owner 交易组',
+    badges: ['维表', '全量'],
+    desc: '渠道维表，按 channel_id 关联；channel_type 字段待发布。',
+    rows: [['库', 'dw'], ['schema', 'dim'], ['表名', 'channel'], ['粒度', '渠道'], ['更新周期', 'daily'], ['owner', '交易组']],
+    fields: [['channel_id', 'string', '渠道 ID'], ['channel_name', 'string', '渠道名'], ['channel_type', 'string', '渠道类型（待发布）']]
+  },
+  'task:daily': {
+    kind: '调度任务 · schedule-task', subtitle: 'daily · 03:00 · SLA 05:00',
+    badges: ['daily', 'T-1', '4 个 job'],
+    desc: '渠道日报日调度。先贴源/清洗/聚合，再归档；产出就绪后触发缓存刷新 task。',
+    rows: [['taskId', 'task:daily'], ['周期', 'daily'], ['cron', '0 3 * * *'], ['依赖窗口', 'T-1'], ['SLA', '05:00']],
+    jobs: [
+      ['1', '集成 贴源', '数据平台'], ['2', 'ETL 清洗', '数据平台'],
+      ['3', 'ETL 聚合', '数据平台'], ['4', 'DB 脚本 归档', 'DB 脚本']
+    ]
+  },
+  'task:api': {
+    kind: '调度任务 · schedule-task', subtitle: 'daily · 05:00 · SLA 05:30',
+    badges: ['daily', '1 个 job'],
+    desc: '缓存刷新 task：等待日报产出就绪后，调用报表 API 刷新缓存。',
+    rows: [['taskId', 'task:api'], ['周期', 'daily'], ['cron', '0 5 * * *'], ['SLA', '05:30']],
+    jobs: [['1', 'API 刷新缓存', 'API']]
+  },
+  'job:etl_channel': {
+    kind: '作业 · 数据平台', subtitle: '可执行作业 · owner 交易组',
+    badges: ['data_platform', 'SQL', '日更'],
+    desc: '读取 dwd.orders + dim.channel，按渠道聚合支付订单，写入 dws.trade_channel_daily。',
+    rows: [['jobId', 'job:etl_channel'], ['类型', '数据平台作业'], ['输入', 'dwd.orders, dim.channel'], ['输出', 'dws.trade_channel_daily'], ['owner', '交易组']],
+    sql: "insert overwrite table dws.trade_channel_daily partition (dt='${bizdate}')\nselect\n  o.channel_id,\n  c.channel_name,\n  count(distinct o.order_id) as order_cnt,\n  sum(o.amount) as gmv\nfrom dwd.orders o\nleft join dim.channel c on o.channel_id = c.channel_id\nwhere o.dt = '${bizdate}'\n  and o.status in ('paid','shipped')\ngroup by o.channel_id, c.channel_name;"
+  },
+  'job:api_report': {
+    kind: '作业 · API', subtitle: '调用报表系统 API 并刷新缓存',
+    badges: ['api', 'HTTP', '副作用：缓存'],
+    desc: '读取 ads.channel_report，调用报表系统 API 刷新缓存；失败会重试并告警。',
+    rows: [['jobId', 'job:api_report'], ['类型', 'API 作业'], ['接口', 'POST /report/cache/refresh'], ['目标', '报表系统 API'], ['owner', '报表组']]
+  },
+  'job:db_script': {
+    kind: '作业 · DB 脚本', subtitle: '数据库脚本，归档报表数据',
+    badges: ['db_script', 'SQL'],
+    desc: '把 ads.channel_report 的当日分区归档到历史表。',
+    rows: [['jobId', 'job:db_script'], ['类型', 'DB 脚本'], ['输入', 'ads.channel_report'], ['输出', 'archive.channel_report']],
+    sql: "insert into archive.channel_report\nselect * from ads.channel_report\nwhere dt = '${bizdate}';"
+  },
+  'bo:trade_order': {
+    kind: '业务对象', subtitle: 'DataMap · 交易域',
+    badges: ['DataMap', '交易域'],
+    desc: '交易订单业务对象。设计期从它找逻辑实体，再落到物理表。',
+    rows: [['对象', '交易订单'], ['域', '交易域'], ['逻辑实体', '订单事实'], ['物理表', 'dwd.orders']]
+  },
+  'le:order_fact': {
+    kind: '逻辑实体', subtitle: 'DataMap · 订单事实',
+    badges: ['逻辑实体', '粒度 订单'],
+    desc: '订单事实逻辑实体，映射到 dwd.orders；元数据已登记。',
+    rows: [['逻辑实体', '订单事实'], ['粒度', '订单'], ['主键', 'order_id'], ['物理表', 'dwd.orders'], ['元数据', '已登记']]
+  },
+  'api:report_service': {
+    kind: 'API', subtitle: '报表系统 · 报表组',
+    badges: ['HTTP', '报表组'],
+    desc: '报表系统对外 API，API 作业调用后刷新缓存。',
+    rows: [['服务', '报表系统 API'], ['协议', 'HTTP'], ['owner', '报表组'], ['调用方', 'job:api_report']]
+  },
+  'cache:report_cache': {
+    kind: '缓存', subtitle: '报表缓存 · 报表组',
+    badges: ['缓存', '报表组'],
+    desc: '渠道日报缓存，API 作业刷新，供看板读取。',
+    rows: [['缓存', 'report_cache'], ['更新', 'API 作业'], ['消费', '渠道日报看板']]
+  }
+};
+
+function short(text, max = 24) { return text.length > max ? text.slice(0, max - 1) + '…' : text; }
+function labelFor(data) { return data.meta ? data.name + '\n' + data.meta : data.name; }
+function elementsFor(view) {
+  const def = VIEWS[view];
+  return def.nodes.map(n => ({ data: Object.assign({}, n, { label: labelFor(n) }) }))
+    .concat(def.edges.map(e => ({ data: e.data })));
+}
+function layoutFor(view) {
+  if (view === 'schedule') return { name: 'preset', fit: true, padding: 30 };
+  if (view === 'production') return { name: 'preset', fit: true, padding: 28 };
+  return { name: 'dagre', rankDir: 'LR', nodeSep: 34, rankSep: 72, edgeSep: 12, padding: 30, animate: false };
+}
+
+let current = 'design';
+let selected = null;
+let activeTab = 'overview';
+
+function render(view) {
+  current = view;
+  document.querySelectorAll('.tab').forEach(t => t.dataset.active = String(t.dataset.view === view));
+  const def = VIEWS[view];
+  document.getElementById('title').textContent = def.title;
+  document.querySelector('.tag.target').textContent = view === 'schedule' ? '调度链路' : '本次目标';
+  cy.elements().remove();
+  cy.add(elementsFor(view));
+  if (def.positions) cy.nodes().forEach(node => { const p = def.positions[node.id()]; if (p) node.position(p); });
+  cy.layout(layoutFor(view)).run();
+  setTimeout(() => cy.fit(36), 30);
+  const target = cy.nodes().filter(n => n.data('target')).first();
+  const primary = target.length ? target : cy.nodes().filter(n => n.data('type') === 'task').first();
+  selectNode(primary.length ? primary : cy.nodes().first());
+}
+
+function defaultTab(node) {
+  const info = INFO[node.data().id];
+  if (!info) return 'overview';
+  if (info.sql) return 'transform';
+  if (info.fields) return 'fields';
+  return 'overview';
+}
+
+function selectNode(node) {
+  if (!node) { selected = null; renderDetail(null); return; }
+  cy.nodes().unselect();
+  node.select();
+  selected = node;
+  activeTab = defaultTab(node);
+  renderDetail(node);
+}
+
+function tabsFor(info) {
+  const tabs = [['overview', '概览']];
+  if (info.fields) tabs.push(['fields', '字段']);
+  if (info.schedule || info.jobs) tabs.push(['schedule', '调度']);
+  if (info.sql) tabs.push(['transform', '加工']);
+  return tabs;
+}
+
+function renderDetail(node) {
+  const head = document.getElementById('detailHead');
+  const tabs = document.getElementById('detailTabs');
+  const body = document.getElementById('detailBody');
+  const foot = document.getElementById('detailFoot');
+  if (!node) {
+    head.innerHTML = '<div class="detail-eyebrow">Node detail</div><h2>点击任意节点</h2><div class="detail-sub">表看库/schema/字段，作业看 SQL/输入输出，调度任务看 job 列表。</div>';
+    tabs.innerHTML = ''; body.innerHTML = '<div class="empty">设计视图先看目标表、上游、调度；生产视图看完整链路；调度视图看 task/job。</div>'; foot.innerHTML = '';
+    return;
+  }
+  const data = node.data();
+  const info = INFO[data.id] || {
+    kind: data.type || '节点', subtitle: data.meta || '', badges: [],
+    rows: [['名称', data.name || data.id], ['类型', data.type || '—']]
+  };
+  const tabList = tabsFor(info);
+  if (!tabList.some(t => t[0] === activeTab)) activeTab = 'overview';
+  head.innerHTML =
+    '<div class="detail-eyebrow"><span>' + info.kind + '</span><button class="dt" id="closeDetail" style="padding:0 2px;border:0;color:var(--faint)">×</button></div>' +
+    '<h2>' + escapeHtml(data.name || data.id) + '</h2>' +
+    '<div class="detail-sub">' + escapeHtml(info.subtitle || data.meta || '') + '</div>' +
+    '<div class="pills">' + (info.badges || []).map(b => '<span class="pill ' + (b === '本次目标' ? 'brand' : '') + '">' + escapeHtml(b) + '</span>').join('') + '</div>';
+  tabs.innerHTML = tabList.map(t => '<button class="dt" data-tab="' + t[0] + '" data-active="' + String(activeTab === t[0]) + '">' + t[1] + '</button>').join('');
+  body.innerHTML = contentFor(info, activeTab);
+  foot.innerHTML = '<button class="tool" id="openDatamap">在 DataMap 查看</button><button class="tool" id="copyName">复制表名</button>';
+  document.getElementById('closeDetail').onclick = () => { cy.nodes().unselect(); selected = null; renderDetail(null); };
+  document.querySelectorAll('.dt[data-tab]').forEach(btn => btn.onclick = () => { activeTab = btn.dataset.tab; renderDetail(node); });
+  document.getElementById('openDatamap').onclick = () => toast('Mock：内网对接后跳 DataMap / 调度平台');
+  document.getElementById('copyName').onclick = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(data.name || data.id);
+    toast('已复制节点名称');
+  };
+}
+
+function contentFor(info, tab) {
+  if (tab === 'fields' && info.fields) {
+    return '<table class="fields"><thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead><tbody>' +
+      info.fields.map(f => '<tr><td>' + escapeHtml(f[0]) + '</td><td>' + escapeHtml(f[1]) + '</td><td>' + escapeHtml(f[2]) + '</td></tr>').join('') +
+      '</tbody></table>';
+  }
+  if (tab === 'schedule') {
+    const s = info.schedule || {};
+    const rows = [];
+    if (s.cycle) rows.push(['周期', s.cycle]);
+    if (s.cron) rows.push(['cron', s.cron]);
+    if (s.sla) rows.push(['SLA', s.sla]);
+    if (s.task) rows.push(['调度任务', s.task]);
+    if (s.depends) rows.push(['依赖', s.depends.join('、')]);
+    const jobs = info.jobs ? '<div class="section-title">包含作业</div><div class="jobs">' + info.jobs.map(j => '<div class="job-row"><span class="idx">' + j[0] + '</span><span class="name">' + escapeHtml(j[1]) + '</span><span class="kind">' + escapeHtml(j[2]) + '</span></div>').join('') + '</div>' : '';
+    return (rows.length ? '<dl class="kv">' + rows.map(r => '<dt>' + r[0] + '</dt><dd>' + escapeHtml(r[1]) + '</dd>').join('') + '</dl>' : '') + jobs;
+  }
+  if (tab === 'transform' && info.sql) {
+    return '<pre class="sql">' + escapeHtml(info.sql) + '</pre>';
+  }
+  return (info.desc ? '<p class="desc">' + escapeHtml(info.desc) + '</p>' : '') +
+    '<dl class="kv">' + (info.rows || []).map(r => '<dt>' + escapeHtml(r[0]) + '</dt><dd>' + escapeHtml(r[1]) + '</dd>').join('') + '</dl>';
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function toast(text) {
+  const el = document.getElementById('toast');
+  el.textContent = text; el.classList.add('show'); clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 1600);
+}
+
+const tip = document.getElementById('tip');
+function hideTip() { tip.classList.remove('show'); }
+cy.on('mouseover', 'node', event => {
+  const node = event.target;
+  node.addClass('hover');
+  const rect = document.querySelector('.canvas-wrap').getBoundingClientRect();
+  const pos = node.renderedPosition();
+  tip.textContent = (node.data('name') || node.id()) + ' · 点击查看详情';
+  tip.style.left = (pos.x + rect.left + 8) + 'px';
+  tip.style.top = (pos.y + rect.top - 30) + 'px';
+  tip.classList.add('show');
+  document.getElementById('cy').style.cursor = 'pointer';
+});
+cy.on('mouseout', 'node', event => {
+  event.target.removeClass('hover');
+  hideTip();
+  document.getElementById('cy').style.cursor = 'grab';
+});
+cy.on('tap', 'node', event => { hideTip(); selected = event.target; activeTab = defaultTab(event.target); renderDetail(event.target); });
+cy.on('tap', event => {
+  if (event.target !== cy) return;
+  cy.nodes().unselect(); selected = null; renderDetail(null);
+});
+document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => render(tab.dataset.view));
+document.getElementById('fit').onclick = () => cy.fit(36);
+document.getElementById('cy').style.cursor = 'grab';
+document.getElementById('stress').onclick = () => {
+  const nodes = [], edges = [];
+  for (let i = 0; i < 100; i += 1) {
+    const table = i % 2 === 0;
+    const id = (table ? 'stress:t:' : 'stress:j:') + i;
+    nodes.push({ data: { id, name: table ? 'dws.t_' + i : 'ETL job_' + i, meta: table ? 'DWS · 压测' : '数据平台 · 压测', label: (table ? 'dws.t_' + i : 'ETL job_' + i) + '\n' + (table ? 'DWS · 压测' : '数据平台 · 压测'), type: table ? 'table' : 'job', jobType: table ? undefined : 'data_platform', layer: table ? (i % 4 === 0 ? 'ods' : i % 4 === 1 ? 'dwd' : i % 4 === 2 ? 'dws' : 'ads') : undefined } });
+    if (i > 0) edges.push({ data: { id: 'stress:e:' + i, source: (i % 2 === 0 ? 'stress:j:' : 'stress:t:') + (i - 1), target: id, type: i % 4 === 0 ? 'control' : 'reads', label: '' } });
+  }
+  cy.elements().remove(); cy.add(nodes.concat(edges));
+  cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 12, rankSep: 22, padding: 18 }).run();
+  setTimeout(() => cy.fit(18), 40);
+  toast('100 节点压测 · Canvas 渲染');
+};
+
+const initial = new URLSearchParams(location.search).get('view');
+render(VIEWS[initial] ? initial : 'design');
+</script>
+</body>
+</html>

@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataOps · 血缘图谱</title>
+<link rel="stylesheet" href="vendor/reactflow.css">
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<script>
+  window.jsxRuntime = { jsx: React.createElement, jsxs: React.createElement, Fragment: React.Fragment };
+</script>
+<script src="vendor/reactflow.umd.js"></script>
+<style>
+  :root{
+    --bg:var(--dsw-alias-bg-l1,#f7f7f8);
+    --panel:var(--dsw-alias-bg-overlay,#fff);
+    --panel2:var(--dsw-alias-bg-l2,#f4f5f7);
+    --text:var(--dsw-alias-label-primary,#0f1115);
+    --muted:var(--dsw-alias-label-secondary,#61666b);
+    --faint:var(--dsw-alias-label-tertiary,#8b9098);
+    --line:var(--dsw-alias-border-l1,rgba(0,0,0,.06));
+    --line2:var(--dsw-alias-border-l2,rgba(0,0,0,.1));
+    --brand:var(--dsw-alias-brand-primary,#4d6bfe);
+    --brand-bg:var(--dsw-alias-brand-primary-bg,#eef2ff);
+    --purple:#7c5cff; --teal:#0f8a7b; --orange:#b45309; --green:#067647; --red:#b42318;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:12px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+  .app{height:100%;display:flex;flex-direction:column}
+  .top{flex:none;background:var(--panel);border-bottom:1px solid var(--line);padding:8px 14px 0}
+  .crumb{display:flex;align-items:center;gap:6px;color:var(--faint);font-size:11px;height:24px}
+  .crumb .brand{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-weight:600}
+  .crumb .mark{width:15px;height:15px;color:var(--brand)}
+  .crumb b{color:var(--text);font-weight:600}
+  .bar{display:flex;align-items:center;gap:10px;height:38px}
+  .title{display:flex;align-items:center;gap:8px;min-width:0}
+  .title h1{font-size:13px;line-height:1;margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tag{font-size:10px;line-height:1;color:var(--muted);border:1px solid var(--line2);border-radius:999px;padding:3px 7px;background:var(--panel2);font-weight:600;white-space:nowrap}
+  .tag.target{color:var(--brand);border-color:#c7d2fe;background:var(--brand-bg)}
+  .spacer{flex:1}
+  .tabs{display:flex;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px}
+  .tab{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:5px;cursor:pointer;white-space:nowrap}
+  .tab[data-active="true"]{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+  .tool{border:1px solid var(--line2);background:var(--panel);color:var(--muted);font:inherit;font-size:11px;font-weight:600;height:26px;padding:0 8px;border-radius:6px;cursor:pointer;white-space:nowrap}
+  .tool:hover{color:var(--text);border-color:#c8cedb}
+  .legend{display:flex;align-items:center;gap:12px;height:26px;color:var(--faint);font-size:10.5px;overflow:hidden;white-space:nowrap}
+  .lg{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:7px;height:7px;border-radius:2px;display:inline-block;flex:none}
+  .body{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
+  .canvas-wrap{position:relative;min-width:0;min-height:0;background:var(--bg)}
+  #flow{position:absolute;inset:0}
+  .hint{position:absolute;left:12px;bottom:10px;z-index:5;color:var(--faint);font-size:10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 7px;pointer-events:none}
+  .detail{background:var(--panel);border-left:1px solid var(--line);min-height:0;display:flex;flex-direction:column}
+  .detail-head{padding:14px 14px 10px;border-bottom:1px solid var(--line);flex:none}
+  .eyebrow{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .detail-head h2{font-size:14px;line-height:1.35;margin:6px 0 3px;font-weight:600;word-break:break-all}
+  .detail-sub{font-size:10.5px;color:var(--muted);line-height:1.45}
+  .pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .pill{font-size:9.5px;line-height:1;font-weight:600;border:1px solid var(--line2);border-radius:999px;padding:3px 6px;color:var(--muted);background:var(--panel2)}
+  .pill.brand{color:var(--brand);border-color:#c7d2fe;background:var(--brand-bg)}
+  .detail-tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line);flex:none}
+  .dt{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:600;padding:5px 8px 7px;border-bottom:2px solid transparent;cursor:pointer}
+  .dt[data-active="true"]{color:var(--text);border-bottom-color:var(--brand)}
+  .detail-body{padding:12px 14px 20px;overflow:auto;min-height:0}
+  .desc{color:var(--muted);font-size:11.5px;line-height:1.6;margin:0 0 10px}
+  .kv{display:grid;grid-template-columns:74px minmax(0,1fr);gap:7px 10px;margin:0;font-size:11px;line-height:1.5}
+  .kv dt{color:var(--faint)}
+  .kv dd{margin:0;color:var(--text);word-break:break-all}
+  .section-title{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:14px 0 6px}
+  .fields{width:100%;border-collapse:collapse;font-size:10.5px}
+  .fields th{text-align:left;color:var(--faint);font-weight:600;padding:4px;border-bottom:1px solid var(--line)}
+  .fields td{padding:4px;border-bottom:1px solid var(--line);vertical-align:top}
+  .fields td:first-child{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
+  .fields td:nth-child(2){color:var(--muted);white-space:nowrap}
+  .fields td:last-child{color:var(--faint)}
+  .sql{margin:0;padding:9px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);font:10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
+  .jobs{display:flex;flex-direction:column;gap:5px}
+  .job-row{display:flex;align-items:center;gap:7px;font-size:11px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+  .job-row .idx{width:16px;height:16px;border-radius:4px;background:var(--panel2);color:var(--muted);font-size:9px;display:flex;align-items:center;justify-content:center;flex:none}
+  .job-row .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .job-row .kind{font-size:9px;color:var(--faint);flex:none}
+  .detail-foot{padding:9px 14px;border-top:1px solid var(--line);display:flex;gap:6px;flex:none}
+  .empty{color:var(--muted);font-size:11.5px;line-height:1.7}
+  .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--text);color:var(--panel);font-size:11px;border-radius:6px;padding:6px 10px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:20}
+  .toast.show{opacity:1}
+  /* React Flow rich node */
+  .react-flow__renderer{cursor:grab}
+  .react-flow__node{font-family:inherit}
+  .react-flow__node-rich{width:240px!important}
+  .rf-card{display:flex;align-items:center;gap:8px;min-height:58px;width:240px;padding:7px 8px;border:1px solid var(--line2);border-radius:8px;background:var(--panel);box-shadow:0 1px 2px rgba(15,23,42,.04);cursor:pointer;transition:border-color .12s,box-shadow .12s}
+  .rf-card:hover{border-color:#b9c4d8;box-shadow:0 4px 14px rgba(15,23,42,.08)}
+  .rf-card.selected{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-bg),0 4px 14px rgba(15,23,42,.08)}
+  .rf-card.target{border-color:#a9b9ff;background:#fbfcff}
+  .rf-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
+  .rf-icon img{width:18px;height:18px;object-fit:contain;display:block}
+  .rf-main{min-width:0;flex:1}
+  .rf-title{font-size:10.5px;font-weight:650;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+  .rf-sub{font-size:9px;line-height:1.35;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .rf-kind{font-size:8px;line-height:1;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:3px 4px;flex:none;font-weight:700;align-self:flex-start;margin-top:1px}
+  .react-flow__handle{width:6px;height:6px;border:0;background:transparent;opacity:0}
+  .react-flow__node-taskGroup{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+  .react-flow__edges{position:absolute;z-index:6!important}
+  .react-flow__nodes{position:absolute;z-index:2!important}
+  .react-flow__node-taskGroup{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}
+.rf-group{width:100%;height:100%;border:1px dashed #d9a24f;border-radius:10px;background:rgba(255,247,234,.06);position:relative}
+  .rf-group-links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+  .rf-group-head{position:absolute;top:7px;left:9px;display:flex;align-items:center;gap:5px;font-size:9.5px;font-weight:700;color:#8a4b0f;background:rgba(255,255,255,.72);border:1px solid #f2d3a4;border-radius:4px;padding:3px 5px;white-space:nowrap}
+  .rf-group-head img{width:12px;height:12px}
+  .react-flow__edge-text{font-size:8px;fill:#7b8494}
+  .react-flow__edge-textbg{fill:var(--bg)}
+  .react-flow__controls{box-shadow:none;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .react-flow__controls-button{border-bottom:1px solid var(--line);background:var(--panel);color:var(--muted);width:24px;height:24px}
+  .lane-label{position:absolute;font-size:10px;font-weight:700;color:var(--faint);letter-spacing:.04em;text-align:left;pointer-events:none;border-bottom:1px dashed var(--line2);padding-bottom:4px}
+  .react-flow__attribution{display:none}
+  @media (max-width:980px){.body{grid-template-columns:1fr}.detail{display:none}}
+</style>
+</head>
+<body>
+<div class="app" id="root"></div>
+<script>
+const React = window.React;
+const ReactDOM = window.ReactDOM;
+const RF = window.ReactFlow;
+const h = React.createElement;
+const { ReactFlow, ReactFlowProvider, Background, Controls, Handle, Position, MarkerType, applyNodeChanges, useReactFlow, ViewportPortal } = RF;
+
+const ICON = {
+  hive: 'vendor/icons/apachehive.svg',
+  clickhouse: 'vendor/icons/clickhouse.svg',
+  mysql: 'vendor/icons/mysql.svg',
+  kafka: 'vendor/icons/apachekafka.svg',
+  redis: 'vendor/icons/redis.svg',
+  spark: 'vendor/icons/apachespark.svg',
+  airflow: 'vendor/icons/apacheairflow.svg',
+  db: 'vendor/icons/db.svg',
+  job: 'vendor/icons/job.svg',
+  api: 'vendor/icons/api.svg',
+  report: 'vendor/icons/report.svg',
+  schedule: 'vendor/icons/schedule.svg',
+  bo: 'vendor/icons/bo.svg',
+  le: 'vendor/icons/le.svg'
+};
+
+const INFO = {
+  'table:dws.trade_channel_daily': {
+    kind: '物理表 · DWS', subtitle: 'dws 层 · 交易域 · owner 交易组',
+    badges: ['本次目标', 'ClickHouse', '日分区', '元数据完整'],
+    desc: '渠道日报目标表：按渠道 × 日期聚合支付订单，供报表/API/漏斗消费。',
+    rows: [['数据库', 'ClickHouse'], ['库', 'dw'], ['schema', 'dws'], ['表名', 'trade_channel_daily'], ['粒度', '渠道 × 日期'], ['分区', 'dt'], ['更新周期', 'daily'], ['行数', '约 1.2 万'], ['owner', '交易组']],
+    fields: [['dt', 'date', '分区日期'], ['channel_id', 'string', '渠道 ID'], ['channel_name', 'string', '渠道名'], ['order_cnt', 'bigint', '支付订单数（去重）'], ['gmv', 'decimal(18,2)', '成交额']],
+    schedule: { cycle: 'daily', cron: '0 3 * * *', sla: '05:00', task: 'task 渠道日报', depends: ['dwd.orders@T-1', 'dim.channel'] }
+  },
+  'table:dwd.orders': {
+    kind: '物理表 · DWD', subtitle: 'Hive · 交易域 · owner 交易组',
+    badges: ['上游', 'Hive', '日分区', '元数据完整'],
+    desc: '订单明细，渠道日报的上游；支付口径由 status in (paid, shipped) 过滤。',
+    rows: [['数据库', 'Hive'], ['库', 'dw'], ['schema', 'dwd'], ['表名', 'orders'], ['粒度', '订单'], ['分区', 'dt'], ['更新周期', 'daily'], ['行数', '约 200 万'], ['owner', '交易组']],
+    fields: [['order_id', 'string', '订单号'], ['channel_id', 'string', '渠道 ID'], ['user_id', 'string', '用户 ID'], ['amount', 'decimal(18,2)', '订单金额'], ['status', 'string', '订单状态'], ['pay_time', 'timestamp', '支付时间'], ['dt', 'date', '分区日期']],
+    schedule: { cycle: 'daily', cron: '0 2 * * *', task: 'task 订单清洗', depends: ['ods.orders@T-1'] }
+  },
+  'table:dim.channel': {
+    kind: '物理表 · DIM', subtitle: 'MySQL · 交易域 · owner 交易组',
+    badges: ['维表', 'MySQL', '全量'],
+    desc: '渠道维表，按 channel_id 关联；channel_type 字段待发布。',
+    rows: [['数据库', 'MySQL'], ['库', 'dim'], ['schema', 'dim'], ['表名', 'channel'], ['粒度', '渠道'], ['更新周期', 'daily'], ['owner', '交易组']],
+    fields: [['channel_id', 'string', '渠道 ID'], ['channel_name', 'string', '渠道名'], ['channel_type', 'string', '渠道类型（待发布）']]
+  },
+  'table:ods.orders': {
+    kind: '物理表 · ODS', subtitle: 'PostgreSQL · 贴源层',
+    badges: ['ODS', 'PostgreSQL'],
+    rows: [['数据库', 'PostgreSQL'], ['库', 'ods'], ['表名', 'orders'], ['分区', 'dt'], ['更新', 'daily']]
+  },
+  'src:orders': {
+    kind: '源系统表', subtitle: 'MySQL · 交易库',
+    badges: ['源系统', 'MySQL'],
+    rows: [['系统', '交易库'], ['数据库', 'MySQL'], ['表', 'orders'], ['接入', 'Kafka → 集成作业']]
+  },
+  'kafka:orders': {
+    kind: '消息中间件 · Kafka', subtitle: 'Topic · 订单变更',
+    badges: ['Kafka', 'Topic', '3 分区'],
+    rows: [['中间件', 'Kafka'], ['Topic', 'orders_cdc'], ['分区', '3'], ['消费', '集成 orders'], ['保留', '7 天']],
+    desc: '交易库订单变更通过 CDC 写入 Kafka，集成作业消费后贴源到 ODS。'
+  },
+  'task:daily': {
+    kind: '调度任务 · schedule-task', subtitle: 'Apache Airflow · daily · 03:00',
+    badges: ['Airflow', 'daily', 'T-1', '4 个 job'],
+    desc: '渠道日报日调度。先贴源/清洗/聚合，再归档；产出就绪后触发缓存刷新 task。',
+    rows: [['平台', 'Apache Airflow'], ['taskId', 'task:daily'], ['周期', 'daily'], ['cron', '0 3 * * *'], ['依赖窗口', 'T-1'], ['SLA', '05:00']],
+    jobs: [['1', '集成 贴源', '数据平台'], ['2', 'ETL 清洗', '数据平台'], ['3', 'ETL 聚合', '数据平台'], ['4', 'DB 脚本 归档', 'DB 脚本']]
+  },
+  'task:api': {
+    kind: '调度任务 · schedule-task', subtitle: '内部调度 · daily · 05:00',
+    badges: ['内部调度', 'daily', '1 个 job'],
+    desc: '缓存刷新 task：等待日报产出就绪后，调用报表 API 刷新缓存。',
+    rows: [['taskId', 'task:api'], ['周期', 'daily'], ['cron', '0 5 * * *'], ['SLA', '05:30']],
+    jobs: [['1', 'API 刷新缓存', 'API']]
+  },
+  'job:etl_channel': {
+    kind: '作业 · 数据平台', subtitle: 'Spark SQL · owner 交易组',
+    badges: ['Spark', 'SQL', '日更'],
+    desc: '读取 dwd.orders + dim.channel，按渠道聚合支付订单，写入 dws.trade_channel_daily。',
+    rows: [['平台', 'Spark'], ['jobId', 'job:etl_channel'], ['类型', '数据平台作业'], ['输入', 'dwd.orders, dim.channel'], ['输出', 'dws.trade_channel_daily'], ['owner', '交易组']],
+    sql: "insert overwrite table dws.trade_channel_daily partition (dt='${bizdate}')\nselect\n  o.channel_id,\n  c.channel_name,\n  count(distinct o.order_id) as order_cnt,\n  sum(o.amount) as gmv\nfrom dwd.orders o\nleft join dim.channel c on o.channel_id = c.channel_id\nwhere o.dt = '${bizdate}'\n  and o.status in ('paid','shipped')\ngroup by o.channel_id, c.channel_name;"
+  },
+  'job:api_report': {
+    kind: '作业 · API', subtitle: '调用报表系统 API 并刷新缓存',
+    badges: ['API', 'HTTP', '副作用：缓存'],
+    desc: '读取 ads.channel_report，调用报表系统 API 刷新缓存；失败会重试并告警。',
+    rows: [['jobId', 'job:api_report'], ['类型', 'API 作业'], ['接口', 'POST /report/cache/refresh'], ['目标', '报表系统 API'], ['owner', '报表组']]
+  },
+  'job:db_script': {
+    kind: '作业 · DB 脚本', subtitle: '数据库脚本，归档报表数据',
+    badges: ['DB 脚本', 'SQL'],
+    desc: '把 ads.channel_report 的当日分区归档到历史表。',
+    rows: [['jobId', 'job:db_script'], ['类型', 'DB 脚本'], ['输入', 'ads.channel_report'], ['输出', 'archive.channel_report']],
+    sql: "insert into archive.channel_report\nselect * from ads.channel_report\nwhere dt = '${bizdate}';"
+  },
+  'bo:trade_order': {
+    kind: '业务对象', subtitle: 'DataMap · 交易域',
+    badges: ['DataMap', '交易域'],
+    desc: '交易订单业务对象。设计期从它找逻辑实体，再落到物理表。',
+    rows: [['对象', '交易订单'], ['域', '交易域'], ['逻辑实体', '订单事实'], ['物理表', 'dwd.orders']]
+  },
+  'le:order_fact': {
+    kind: '逻辑实体', subtitle: 'DataMap · 订单事实',
+    badges: ['逻辑实体', '粒度 订单'],
+    desc: '订单事实逻辑实体，映射到 dwd.orders；元数据已登记。',
+    rows: [['逻辑实体', '订单事实'], ['粒度', '订单'], ['主键', 'order_id'], ['物理表', 'dwd.orders'], ['元数据', '已登记']]
+  },
+  'api:report_service': {
+    kind: 'API', subtitle: '报表系统 · 报表组',
+    badges: ['HTTP', '报表组'],
+    rows: [['服务', '报表系统 API'], ['协议', 'HTTP'], ['owner', '报表组'], ['调用方', 'job:api_report']]
+  },
+  'cache:report_cache': {
+    kind: '缓存 · Redis', subtitle: '报表缓存 · 报表组',
+    badges: ['Redis', '缓存'],
+    rows: [['中间件', 'Redis'], ['缓存', 'report_cache'], ['更新', 'API 作业'], ['消费', '渠道日报看板']]
+  },
+  'table:ads.channel_report': {
+    kind: '物理表 · ADS', subtitle: 'ClickHouse · 报表组',
+    badges: ['ADS', 'ClickHouse'],
+    rows: [['数据库', 'ClickHouse'], ['库', 'ads'], ['表名', 'channel_report'], ['粒度', '渠道 × 日期'], ['owner', '报表组']],
+    fields: [['dt', 'date', '分区'], ['channel_id', 'string', '渠道'], ['order_cnt', 'bigint', '订单数'], ['gmv', 'decimal', 'GMV']]
+  }
+};
+
+const N = (id, name, kind, meta, icon, iconBg, extra) => Object.assign({ id, name, kind, meta, icon, iconBg }, extra || {});
+const E = (source, target, kind, label) => ({ id: source + '>' + target, source, target, kind, label });
+const palette = {
+  table: '#eef3fb', hive: '#fff7e8', clickhouse: '#fff8e8', mysql: '#eaf5ff', kafka: '#f4f0ff', redis: '#fff0f0',
+  job: '#fff7ed', api: '#f4f1ff', report: '#eefaf3', bo: '#f4f1ff', le: '#e9f8f4', source: '#f8fafc'
+};
+
+const VIEWS = {
+  design: {
+    title: 'dws.trade_channel_daily',
+    tabs: '设计视图',
+    tag: '本次目标',
+    summary: '设计视图 · 目标表从 DataMap 的业务对象/逻辑实体取数，由日调度控制',
+    nodes: [
+      N('bo:trade_order', '交易订单', 'BO', '业务对象 · 交易域', ICON.bo, palette.bo),
+      N('le:order_fact', '订单事实', 'LE', '逻辑实体 · 粒度 订单', ICON.le, palette.le),
+      N('table:dwd.orders', 'dwd.orders', 'DWD', 'Hive · 交易组', ICON.hive, palette.hive, { layer: 'dwd' }),
+      N('table:dim.channel', 'dim.channel', 'DIM', 'MySQL · 交易组', ICON.mysql, palette.mysql, { layer: 'dim' }),
+      N('task:daily', 'task 渠道日报', 'TASK', 'Airflow · daily 03:00', ICON.airflow, palette.job),
+      N('job:etl_channel', 'ETL 渠道聚合', 'ETL', 'Spark · 数据平台', ICON.spark, palette.job),
+      N('table:dws.trade_channel_daily', 'dws.trade_channel_daily', 'DWS', 'ClickHouse · 本次目标', ICON.clickhouse, palette.clickhouse, { layer: 'dws', target: true }),
+      N('report:ads.channel_report', 'ads.channel_report', 'RPT', '报表 · 报表组', ICON.report, palette.report)
+    ],
+    edges: [
+      E('bo:trade_order', 'le:order_fact', 'maps_to', '映射'),
+      E('le:order_fact', 'table:dwd.orders', 'maps_to', '落物理表'),
+      E('table:dwd.orders', 'job:etl_channel', 'reads', '读'),
+      E('table:dim.channel', 'job:etl_channel', 'reads', 'join'),
+      E('job:etl_channel', 'table:dws.trade_channel_daily', 'writes', '写'),
+      E('task:daily', 'job:etl_channel', 'control', '触发'),
+      E('table:dws.trade_channel_daily', 'report:ads.channel_report', 'reads', '下游')
+    ],
+    positions: {
+      'bo:trade_order': { x: 20, y: 40 }, 'le:order_fact': { x: 290, y: 40 },
+      'table:dwd.orders': { x: 560, y: 40 }, 'table:dim.channel': { x: 830, y: 40 },
+      'report:ads.channel_report': { x: 20, y: 180 }, 'table:dws.trade_channel_daily': { x: 290, y: 180 },
+      'job:etl_channel': { x: 560, y: 180 }, 'task:daily': { x: 830, y: 180 }
+    },
+    layout: 'manual'
+  },
+  production: {
+    title: 'dws.trade_channel_daily',
+    tabs: '生产视图',
+    tag: '本次目标',
+    summary: '生产视图 · 源系统 → Kafka → 集成 → ODS → ETL → DWD/DWS/ADS → API/缓存/报表',
+    nodes: [
+      N('src:orders', '交易库.orders', 'SRC', 'MySQL · 交易库', ICON.mysql, palette.mysql),
+      N('kafka:orders', 'Kafka orders_cdc', 'MQ', 'Kafka · 3 分区', ICON.kafka, palette.kafka),
+      N('job:integration_orders', '集成 orders', 'INT', '数据平台 · 贴源', ICON.spark, palette.job),
+      N('table:ods.orders', 'ods.orders', 'ODS', 'PostgreSQL · 贴源', ICON.db, palette.table, { layer: 'ods' }),
+      N('job:etl_dwd', 'ETL 清洗订单', 'ETL', 'Spark · 清洗', ICON.spark, palette.job),
+      N('table:dwd.orders', 'dwd.orders', 'DWD', 'Hive · 交易组', ICON.hive, palette.hive, { layer: 'dwd' }),
+      N('job:etl_dws', 'ETL 渠道聚合', 'ETL', 'Spark · 聚合', ICON.spark, palette.job),
+      N('table:dws.trade_channel_daily', 'dws.trade_channel_daily', 'DWS', 'ClickHouse · 本次目标', ICON.clickhouse, palette.clickhouse, { layer: 'dws', target: true }),
+      N('job:etl_ads', 'ETL 日报汇总', 'ETL', 'Spark · 汇总', ICON.spark, palette.job),
+      N('table:ads.channel_report', 'ads.channel_report', 'ADS', 'ClickHouse · 报表组', ICON.clickhouse, palette.clickhouse, { layer: 'ads' }),
+      N('job:api_report', 'API 刷新缓存', 'API', 'API 作业 · 报表组', ICON.api, palette.api),
+      N('api:report_service', '报表系统 API', 'API', '报表组 · HTTP', ICON.api, palette.api),
+      N('cache:report_cache', '报表缓存', 'CACHE', 'Redis · 报表组', ICON.redis, palette.redis),
+      N('job:db_script', 'DB 脚本归档', 'DB', 'DB 脚本 · 交易组', ICON.db, palette.job),
+      N('table:archive.channel_report', 'archive.channel_report', 'ADS', 'ClickHouse · 归档', ICON.clickhouse, palette.clickhouse, { layer: 'ads' }),
+      N('report:channel_dashboard', '渠道日报看板', 'RPT', '报表 · 报表组', ICON.report, palette.report)
+    ],
+    positions: {
+      'src:orders': { x: 20, y: 30 }, 'kafka:orders': { x: 290, y: 30 },
+      'job:integration_orders': { x: 560, y: 30 }, 'table:ods.orders': { x: 830, y: 30 },
+      'job:etl_dwd': { x: 830, y: 150 }, 'table:dwd.orders': { x: 560, y: 150 },
+      'job:etl_dws': { x: 290, y: 150 }, 'table:dws.trade_channel_daily': { x: 20, y: 150 },
+      'job:etl_ads': { x: 20, y: 270 }, 'table:ads.channel_report': { x: 290, y: 270 },
+      'job:api_report': { x: 560, y: 270 }, 'job:db_script': { x: 830, y: 270 },
+      'report:channel_dashboard': { x: 20, y: 390 }, 'cache:report_cache': { x: 290, y: 390 },
+      'api:report_service': { x: 560, y: 390 }, 'table:archive.channel_report': { x: 830, y: 390 }
+    },
+    edges: [
+      E('src:orders', 'kafka:orders', 'reads', 'CDC'),
+      E('kafka:orders', 'job:integration_orders', 'reads', '消费'),
+      E('job:integration_orders', 'table:ods.orders', 'writes', '贴源'),
+      E('table:ods.orders', 'job:etl_dwd', 'reads', '清洗'),
+      E('job:etl_dwd', 'table:dwd.orders', 'writes', '明细'),
+      E('table:dwd.orders', 'job:etl_dws', 'reads', '聚合'),
+      E('job:etl_dws', 'table:dws.trade_channel_daily', 'writes', '汇总'),
+      E('table:dws.trade_channel_daily', 'job:etl_ads', 'reads', '汇总'),
+      E('job:etl_ads', 'table:ads.channel_report', 'writes', '报表层'),
+      E('table:ads.channel_report', 'job:api_report', 'reads', '读'),
+      E('job:api_report', 'api:report_service', 'call', '调用'),
+      E('job:api_report', 'cache:report_cache', 'writes', '刷新'),
+      E('table:ads.channel_report', 'job:db_script', 'reads', '归档'),
+      E('job:db_script', 'table:archive.channel_report', 'writes', '写'),
+      E('cache:report_cache', 'report:channel_dashboard', 'reads', '供数')
+    ],
+    layout: 'manual'
+  },
+  schedule: {
+    title: '渠道日报 · 调度链路',
+    tabs: '调度视图',
+    tag: '调度链路',
+    summary: '调度视图 · schedule-task 包含多个 schedule-job，按顺序/依赖执行',
+    groups: [
+      { id: 'task:daily', x: 30, y: 70, w: 280, h: 390, label: 'task 渠道日报', icon: ICON.airflow, links: [{ y1: 122, y2: 140, label: '1→2' }, { y1: 202, y2: 220, label: '2→3' }, { y1: 282, y2: 300, label: '3→4' }] },
+      { id: 'task:api', x: 350, y: 180, w: 280, h: 135, label: 'task 缓存刷新', icon: ICON.schedule }
+    ],
+    nodes: [
+      N('job:int', '集成 贴源', 'JOB', '数据平台 · 1', ICON.spark, palette.job, { parentId: 'task:daily', x: 24, y: 60 }),
+      N('job:etl_dwd', 'ETL 清洗', 'JOB', '数据平台 · 2', ICON.spark, palette.job, { parentId: 'task:daily', x: 24, y: 140 }),
+      N('job:etl_dws', 'ETL 聚合', 'JOB', '数据平台 · 3', ICON.spark, palette.job, { parentId: 'task:daily', x: 24, y: 220 }),
+      N('job:db', 'DB 脚本 归档', 'JOB', 'DB 脚本 · 4', ICON.db, palette.job, { parentId: 'task:daily', x: 24, y: 300 }),
+      N('job:api', 'API 刷新缓存', 'JOB', 'API · 1', ICON.api, palette.api, { parentId: 'task:api', x: 24, y: 60 }),
+      N('api:report', '报表系统 API', 'API', '报表组 · HTTP', ICON.api, palette.api, { x: 680, y: 150 }),
+      N('cache:report', '报表缓存', 'CACHE', 'Redis · 报表组', ICON.redis, palette.redis, { x: 680, y: 270 })
+    ],
+    edges: [
+      E('task:daily', 'task:api', 'control', '产出就绪'),
+      E('job:api', 'api:report', 'call', '调用'),
+      E('job:api', 'cache:report', 'writes', '刷新')
+    ],
+    layout: 'manual'
+  }
+};
+
+function nodeData(def) {
+  return { name: def.name, kind: def.kind, meta: def.meta, icon: def.icon, iconBg: def.iconBg, target: !!def.target };
+}
+
+function RichNode(props) {
+  const data = props.data;
+  return h('div', { className: 'rf-card' + (props.selected ? ' selected' : '') + (data.target ? ' target' : '') },
+    h('div', { className: 'rf-icon', style: { background: data.iconBg } }, h('img', { src: data.icon, alt: '' })),
+    h('div', { className: 'rf-main' },
+      h('div', { className: 'rf-title' }, data.name),
+      h('div', { className: 'rf-sub' }, data.meta)),
+    h('div', { className: 'rf-kind' }, data.kind),
+    h(Handle, { type: 'target', position: Position.Left, id: 'left-in' }),
+    h(Handle, { type: 'source', position: Position.Left, id: 'left-out' }),
+    h(Handle, { type: 'target', position: Position.Right, id: 'right-in' }),
+    h(Handle, { type: 'source', position: Position.Right, id: 'right-out' }),
+    h(Handle, { type: 'target', position: Position.Top, id: 'top-in' }),
+    h(Handle, { type: 'source', position: Position.Top, id: 'top-out' }),
+    h(Handle, { type: 'target', position: Position.Bottom, id: 'bottom-in' }),
+    h(Handle, { type: 'source', position: Position.Bottom, id: 'bottom-out' })
+  );
+}
+
+function GroupNode(props) {
+  var d = props.data;
+  return h('div', { className: 'rf-group' },
+    d.links ? h('svg', { className: 'rf-group-links', viewBox: '0 0 ' + d.w + ' ' + d.h, preserveAspectRatio: 'none' },
+      d.links.map(function (link, i) {
+        return h('g', { key: i },
+          h('line', { x1: 12, y1: link.y1, x2: 12, y2: link.y2 - 4, stroke: '#c27a16', strokeWidth: 1.6, strokeDasharray: '4 3' }),
+          h('path', { d: 'M9 ' + (link.y2 - 5) + ' L15 ' + (link.y2 - 5) + ' L12 ' + (link.y2 - 1) + ' Z', fill: '#c27a16' }),
+          h('text', { x: 18, y: (link.y1 + link.y2) / 2 + 3, fill: '#9a5d0b', fontSize: 8.5, fontWeight: 600 }, link.label))
+      })) : null,
+    h('div', { className: 'rf-group-head' },
+      h('img', { src: d.icon, alt: '' }),
+      h('span', null, d.label)),
+    h(Handle, { type: 'target', position: Position.Left, id: 'left-in' }),
+    h(Handle, { type: 'source', position: Position.Right, id: 'right-out' }),
+    h(Handle, { type: 'source', position: Position.Left, id: 'left-out' }),
+    h(Handle, { type: 'target', position: Position.Right, id: 'right-in' }));
+}
+
+
+const ROW_LABELS = {
+  design: ['资产 / 上游 / 加工', '目标 / 消费'],
+  production: ['接入', '加工', '服务', '消费']
+};
+
+const GRID = {
+  design: {
+    rows: [
+      { label: '资产 / 上游 / 加工', ids: ['bo:trade_order', 'le:order_fact', 'table:dwd.orders', 'table:dim.channel'] },
+      { label: '目标 / 消费', ids: ['report:ads.channel_report', 'table:dws.trade_channel_daily', 'job:etl_channel', 'task:daily'] }
+    ]
+  },
+  production: {
+    rows: [
+      { label: '接入', ids: ['src:orders', 'kafka:orders', 'job:integration_orders', 'table:ods.orders'] },
+      { label: '加工', ids: ['table:dws.trade_channel_daily', 'job:etl_dws', 'table:dwd.orders', 'job:etl_dwd'] },
+      { label: '服务', ids: ['job:etl_ads', 'table:ads.channel_report', 'job:api_report', 'job:db_script'] },
+      { label: '消费', ids: ['report:channel_dashboard', 'cache:report_cache', 'api:report_service', 'table:archive.channel_report'] }
+    ]
+  }
+};
+
+function gridLayout(nodes, view) {
+  const spec = GRID[view];
+  if (!spec) return { nodes, lanes: [] };
+  const W = 240, H = 62, GX = 30, GY = 58, LEFT = 20, TOP = 30;
+  const byId = {};
+  nodes.forEach(n => { byId[n.id] = n; });
+  const positions = {};
+  const lanes = [];
+  spec.rows.forEach((row, rowIndex) => {
+    lanes.push({ label: row.label, x: 10, y: TOP + rowIndex * (H + GY) - 26, width: W });
+    row.ids.forEach((id, col) => {
+      positions[id] = { x: LEFT + col * (W + GX), y: TOP + rowIndex * (H + GY) };
+    });
+  });
+  return {
+    nodes: nodes.map(n => positions[n.id] ? Object.assign({}, n, { position: positions[n.id] }) : n),
+    lanes
+  };
+}
+
+function routeEdges(nodes, edges) {
+  const byId = {};
+  nodes.forEach(n => { byId[n.id] = n; });
+  const offsetOf = n => {
+    const p = n.parentId ? byId[n.parentId] : null;
+    return p ? { x: p.position.x, y: p.position.y } : { x: 0, y: 0 };
+  };
+  const abs = n => {
+    const o = offsetOf(n);
+    return { x: n.position.x + o.x, y: n.position.y + o.y, w: (n.style && n.style.width) || n.width || 240, h: (n.style && n.style.height) || n.height || 62 };
+  };
+  return edges.map(edge => {
+    const s = byId[edge.source], t = byId[edge.target];
+    if (!s || !t) return edge;
+    const a = abs(s), b = abs(t);
+    const dx = b.x - a.x, dy = b.y - a.y;
+    let sourceHandle, targetHandle;
+    if (Math.abs(dy) > Math.abs(dx) * 0.65) {
+      if (dy >= 0) { sourceHandle = 'bottom-out'; targetHandle = 'top-in'; }
+      else { sourceHandle = 'top-out'; targetHandle = 'bottom-in'; }
+    } else if (dx >= 0) { sourceHandle = 'right-out'; targetHandle = 'left-in'; }
+    else { sourceHandle = 'left-out'; targetHandle = 'right-in'; }
+    return Object.assign({}, edge, { sourceHandle, targetHandle });
+  });
+}
+
+function validateLayout(nodes) {
+  const byId = {};
+  nodes.forEach(n => { byId[n.id] = n; });
+  const abs = n => {
+    const p = n.parentId ? byId[n.parentId] : null;
+    return { x: n.position.x + (p ? p.position.x : 0), y: n.position.y + (p ? p.position.y : 0), w: n.width || 240, h: n.height || 62 };
+  };
+  const rects = nodes.filter(n => n.type === 'rich').map(n => Object.assign({ id: n.id }, abs(n)));
+  const overlaps = [];
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      const a = rects[i], b = rects[j];
+      const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (ox > 0.5 && oy > 0.5) overlaps.push(a.id + ' x ' + b.id);
+    }
+  }
+  if (overlaps.length) console.warn('DataOps layout overlap:', overlaps);
+  return overlaps.length;
+}
+
+function buildFlow(view) {
+  const def = VIEWS[view];
+  const edges = def.edges.map(e => ({
+    id: e.id, source: e.source, target: e.target, type: 'smoothstep',
+    label: e.label,
+    markerEnd: { type: MarkerType.ArrowClosed, color: e.kind === 'control' ? '#c27a16' : e.kind === 'call' ? '#9a7cf0' : '#7d99ea' },
+    style: {
+      stroke: e.kind === 'control' ? '#c27a16' : e.kind === 'call' ? '#9a7cf0' : e.kind === 'maps_to' ? '#b3a1e8' : '#7d99ea',
+      strokeWidth: e.kind === 'control' ? 2.4 : 1.2,
+      strokeDasharray: e.kind === 'control' ? '5 3' : e.kind === 'maps_to' ? '3 3' : undefined
+    },
+    labelStyle: { fontSize: 8, fill: e.kind === 'control' ? '#9a5d0b' : '#7b8494', fontWeight: e.kind === 'control' ? 600 : 400 },
+    labelBgStyle: { fill: e.kind === 'control' ? '#fffaf0' : '#f7f7f8', fillOpacity: 1 },
+    labelBgPadding: [3, 2],
+    labelBgBorderRadius: 3
+  }));
+  if (def.groups) {
+    const groups = def.groups.map(g => ({
+      id: g.id, type: 'taskGroup', position: { x: g.x, y: g.y },
+      style: { width: g.w, height: g.h }, data: { label: g.label, icon: g.icon, links: g.links, w: g.w, h: g.h },
+      selectable: true, draggable: false, zIndex: 0
+    }));
+    const groupById = {};
+    def.groups.forEach(g => { groupById[g.id] = g; });
+    const children = def.nodes.map(n => {
+      const parent = groupById[n.parentId];
+      return {
+        id: n.id, type: 'rich',
+        position: { x: n.x + (parent ? parent.x : 0), y: n.y + (parent ? parent.y : 0) },
+        data: nodeData(n), width: 240, height: 62, zIndex: 2
+      };
+    });
+    const allNodes = groups.concat(children);
+    return { nodes: allNodes, edges: routeEdges(allNodes, edges), lanes: [] };
+  }
+  let nodes = def.nodes.map(n => ({
+    id: n.id, type: 'rich', position: n.x !== undefined ? { x: n.x, y: n.y } : { x: 0, y: 0 },
+    data: nodeData(n), width: 240, height: 62
+  }));
+  const laid = gridLayout(nodes, view);
+  return { nodes: laid.nodes, edges: routeEdges(laid.nodes, edges), lanes: laid.lanes };
+}
+
+function App() {
+  const [view, setView] = React.useState(new URLSearchParams(location.search).get('view') || 'design');
+  const [nodes, setNodes] = React.useState([]);
+  const [edges, setEdges] = React.useState([]);
+  const [lanes, setLanes] = React.useState([]);
+  const [selectedId, setSelectedId] = React.useState(null);
+  const [tab, setTab] = React.useState('overview');
+  const [toast, setToast] = React.useState('');
+  const { setViewport } = useReactFlow();
+
+  React.useEffect(() => {
+    const flow = buildFlow(view);
+    setNodes(flow.nodes);
+    setEdges(flow.edges);
+    setLanes(flow.lanes || []);
+    const target = flow.nodes.find(n => n.data && n.data.target);
+    const taskGroup = flow.nodes.find(n => n.type === 'taskGroup');
+    const primary = view === 'schedule' ? taskGroup : (target || flow.nodes.find(n => n.type === 'rich'));
+    setSelectedId(primary ? primary.id : null);
+    setTab(primary ? (view === 'schedule' ? 'schedule' : defaultTab(primary.id)) : 'overview');
+    setTimeout(() => { fitAll(flow.nodes); validateLayout(flow.nodes); }, 80);
+  }, [view, setViewport]);
+
+  React.useEffect(() => {
+    setNodes(nds => nds.map(n => ({ ...n, selected: n.id === selectedId })));
+  }, [selectedId]);
+
+  React.useEffect(() => {
+    if (!toast) return undefined;
+    const timer = setTimeout(() => setToast(''), 1600);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  function fitAll(ns) {
+    const container = document.getElementById('flow');
+    if (!container || !ns.length) return;
+    const rect = container.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const byId = {};
+    ns.forEach(n => { byId[n.id] = n; });
+    function abs(n) {
+      if (!n.parentId) return n.position;
+      const parent = byId[n.parentId];
+      return { x: n.position.x + (parent ? parent.position.x : 0), y: n.position.y + (parent ? parent.position.y : 0) };
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    ns.forEach(n => {
+      const pos = abs(n);
+      const w = n.style && n.style.width ? n.style.width : (n.width || 240);
+      const h = n.style && n.style.height ? n.style.height : (n.height || 62);
+      minX = Math.min(minX, pos.x); minY = Math.min(minY, pos.y);
+      maxX = Math.max(maxX, pos.x + w); maxY = Math.max(maxY, pos.y + h);
+    });
+    const pad = 34;
+    const zoom = Math.min(1.05, Math.max(0.35, Math.min((rect.width - pad * 2) / (maxX - minX), (rect.height - pad * 2) / (maxY - minY))));
+    const x = (rect.width - (maxX - minX) * zoom) / 2 - minX * zoom;
+    const y = (rect.height - (maxY - minY) * zoom) / 2 - minY * zoom;
+    setViewport({ x, y, zoom });
+  }
+
+  const onNodesChange = React.useCallback(changes => setNodes(nds => applyNodeChanges(changes, nds)), []);
+  const onNodeClick = React.useCallback((_event, node) => {
+    if (node.type === 'taskGroup' && INFO[node.id]) {
+      setSelectedId(node.id); setTab('schedule'); return;
+    }
+    if (!node.data || node.type !== 'rich') return;
+    setSelectedId(node.id);
+    setTab(defaultTab(node.id));
+  }, []);
+  const onPaneClick = React.useCallback(() => setSelectedId(null), []);
+  const selected = selectedId ? nodes.find(n => n.id === selectedId) : null;
+  const info = selected
+    ? (INFO[selectedId] || { kind: selected.data.kind || '节点', subtitle: selected.data.meta || '', badges: [], rows: [['名称', selected.data.name || selectedId], ['类型', selected.data.kind || '—']] })
+    : null;
+  const viewDef = VIEWS[view] || VIEWS.design;
+  const nodeTypes = React.useMemo(() => ({ rich: RichNode, taskGroup: GroupNode }), []);
+
+  return h('div', { className: 'app' },
+    h('header', { className: 'top' },
+      h('div', { className: 'crumb' },
+        h('span', { className: 'brand' },
+          h('svg', { className: 'mark', viewBox: '0 0 24 24', fill: 'none' },
+            h('path', { d: 'M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' })),
+          'DataOps'),
+        h('span', null, '/'), h('span', null, '渠道日报'), h('span', null, '/'), h('b', null, '血缘图谱'),
+        h('span', { className: 'tag', style: { marginLeft: 4 } }, 'MOCK · DataMap')),
+      h('div', { className: 'bar' },
+        h('div', { className: 'title' }, h('h1', null, viewDef.title), h('span', { className: 'tag target' }, viewDef.tag)),
+        h('div', { className: 'spacer' }),
+        h('div', { className: 'tabs' }, ['design', 'production', 'schedule'].map(v =>
+          h('button', { key: v, className: 'tab', 'data-active': String(view === v), onClick: () => setView(v) }, VIEWS[v].tabs))),
+        h('button', { className: 'tool', onClick: () => fitAll(nodes) }, '适应'),
+        h('button', { className: 'tool', onClick: () => stress() }, '100 节点')),
+      h('div', { className: 'legend' },
+        ['业务对象', '逻辑实体', '物理表', '调度任务', '作业', 'API / 缓存', '报表'].map((label, i) => h('span', { key: label, className: 'lg' }, h('i', { className: 'dot', style: { background: ['#7c5cff', '#0f8a7b', '#fff', '#fff7ea', '#b45309', '#fff', '#067647'][i], border: [0, 0, '1.3px solid #94a3b8', '1.3px dashed #b45309', 0, '1.3px solid #7c5cff', 0][i] } }), label)),
+        h('span', { className: 'lg' }, '点击节点查看库/schema/字段、调度和 SQL'),
+        h('span', { className: 'spacer' }),
+        h('span', { className: 'lg' }, 'React Flow · 富节点'))),
+    h('main', { className: 'body' },
+      h('section', { className: 'canvas-wrap' },
+        view === 'schedule' ? h('div', { className: 'schedule-deps' },
+          h('span', null, '依赖窗口'),
+          h('b', null, 'dwd.orders@T-1'),
+          h('em', null, '·'),
+          h('b', null, 'dim.channel'),
+          h('em', null, '→'),
+          h('b', null, 'task 渠道日报'),
+          h('em', null, '→'),
+          h('b', null, 'task 缓存刷新'), h('span', { style: { color: '#a8a094' } }, '· 虚线 = 调度/产出依赖')) : null,
+        h('div', { id: 'flow' },
+          h(ReactFlow, {
+            nodes, edges, nodeTypes,
+            onNodesChange, onNodeClick, onPaneClick,
+            fitView: false, minZoom: 0.2, maxZoom: 1.8,
+            nodesDraggable: true, nodesConnectable: false, elementsSelectable: true,
+            proOptions: { hideAttribution: true }
+          },
+            h(Background, { gap: 20, size: 1, color: '#d9dee8' }),
+            h(Controls, { showInteractive: false }),
+            h(ViewportPortal, null, lanes.map(lane => h('div', { key: lane.label, className: 'lane-label', style: { left: lane.x, top: lane.y, width: lane.width } }, lane.label)))
+          )),
+        h('div', { className: 'hint' }, '点击节点看详情 · 滚轮缩放 · 拖拽平移')),
+      h('aside', { className: 'detail' }, h(Detail, { info, selected, selectedId, tab, setTab, setSelectedId, setToast }))),
+    toast ? h('div', { className: 'toast show' }, toast) : null
+  );
+
+  function stress() {
+    const ns = [], es = [];
+    for (let i = 0; i < 100; i += 1) {
+      const table = i % 2 === 0;
+      const id = 'stress:' + i;
+      ns.push({ id, type: 'rich', position: { x: (i % 10) * 250, y: Math.floor(i / 10) * 100 }, data: { name: table ? 'dws.t_' + i : 'ETL job_' + i, kind: table ? 'DWS' : 'ETL', meta: table ? 'ClickHouse · 压测' : 'Spark · 压测', icon: table ? ICON.clickhouse : ICON.spark, iconBg: table ? palette.clickhouse : palette.job }, width: 220, height: 62 });
+      if (i > 0) es.push({ id: 's' + i, source: 'stress:' + (i - 1), target: id, type: 'smoothstep', style: { stroke: '#7d99ea', strokeWidth: 1 } });
+    }
+    setNodes(ns); setEdges(es); setSelectedId(null);
+    setTimeout(() => fitAll(ns), 30);
+    setToast('100 节点压测 · React Flow DOM 节点');
+  }
+}
+
+function defaultTab(id) {
+  const info = INFO[id];
+  if (!info) return 'overview';
+  if (info.sql) return 'transform';
+  if (info.fields) return 'fields';
+  return 'overview';
+}
+
+function Detail(props) {
+  const { info, selected, selectedId, tab, setTab, setSelectedId, setToast } = props;
+  if (!selected || !info) {
+    return h(React.Fragment, null,
+      h('div', { className: 'detail-head' }, h('div', { className: 'eyebrow' }, 'Node detail'), h('h2', null, '点击任意节点')),
+      h('div', { className: 'detail-body' }, h('div', { className: 'empty' }, '表看库/schema/字段，作业看 SQL/输入输出，调度任务看 job 列表。')));
+  }
+  const tabs = [['overview', '概览']];
+  if (info.fields) tabs.push(['fields', '字段']);
+  if (info.schedule || info.jobs) tabs.push(['schedule', '调度']);
+  if (info.sql) tabs.push(['transform', '加工']);
+  const active = tabs.some(t => t[0] === tab) ? tab : 'overview';
+  return h(React.Fragment, null,
+    h('div', { className: 'detail-head' },
+      h('div', { className: 'eyebrow' }, h('span', null, info.kind), h('button', { className: 'dt', onClick: () => setSelectedId(null) }, '×')),
+      h('h2', null, selected.data.name || selected.data.label || selected.id),
+      h('div', { className: 'detail-sub' }, info.subtitle),
+      h('div', { className: 'pills' }, (info.badges || []).map(b => h('span', { key: b, className: 'pill' + (b === '本次目标' ? ' brand' : '') }, b)))),
+    h('div', { className: 'detail-tabs' }, tabs.map(t => h('button', { key: t[0], className: 'dt', 'data-active': String(active === t[0]), onClick: () => setTab(t[0]) }, t[1]))),
+    h('div', { className: 'detail-body' }, content(info, active)),
+    h('div', { className: 'detail-foot' },
+      h('button', { className: 'tool', onClick: () => setToast('Mock：内网对接后跳 DataMap / 调度平台') }, '在 DataMap 查看'),
+      h('button', { className: 'tool', onClick: () => { if (navigator.clipboard) navigator.clipboard.writeText(selected.data.name || selected.data.label || selected.id); setToast('已复制节点名称'); } }, '复制名称')));
+}
+
+function content(info, tab) {
+  if (tab === 'fields' && info.fields) {
+    return h('table', { className: 'fields' },
+      h('thead', null, h('tr', null, h('th', null, '字段'), h('th', null, '类型'), h('th', null, '说明'))),
+      h('tbody', null, info.fields.map(f => h('tr', { key: f[0] }, h('td', null, f[0]), h('td', null, f[1]), h('td', null, f[2])))));
+  }
+  if (tab === 'schedule') {
+    const s = info.schedule || {};
+    const rows = [];
+    if (s.cycle) rows.push(['周期', s.cycle]);
+    if (s.cron) rows.push(['cron', s.cron]);
+    if (s.sla) rows.push(['SLA', s.sla]);
+    if (s.task) rows.push(['调度任务', s.task]);
+    if (s.depends) rows.push(['依赖', s.depends.join('、')]);
+    return h(React.Fragment, null,
+      rows.length ? h('dl', { className: 'kv' }, rows.map(r => h(React.Fragment, { key: r[0] }, h('dt', null, r[0]), h('dd', null, r[1])))) : null,
+      info.jobs ? h(React.Fragment, null,
+        h('div', { className: 'section-title' }, '包含作业'),
+        h('div', { className: 'jobs' }, info.jobs.map(j => h('div', { key: j[0], className: 'job-row' }, h('span', { className: 'idx' }, j[0]), h('span', { className: 'name' }, j[1]), h('span', { className: 'kind' }, j[2]))))) : null);
+  }
+  if (tab === 'transform' && info.sql) return h('pre', { className: 'sql' }, info.sql);
+  return h(React.Fragment, null,
+    info.desc ? h('p', { className: 'desc' }, info.desc) : null,
+    h('dl', { className: 'kv' }, (info.rows || []).map(r => h(React.Fragment, { key: r[0] }, h('dt', null, r[0]), h('dd', null, r[1])))));
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(ReactFlowProvider, null, h(App)));
+</script>
+</body>
+</html>

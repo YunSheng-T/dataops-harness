@@ -1,0 +1,37 @@
+{
+  "name": "@dataops/dsh-dataops-client",
+  "version": "0.0.1",
+  "private": true,
+  "description": "数据开发工作台 · DSH client plugin：把阶段产物渲染成对话内的卡片（需求/设计/技术方案/证据）",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "README.md"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-tool"
+      ]
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs && node scripts/smoke-apply.mjs && node --check lib/client.js && node --check lib/index.js",
+    "smoke": "node scripts/smoke-apply.mjs"
+  }
+}
