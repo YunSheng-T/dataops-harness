@@ -1,11 +1,12 @@
 {
   "scenario": "stage4-ui",
-  "runId": "p14-mvqhce0g",
-  "at": "2026-10-27T09:25:41.358Z",
+  "runId": "p14-mvqi1byo",
+  "at": "2026-10-27T09:45:22.831Z",
   "failures": [],
   "notes": [
     {
-      "scenario": "stage4-ui"
+      "scenario": "stage4-ui",
+      "darkBg": "rgb(21, 21, 23)"
     }
   ]
 }

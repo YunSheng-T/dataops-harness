@@ -442,8 +442,22 @@ async function runStage4Ui() {
     check(card.includes('Build') && card.includes('Scan') && card.includes('Deploy'), 'stage 4 validation rows visible')
     check(card.includes('manual') && card.includes('SE'), 'stage 4 manual test and SE review visible')
     await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-4-live.png'), Buffer.from(r.result.data, 'base64')) })
+    for (const width of [1600, 1920]) {
+      await page.send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false })
+      await sleep(600)
+      const overflow = await page.evaluate('document.documentElement.scrollWidth - window.innerWidth')
+      check(overflow <= 1, 'stage 4 no horizontal overflow at ' + width + 'px (delta ' + overflow + ')')
+      await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-4-live-' + width + '.png'), Buffer.from(r.result.data, 'base64')) })
+    }
+    await page.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false })
+    await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
+    await sleep(800)
+    const darkBg = await page.evaluate('getComputedStyle(document.body).backgroundColor')
+    check(darkBg !== 'rgb(255, 255, 255)' && darkBg !== 'rgba(0, 0, 0, 0)', 'stage 4 dark theme applies: ' + darkBg)
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-4-live-dark.png'), Buffer.from(r.result.data, 'base64')) })
+    await page.send('Emulation.setEmulatedMedia', { features: [] })
     check(page.errors.length === 0, 'no console exceptions: ' + page.errors.slice(-2).join(' | '))
-    notes.push({ scenario: 'stage4-ui' })
+    notes.push({ scenario: 'stage4-ui', darkBg })
   } finally {
     page.ws.close()
     page.child.kill('SIGTERM')
