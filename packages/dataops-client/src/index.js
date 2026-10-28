@@ -168,6 +168,8 @@ function apply(ctx) {
   function SignoffRequestHost() {
     var requestState = React.useState(null)
     var request = requestState[0]
+    var noticeState = React.useState(null)
+    var notice = noticeState[0]
     React.useEffect(function () {
       var onRequest = function (event) {
         var detail = (event && event.detail) || {}
@@ -178,7 +180,7 @@ function apply(ctx) {
       window.addEventListener('dataops:signoff-request', onRequest)
       return function () { window.removeEventListener('dataops:signoff-request', onRequest) }
     }, [])
-    if (!request) return null
+    if (!request && !notice) return null
     var text = '【签收】gate=' + request.gate + ' role=' + request.role + ' actionId=' + request.actionId + ' actor=' + request.actor + (request.comment ? ' comment=' + request.comment : '')
     function sendViaAgent() {
       if (typeof window.__dataopsCompose === 'function') window.__dataopsCompose(text)
@@ -209,12 +211,18 @@ function apply(ctx) {
       }).then(function (body) {
         if (!body || body.ok !== true) throw new Error('signoff route rejected')
         window.dispatchEvent(new CustomEvent('dataops:signoff-recorded', { detail: { workitem: body.workitem } }))
+        noticeState[1]('签收已记录，阶段状态已刷新')
+        window.setTimeout(function () { noticeState[1](null) }, 2600)
       }).catch(function () { sendViaAgent() })
     }
     function copy() {
       if (navigator.clipboard) navigator.clipboard.writeText(text)
     }
-    return React.createElement('div', { className: 'do-signoff-host-mask', onClick: function (e) { if (e.target === e.currentTarget) requestState[1](null) } },
+    var toast = notice
+      ? React.createElement('div', { className: 'do-signoff-toast', role: 'status' }, notice)
+      : null
+    return React.createElement(React.Fragment, null, toast,
+      request ? React.createElement('div', { className: 'do-signoff-host-mask', onClick: function (e) { if (e.target === e.currentTarget) requestState[1](null) } },
       React.createElement('div', { className: 'do-signoff-host' },
         React.createElement('div', { className: 'do-signoff-host-head' },
           React.createElement('span', { className: 'do-signoff-host-title' }, '确认签收'),
@@ -228,7 +236,7 @@ function apply(ctx) {
           React.createElement('button', { type: 'button', className: 'do-signoff-host-btn', onClick: function () { requestState[1](null) } }, '取消'),
           React.createElement('button', { type: 'button', className: 'do-signoff-host-btn do-signoff-host-primary', onClick: fill }, '签收并提交')
         )
-      )
+      )) : null
     )
   }
   slots.inject('conversation.input.dock', function () {

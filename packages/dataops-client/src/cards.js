@@ -200,7 +200,7 @@ export function createDataopsCards(React) {
     '.do-dev-attempt-line{font-size:9px;line-height:16px;color:var(--dsw-alias-label-tertiary,#81858c)}',
     '.do-dev-gates{margin-top:8px;padding-top:7px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06))}',
     '.do-dev-gate-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px}',
-    '.do-dev-warning{margin-top:7px;padding:6px 8px;border-radius:6px;background:color-mix(in srgb,var(--dsw-alias-state-warn-primary,#f59e0b) 10%,transparent);color:var(--dsw-alias-state-warn-primary,#b45309);font-size:10px}',
+    '.do-dev-warning{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:7px;padding:6px 8px;border-radius:6px;background:color-mix(in srgb,var(--dsw-alias-state-warn-primary,#f59e0b) 10%,transparent);color:var(--dsw-alias-state-warn-primary,#b45309);font-size:10px}',
     '.do-dev-artifacts{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:7px}',
     '.do-cicd-pipeline{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0;padding:7px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));border-radius:8px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
     '.do-cicd-step{display:flex;align-items:center;gap:4px;padding:2px 6px;border-radius:5px;background:var(--dsw-alias-bg-overlay,#fff);border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07))}',
@@ -227,6 +227,7 @@ export function createDataopsCards(React) {
     '.do-asset-meta{font-size:9px;color:var(--dsw-alias-label-tertiary,#81858c);margin-top:3px}',
     '.do-asset-fields{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px}',
     '.do-asset-fields .do-chip{font-size:8.5px;padding:1px 4px}',
+    '.do-signoff-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:150;border:1px solid var(--dsw-alias-state-success-primary,#22c55e);background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-primary,#0f1115);border-radius:8px;padding:7px 12px;font-size:11px;box-shadow:0 6px 24px rgba(15,23,42,.16)}',
     '.do-signoff-host-mask{position:fixed;inset:0;z-index:140;background:rgba(15,23,42,.42);display:flex;align-items:center;justify-content:center;padding:24px}',
     '.do-signoff-host{width:min(560px,calc(100vw - 32px));background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-primary,#0f1115);border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.16));border-radius:12px;box-shadow:0 18px 60px rgba(15,23,42,.28);padding:14px}',
     '.do-signoff-host-head{display:flex;align-items:center;gap:8px}',
@@ -1046,7 +1047,6 @@ export function createDataopsCards(React) {
         m.merge && m.merge.commit ? h(Pill, { key: 'commit' }, m.merge.commit) : null
       ],
       footer: [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'develop.yaml')),
-        buildFailed ? h(Btn, { key: 'retry', variant: 'primary', onClick: retryBuild }, '重新编译') : null,
         h(Btn, { key: 'open', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看产物')]
     },
       h('dl', { className: 'do-grid' },
@@ -1088,7 +1088,7 @@ export function createDataopsCards(React) {
           }))
         }))
       ) : null,
-      buildFailed ? h('div', { className: 'do-dev-warning' }, 'Build 未通过：CICD/合入前必须先修复并重新验证。') : null,
+      buildFailed ? h('div', { className: 'do-dev-warning' }, h('span', null, 'Build 未通过：CICD/合入前必须先修复并重新验证。'), h(Btn, { key: 'retry', variant: 'primary', onClick: retryBuild }, '重新编译')) : null,
       tasks.length ? h('div', null,
         h('div', { className: 'do-label' }, '任务'),
         tasks.map(function (task, i) {
