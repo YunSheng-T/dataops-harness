@@ -74,3 +74,32 @@ export const DEVELOP = {
     { id: 'G-TEST-AUTO', severity: 'warning', message: '平台无自动化测试机制，测试为人工记录', owner: '平台组' }
   ]
 }
+
+export const DEVELOP_BUILD_FAILED = {
+  ...DEVELOP,
+  status: 'fixing',
+  loop: 1,
+  validation: {
+    build: {
+      status: 'failed',
+      attempt: 1,
+      error: '编译失败：dws.trade_channel_daily.order_cnt 聚合与源字段类型不匹配',
+      log: 'evidence/ev-develop-build-001.yaml',
+      attempts: [
+        { attempt: 1, status: 'failed', error: 'decimal(18,2) 与源字段 decimal(18,4) 类型不匹配', action: '等待修复：显式 cast 并补精度校验' }
+      ]
+    },
+    scan: { status: 'pending' },
+    deploy: { status: 'pending' },
+    test: { status: 'pending' }
+  },
+  review: {
+    se: { status: 'pending', approver: '王工' },
+    committer: { status: 'waiting', approver: '代码平台' },
+    ba: 'advisory'
+  },
+  merge: { status: 'pending', commit: null, reviewer: '代码平台' },
+  gaps: [
+    { id: 'G-BUILD', severity: 'blocking', message: 'Build attempt 1 失败，必须修复后重跑', owner: '交易组' }
+  ]
+}

@@ -13,13 +13,14 @@ import { normalizeConfig } from '../packages/dataops-tools/src/config.js'
 import { ensureWorkitem, readWorkitem, stageComplete, stagePrepare, stageSignoff } from '../packages/dataops-tools/src/workitem-store.js'
 import { buildDevelopArtifacts } from '../packages/dataops-tools/src/develop-package.js'
 import { buildPipelinePackage } from '../packages/dataops-tools/src/pipeline-package.js'
-import { DEVELOP } from '../packages/dataops-tools/src/fixtures/develop.js'
+import { DEVELOP, DEVELOP_BUILD_FAILED } from '../packages/dataops-tools/src/fixtures/develop.js'
 import { CICD_PIPELINE } from '../packages/dataops-tools/src/fixtures/cicd.js'
 
 const root = resolve(import.meta.dirname, '..')
 const args = process.argv.slice(2)
 const flag = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null }
 const targetStage = flag('--stage') || 'develop'
+const mode = flag('--mode') || 'ok'
 const id = flag('--id') || '2026-10-27-us-3821-demo'
 const config = normalizeConfig({ workitemsDir: join(root, 'workitems') })
 const dir = join(root, 'workitems', id)
@@ -70,7 +71,8 @@ await prep('tech_plan', 'scheme', {
 await sign('scheme.tech_plan', 'SE', 'ui-demo-tech', '王工')
 
 const artifacts = buildDevelopArtifacts(join(root, 'workitems'), wid)
-await prep('develop', 'develop', { ...DEVELOP, artifacts }, 'deliverables/develop/develop.yaml')
+await prep('develop', 'develop', { ...(mode === 'build-failed' ? DEVELOP_BUILD_FAILED : DEVELOP), artifacts }, 'deliverables/develop/develop.yaml')
+if (mode === 'build-failed' && targetStage === 'cicd') throw new Error('build-failed demo cannot be advanced to cicd; fix the build first')
 if (targetStage === 'cicd') {
   await sign('develop.code_review', 'SE', 'ui-demo-dev-se', '王工')
   await sign('develop.merge', 'Committer', 'ui-demo-merge', '代码平台')
@@ -80,7 +82,7 @@ if (targetStage === 'cicd') {
   // Stage 5 card after package: write the final payload for the demo.
   const file = join(dir, 'deliverables', 'cicd', 'cicd.yaml')
   writeFileSync(file, JSON.stringify({ ...CICD_PIPELINE, artifact, status: 'succeeded' }, null, 2) + '\n')
-} else {
+} else if (mode !== 'build-failed') {
   await sign('develop.code_review', 'SE', 'ui-demo-dev-se', '王工')
 }
 const final = readWorkitem(config, { id: wid })

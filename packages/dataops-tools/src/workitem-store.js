@@ -731,8 +731,14 @@ export function stageSignoff(config, args) {
     const review = (raw.approvals || []).find(a => a && a.gate === 'develop.code_review')
     if (!review || review.status !== 'approved') throw new Error('stage: develop.code_review must be approved before merge')
   }
-  const stageKey = gate.startsWith('scheme.') ? 'scheme' : gate
+  const stageKey = gate.startsWith('scheme.') ? 'scheme' : gate.startsWith('develop.') ? 'develop' : gate
   const pointer = raw.stages && raw.stages[stageKey] && raw.stages[stageKey].deliverable
+  if (gate === 'develop.merge' && pointer) {
+    const file = parseWorkitem(readFileSync(join(dir, pointer), 'utf8'))
+    const validation = file.validation || {}
+    if (!validation.build || validation.build.status !== 'passed') throw new Error('stage: develop build must pass before Committer merge')
+    if (validation.scan && (validation.scan.status === 'failed' || (validation.scan.blocking || []).length)) throw new Error('stage: develop scan has blocking findings')
+  }
   if ((gate === 'scheme.analysis' || gate === 'scheme.solution' || gate === 'scheme.tech_plan') && pointer) {
     const file = parseWorkitem(readFileSync(join(dir, pointer), 'utf8'))
     if (file.status === 'blocked' || file.status === 'returned') throw new Error('stage: ' + gate + ' deliverable is not ready (' + file.status + ')')

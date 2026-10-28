@@ -246,7 +246,12 @@ check('six-stage cards render their key facts', () => {
     block: block({ kind: 'develop', target: 'dws.x', status: 'awaiting_merge', branch: 'feature/x', artifacts: [{ type: 'sql', path: 'deliverables/develop/sql/etl.sql' }, { type: 'ops_script', path: 'deliverables/develop/ops/deploy.sh' }], validation: { build: { status: 'passed', attempt: 2 }, scan: { status: 'failed', blocking: ['作业数 52 > 50'] }, deploy: { status: 'blocked', reason: '数据源缺失' }, test: { status: 'manual' } }, tasks: [{ name: '过滤订单', status: 'done', progress: 100, owner: '交易组' }], review: { se: { status: 'approved' }, committer: { status: 'waiting' } }, merge: { status: 'pending' }, source: 'mock', asOf: '2026-10-25 14:20' })
   }))
   assert(develop.includes('开发验证') && develop.includes('过滤订单') && develop.includes('sql') && develop.includes('数据源缺失'), 'develop card')
-  assert(develop.includes('记录合入'), 'committer waiting must expose the merge action')
+  assert(!develop.includes('记录合入'), 'committer action must be hidden while scan/build is not ready')
+  const developReady = text(Cards.DevelopCard({ block: block({ kind: 'develop', target: 'dws.x', status: 'awaiting_merge', artifacts: [], validation: { build: { status: 'passed', attempt: 2 }, scan: { status: 'passed', blocking: [] }, deploy: { status: 'passed' }, test: { status: 'manual' } }, review: { se: { status: 'approved' }, committer: { status: 'waiting' } }, merge: { status: 'pending' } }) }))
+  assert(developReady.includes('记录合入'), 'committer waiting must expose the merge action when build/scan pass')
+  const developFailed = text(Cards.DevelopCard({ block: block({ kind: 'develop', target: 'dws.x', status: 'fixing', artifacts: [], validation: { build: { status: 'failed', attempt: 1, error: '类型不匹配', attempts: [{ attempt: 1, status: 'failed', error: '类型不匹配' }] }, scan: { status: 'pending' } }, review: { committer: { status: 'waiting' } }, merge: { status: 'pending' } }) }))
+  assert(developFailed.includes('重新编译') && developFailed.includes('Build 未通过'), 'failed build exposes retry and warning')
+  assert(!developFailed.includes('记录合入'), 'failed build must not expose merge')
   const reqEvidence = text(Cards.RequirementCard({ block: block({ kind: 'requirement', title: '需求', goal: '目标', owner: '交易组', evidence: [{ id: 'ev-1', query: 'select 1', env: 'mock', asOf: '2026-10-27' }] }) }))
   assert(reqEvidence.includes('ev-1'), 'requirement must render evidence objects as chips')
   const pipeline = text(Cards.PipelineCard({

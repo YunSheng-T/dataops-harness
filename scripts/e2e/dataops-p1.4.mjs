@@ -423,6 +423,36 @@ async function runUiDock() {
   }
 }
 
+async function runStage4FailedUi() {
+  const serverPort = await freePort()
+  const chromePort = await freePort()
+  const server = await startServer(serverPort, 'workspace-write')
+  const page = await startChrome(chromePort, server.url, join(root, '.tmp-p14-chrome-stage4fail-' + runId))
+  try {
+    await ensureComposer(page.evaluate)
+    await dismissPreview(page.evaluate)
+    await ensureComposer(page.evaluate)
+    await sendPrompt(page, '读取工作项 2026-10-27-us-3821-demo 的开发验证交付物，展示 build 失败的开发验证卡；只读展示，不要合入。')
+    await waitFor(async () => (await currentCardText(page)).includes('Build'), 240000, 'stage 4 failed card')
+    await sleep(800)
+    const card = await currentCardText(page)
+    check(/失败|未通过/.test(card), 'stage 4 shows build failure')
+    check(card.includes('重新编译'), 'stage 4 exposes retry')
+    check(!card.includes('记录合入'), 'failed build hides merge action')
+    await page.evaluate(`document.querySelector('.do-turn-card')?.scrollIntoView({ block: 'start' })`)
+    await sleep(300)
+    await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-4-build-failed.png'), Buffer.from(r.result.data, 'base64')) })
+    check(page.errors.length === 0, 'no console exceptions: ' + page.errors.slice(-2).join(' | '))
+    notes.push({ scenario: 'stage4-failed-ui' })
+  } finally {
+    page.ws.close()
+    page.child.kill('SIGTERM')
+    server.child.kill('SIGTERM')
+    await sleep(800)
+    safeRemove(join(root, '.tmp-p14-chrome-stage4fail-' + runId))
+  }
+}
+
 async function runCommitterUi() {
   const serverPort = await freePort()
   const chromePort = await freePort()
@@ -799,6 +829,7 @@ async function main() {
   else if (scenario === 'incident') await runIncident()
   else if (scenario === 'us-picker') await runUsPicker()
   else if (scenario === 'stage-flow') await runStageFlow()
+  else if (scenario === 'stage4-failed-ui') await runStage4FailedUi()
   else if (scenario === 'committer-ui') await runCommitterUi()
   else if (scenario === 'journey-ui') await runJourneyUi()
   else if (scenario === 'stage4-ui') await runStage4Ui()

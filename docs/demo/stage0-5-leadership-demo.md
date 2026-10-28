@@ -564,3 +564,80 @@ A：mock 身份 + UI actionId + stage runtime 门禁；不是生产认证。
 - 现场逐阶段签收依赖 Agent 和 UI 自动提交；网络/模型慢时使用 seed + 只读展示兜底。
 - P1/P2 的 client/tool 检查通过；完整 P1/P2 浏览器回归未在本次演示前重跑。
 - GitHub 推送曾因网络失败；演示前确认 `git status` 和远端状态。
+
+---
+
+# 附录 E：Build 失败 → 修改作业 → 重新编译
+
+## 1. 生成失败分支
+
+```sh
+node scripts/seed-dataops-demo.mjs --stage develop --mode build-failed
+```
+
+新会话输入：
+
+```text
+读取工作项 2026-10-27-us-3821-demo 的开发验证交付物，展示 build 失败的开发验证卡；只读展示，不要合入。
+```
+
+预期：
+
+- Build = failed，attempt 1
+- Scan / Deploy / Test = pending
+- 显示编译错误：`decimal(18,2)` 与源字段 `decimal(18,4)` 类型不匹配
+- 显示“Build 未通过：CICD/合入前必须先修复并重新验证”
+- **没有**“记录合入”
+- 有“重新编译”
+
+截图：`prototype/shots/stage-4-build-failed.png`
+
+## 2. 自动验证失败门禁
+
+```sh
+node packages/dataops-tools/scripts/check.mjs
+```
+
+测试覆盖：
+
+- 生成 build failed payload
+- SE review 可以记录
+- Committer merge 被拒绝：`develop build must pass before Committer merge`
+- 修复后 build passed，才允许 merge → cicd
+
+## 3. 重新修改作业
+
+现场操作：
+
+1. 点卡片底部 **重新编译**；
+2. 消息进入会话并自动发送；
+3. 让 Agent 修复类型/精度并重新生成 attempt；
+4. 重新出开发验证卡；
+5. 此时 Build = passed，attempt 2；
+6. 才开始 SE / Committer 合入。
+
+如果现场来不及让 Agent 重写，使用固定修复态：
+
+```sh
+node scripts/seed-dataops-demo.mjs --stage develop
+```
+
+这是固定正向 fixture，用于展示修复后的 attempt 2，不替代真实的 Agent 修复过程。
+
+预期修复态：
+
+```text
+Build   passed   attempt 2
+Scan    passed   attempt 2
+Deploy  passed   attempt 2
+Test    manual
+SE      approved
+Committer 可合入
+```
+
+## 4. 失败门禁的真实行为
+
+- Build failed：隐藏“记录合入”
+- 直接调用 `develop.merge`：stage runtime 拒绝
+- Scan blocking：同样不能合入
+- Build 修复后：才能推进到 CICD

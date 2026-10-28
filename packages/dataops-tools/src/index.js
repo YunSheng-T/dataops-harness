@@ -18,7 +18,7 @@ import { US_AS_OF, listUs, usDetail } from './fixtures/us.js'
 import { readDatamap } from './fixtures/datamap.js'
 import { readLineageV2 } from './fixtures/lineage.js'
 import { readEvidenceV2 } from './fixtures/evidence.js'
-import { DEVELOP } from './fixtures/develop.js'
+import { DEVELOP, DEVELOP_BUILD_FAILED } from './fixtures/develop.js'
 import { CICD_PIPELINE } from './fixtures/cicd.js'
 import {
   designPayload, evidencePayload, formatImpact, gap, lineagePayload, now,
@@ -629,10 +629,10 @@ export function createTools(config, deps) {
     }),
     textTool({
       name: 'dataops_shared_read_develop',
-      description: '读取 mock 开发验证事实：多产物清单、build/scan/deploy/test attempt、SE/Committer 状态；传 workitemId 会写入 mock 多产物文件。',
-      parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：把 mock 多产物写到该 workitem。' } }),
+      description: '读取 mock 开发验证事实：多产物清单、build/scan/deploy/test attempt、SE/Committer 状态；mode=build-failed 返回编译失败分支。',
+      parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：把 mock 多产物写到该 workitem。' }, mode: { type: 'string', enum: ['ok', 'build-failed'], description: '演示分支；build-failed 返回第一次编译失败。' } }),
       execute: async args => {
-        const value = { ...DEVELOP, workitemMode: 'mock' }
+        const value = { ...(args.mode === 'build-failed' ? DEVELOP_BUILD_FAILED : DEVELOP), workitemMode: 'mock' }
         if (args.workitemId) value.materialized = buildDevelopArtifacts(resolve(config.workitemsDir), args.workitemId)
         return value
       },

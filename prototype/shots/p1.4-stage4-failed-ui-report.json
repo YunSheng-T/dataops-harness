@@ -1,0 +1,11 @@
+{
+  "scenario": "stage4-failed-ui",
+  "runId": "p14-mvrgatpq",
+  "at": "2026-10-28T01:44:22.202Z",
+  "failures": [],
+  "notes": [
+    {
+      "scenario": "stage4-failed-ui"
+    }
+  ]
+}

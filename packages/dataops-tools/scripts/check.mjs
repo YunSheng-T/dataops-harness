@@ -358,8 +358,16 @@ check('stage 4 and stage 5 gates advance without DSH release approval', async ()
     assert(dev.kind === 'develop' && dev.prepared === true, 'develop stage prepare')
     const devCard = await by('dataops_shared_read_stage').execute({ id, stage: 'develop' }, { signal })
     assert(devCard.kind === 'develop' && devCard.workitemId === id && devCard.artifacts.length >= 10, 'read stage returns develop card payload')
+    const failed = await by('dataops_shared_read_develop').execute({ mode: 'build-failed' }, { signal })
+    await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'develop', stage: 'develop', deliverable: 'deliverables/develop/develop.yaml', payload: failed }, { signal })
     const se = await by('dataops_shared_stage').execute({ action: 'signoff', id, gate: 'develop.code_review', role: 'se', via: 'ui', actionId: 'ui-dev-se', actor: '王工' }, { signal })
     assert(se.gateStatus === 'approved' && se.stage === 'develop', 'SE review keeps stage in develop')
+    let buildBlocked = false
+    try {
+      await by('dataops_shared_stage').execute({ action: 'signoff', id, gate: 'develop.merge', role: 'committer', via: 'ui', actionId: 'ui-dev-merge-failed', actor: '代码平台' }, { signal })
+    } catch (error) { console.log('BUILD BLOCK ERROR:', error.message); buildBlocked = /build must pass/.test(error.message) }
+    assert(buildBlocked, 'failed build blocks Committer merge')
+    await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'develop', stage: 'develop', deliverable: 'deliverables/develop/develop.yaml', payload: { ...materialized, validation: { ...materialized.validation } } }, { signal })
     const merge = await by('dataops_shared_stage').execute({ action: 'signoff', id, gate: 'develop.merge', role: 'committer', via: 'ui', actionId: 'ui-dev-merge', actor: '代码平台' }, { signal })
     assert(merge.gateStatus === 'approved' && merge.stage === 'cicd', 'committer merge advances to cicd')
     const cicd = await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'cicd', stage: 'cicd', deliverable: 'deliverables/cicd/cicd.yaml', payload: { pipelineRunId: 'run-1', status: 'succeeded' } }, { signal })
