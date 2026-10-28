@@ -162,6 +162,14 @@ P7 CLI runner      1–2 天（不含真实 CICD 参数）
 内网 P9/P10        并行/最后收口
 ```
 
+## 5.1 本地验收
+
+```sh
+node scripts/verify-local.mjs
+```
+
+覆盖 client/tools/smoke、stage contract、preset/workitem、provider config/health、offline surface、stage0-5 contract。
+
 ## 6. 提交与验收规则
 
 - 每阶段一个 commit/tag；不把真实 adapter 和 UI 重排混在一起。

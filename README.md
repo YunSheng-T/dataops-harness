@@ -106,3 +106,11 @@ cd packages/dataops-tools && npm run check    # 24 个注册工具（P3 活动�
 - [内网 Stage 0–5 实施计划](docs/plans/intranet-stage0-5.md)
 
 - [内网离线安装](docs/ops/offline-install.md)
+
+## 本地验收
+
+```sh
+node scripts/verify-local.mjs
+```
+
+无网络、无浏览器、无真实平台。

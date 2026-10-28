@@ -117,6 +117,7 @@ External systems
 - [x] provider health check（未配置 health endpoint 时明确 configured）
 - [x] provider config JSON schema/命令校验（不联网、不打印 token）
 - [x] 阶段简报展开态浏览器验证
+- [x] 一条命令本地验收：`node scripts/verify-local.mjs`
 
 ## 6. 下一步治理顺序
 
