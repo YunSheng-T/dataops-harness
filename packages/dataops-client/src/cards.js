@@ -1467,6 +1467,23 @@ export function createDataopsCards(React) {
     )
   }
 
+  var CardBoundary = typeof React.Component === 'function'
+    ? class CardBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { error: null } }
+      static getDerivedStateFromError(error) { return { error: error } }
+      render() {
+        if (this.state.error) {
+          return h('div', { className: 'do-card', 'data-state': 'error' },
+            h('div', { className: 'do-head' }, h('span', { className: 'do-dot', 'data-tone': 'fail' }), h('span', { className: 'do-title' }, '卡片渲染失败')),
+            h('div', { className: 'do-muted' }, String(this.state.error && this.state.error.message || this.state.error || 'unknown error')),
+            h('div', { className: 'do-muted' }, '其他卡片和阶段导航仍可用；请检查 payload 字段。')
+          )
+        }
+        return this.props.children
+      }
+    }
+    : function CardBoundaryFallback(props) { return props.children }
+
   function DeliverableRenderer(props) {
     var m = parseModel(props.block)
     if (!m || !m.kind) return h(Fallback, props)
@@ -1484,7 +1501,7 @@ export function createDataopsCards(React) {
     }
     var Card = cards[m.kind]
     if (!Card) return h(Fallback, props)
-    return h(Card, props)
+    return h(CardBoundary, null, h(Card, props))
   }
 
   function StageResultCard(props) {
