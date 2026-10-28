@@ -212,6 +212,21 @@ check('CICD CLI runner handles sync, polling and fail-closed results', async () 
   assert(cfg.pipelinePollIntervalMs === 3000 && cfg.pipelineTimeoutMs === 900000, 'pipeline defaults')
 })
 
+check('US picker uses the real devops provider when configured', async () => {
+  const config = normalizeConfig({
+    domains: { us: { kind: 'http', baseUrl: 'http://internal.test', paths: { list: '/api/v1/us', ticket: '/api/v1/us/{ticketId}' } } },
+    catalog: { kind: 'mock' }
+  })
+  const fetchImpl = async url => {
+    assert(String(url).includes('/api/v1/us'), 'US list URL')
+    return new Response(JSON.stringify([{ id: 'US-REAL-1', title: '真实 US', status: '待处理', priority: 'P1', owner: '张三', assets: ['dws.x'] }]), { status: 200, headers: { 'content-type': 'application/json' } })
+  }
+  const scoped = createTools(config, { fetchImpl })
+  const payload = await scoped.find(tool => tool.name === 'dataops_shared_read_us').execute({}, { signal })
+  assert(payload.kind === 'us-picker' && payload.mock === false && payload.source === 'edevops', 'real US source')
+  assert(payload.items.length === 1 && payload.items[0].id === 'US-REAL-1' && payload.items[0].assets[0] === 'dws.x', 'real US normalization')
+})
+
 check('every mock tool payload is lossless JSON', async () => {
   const cases = {
     dataops_requirement_extract_spec: { scenario: 'channel-report' },

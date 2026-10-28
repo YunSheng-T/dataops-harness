@@ -77,6 +77,11 @@ export function createDevops(config, options) {
       if (!ticketId) throw configError('devops 模式需要 ticketId', '请提供需求单号，例如 REQ-3821。')
       const raw = await transport.call('ticket', { ticketId }, { signal: args && args.signal })
       return normalizeTicket(raw, ticketId)
+    },
+    async listTickets(args = {}) {
+      const raw = await transport.call('list', { assignee: args.assignee, status: args.status }, { signal: args.signal })
+      const items = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.items) ? raw.items : [])
+      return items.map(item => normalizeTicket(item)).filter(item => item.id)
     }
   }
 }

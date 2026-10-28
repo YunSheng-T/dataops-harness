@@ -138,6 +138,9 @@ export function createTools(config, deps) {
     execFileImpl: options.execFileImpl
   }
   const devops = createDevops(config, transportOptions)
+  const usDomain = config.domains && config.domains.us && config.domains.us.kind ? config.domains.us : config.devops
+  const us = createDevops({ ...config, devops: usDomain }, transportOptions)
+  const usSource = usDomain.kind
   const catalog = createCatalog(config, transportOptions)
   const devopsSource = config.devops.kind
   const catalogSource = config.catalog.kind
@@ -381,7 +384,29 @@ export function createTools(config, deps) {
     }
   }
 
+  function asUs(ticket, existing) {
+    return {
+      ...ticket,
+      source: { system: 'edevops', id: ticket.id },
+      assets: (ticket.impacts || []).map(item => item.name).filter(Boolean),
+      existingWorkitem: existing || null
+    }
+  }
+
   async function runReadUs(args) {
+    if (usSource !== 'mock') {
+      if (args && args.id) {
+        const ticket = await us.getTicket({ ticketId: args.id, signal: args.signal })
+        const existing = findWorkitemBySource(config, { system: 'edevops', id: ticket.id })
+        return { kind: 'us', schemaVersion: 2, source: 'edevops', asOf: now(), mock: false, item: asUs(ticket, existing && existing.id) }
+      }
+      const tickets = await us.listTickets(args)
+      const items = tickets.map(ticket => {
+        const existing = findWorkitemBySource(config, { system: 'edevops', id: ticket.id })
+        return asUs(ticket, existing && existing.id)
+      })
+      return { kind: 'us-picker', schemaVersion: 2, source: 'edevops', asOf: now(), mock: false, items, total: items.length }
+    }
     if (args && args.id) {
       const item = usDetail(args.id)
       if (!item) throw new Error('US not found: ' + args.id)
