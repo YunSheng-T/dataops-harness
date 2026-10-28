@@ -52,6 +52,7 @@ node scripts/check-dataops-preset.mjs
 node scripts/check-dataops-workitem.mjs
 node scripts/check-stage-contract.mjs
 node scripts/check-dataops-health.mjs
+node scripts/check-provider-config.mjs --config docs/ops/provider-config.example.json
 ```
 
 安装脚本只做本地链接/复制，不访问 npm。

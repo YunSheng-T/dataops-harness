@@ -115,6 +115,7 @@ External systems
 - [x] 内网接入架构/ADR 0012
 - [x] 离线安装包与内网安装演练
 - [x] provider health check（未配置 health endpoint 时明确 configured）
+- [x] provider config JSON schema/命令校验（不联网、不打印 token）
 - [x] 阶段简报展开态浏览器验证
 
 ## 6. 下一步治理顺序

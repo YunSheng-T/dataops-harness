@@ -73,6 +73,7 @@ export function normalizeConfig(config) {
     mockDelayMs: positiveInt(input.mockDelayMs, DEFAULTS.mockDelayMs, 0, 10000),
     workitemsDir: typeof input.workitemsDir === 'string' && input.workitemsDir.trim() !== '' ? input.workitemsDir.trim() : DEFAULTS.workitemsDir,
     disabledTools: Array.isArray(input.disabledTools) ? input.disabledTools.filter(item => typeof item === 'string') : [],
+    domains: input.domains && typeof input.domains === 'object' && !Array.isArray(input.domains) ? input.domains : {},
     devops: normalizeDomain(input.devops, provider, 'devops'),
     catalog: normalizeDomain(input.catalog, provider, 'catalog'),
     cicd: normalizeDomain(input.cicd, 'mock', 'cicd'),
