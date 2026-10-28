@@ -120,3 +120,5 @@ node scripts/verify-local.mjs
 ```sh
 node scripts/check-install.mjs
 ```
+
+- [内网 DSH 接入与 Agent 迭代](docs/ops/intranet-dsh-setup.md)

@@ -147,6 +147,10 @@ domains:
 - mock 不得冒充生产事实。
 - Stage 6 不实现、不展示。
 
+## 6.1 DSH 安装与 Agent 迭代
+
+见 [intranet-dsh-setup.md](intranet-dsh-setup.md)。
+
 ## 7. 验证入口
 
 ```sh
