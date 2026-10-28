@@ -15,9 +15,9 @@ git submodule update --init --recursive
 
 | 目录 | 内容 |
 |---|---|
-| `packages/dataops-client` | 用户面插件：11 个活动 toolview（4 事实 + 4 CICD + USPicker + DeliverableRenderer + StageResultCard）、标题阶段 chip、轮末阶段/排障简报、右栏资产/血缘/证据 |
+| `packages/dataops-client` | 用户面插件：14 个活动 toolview（事实/CICD/USPicker/阶段卡/StageResultCard 等）、标题阶段 chip、阶段简报、右栏资产/血缘/证据 |
 | `packages/dataops-brand` | 品牌插件：∞ 标记 + `DataOps` 字标（侧栏 + 空会话 Hero） |
-| `packages/dataops-tools` | Host 工具：19 个活动原子能力（事实/CICD/工作项/日志/presenter/US/DataMap/ensure/stage）；provider 支持 `mock` / `cli` / `http` |
+| `packages/dataops-tools` | Host 工具：19 个活动原子能力（事实/CICD/工作项/日志/presenter/US/DataMap/ensure/stage）；provider 支持 `mock` / `cli` / `http`；真实域 adapter 见内网架构 |
 | `packages/dataops-preset` | Agent preset `dataops-dev`：DataOps Lead persona、workflow/workitem 技能、文件/提问/待办工具、发布审批约束 |
 | `profiles/dataops` | 独立 profile 模板（基于 `dsh-base` + `dsh-web-app`，不碰 `desktop` profile） |
 | `.agents/skills` | 领域技能：SQL 评审、建模评审、管道排障、影响面、服务契约、工作项协议 |
@@ -26,9 +26,9 @@ git submodule update --init --recursive
 | `workitems/_template` | 工作项 v0 模板：item.yaml / intent.md / plan.md / decision.md；交付阶段与审批记录 |
 | `docs/dataops-harness-blueprint.md` | 两仓库关系与 DSH 高价值资产盘点 |
 
-> **阶段模型 v2**：目标 6 段（需求 → 设计 → 方案 → 开发 → CICD → 复盘）。阶段/设计归属与公共组件视图见 [docs/design/blueprint-v2.md](docs/design/blueprint-v2.md) 和 [prototype/blueprint-v2.html](prototype/blueprint-v2.html)。
+> **阶段模型 v2**：本版实现到 Stage 5（需求 → 设计 → 方案 → 开发 → CICD）；Stage 6 不实现。阶段/设计归属与公共组件视图见 [docs/design/blueprint-v2.md](docs/design/blueprint-v2.md) 和 [prototype/blueprint-v2.html](prototype/blueprint-v2.html)。
 
-用户入口、Agent 编排、工作项与工具边界见 [docs/design/agent-orchestration.md](docs/design/agent-orchestration.md)。
+用户入口、Agent 编排、工作项与工具边界见 [docs/design/agent-orchestration.md](docs/design/agent-orchestration.md)。真实系统接入边界见 [docs/design/intranet-architecture.md](docs/design/intranet-architecture.md)。
 
 设计文档索引：[docs/design/README.md](docs/design/README.md) · 用户旅程：[docs/design/user-journey/README.md](docs/design/user-journey/README.md) · US 接单+需求：[docs/design/user-journey/stage-0-1-us-intake-requirement.md](docs/design/user-journey/stage-0-1-us-intake-requirement.md) · 遗留事项：[docs/backlog.md](docs/backlog.md) · P1 总结：[docs/design/p1-summary.md](docs/design/p1-summary.md) · P2 计划：[docs/design/p2-plan.md](docs/design/p2-plan.md) · P2 设计：[docs/design/p2-tool-convergence.md](docs/design/p2-tool-convergence.md)。
 
@@ -42,7 +42,7 @@ P3 可视化：[0+1 → Stage 3 蓝图](prototype/stage0-3-implementation-bluepr
 
 ## Mock 演示
 
-不接内网，先跑完整 6 段 mock 演示 + 排障：见 [docs/design/mock-demo.md](docs/design/mock-demo.md)。
+不接内网，先跑 Stage 0–5 mock 演示 + 排障：见 [docs/design/mock-demo.md](docs/design/mock-demo.md)。
 
 ![DataOps 6-stage mock story](prototype/shots/real-dataops-story.png)
 
