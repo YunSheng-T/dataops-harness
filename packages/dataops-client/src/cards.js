@@ -41,8 +41,10 @@ export function createDataopsCards(React) {
     '.do-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));margin:10px -14px -11px;padding:10px 14px;background:var(--dsw-alias-bg-base,#f9fafb)}',
     '.do-foot .do-meta{margin-right:auto}',
     '.do-btn{height:28px;padding:0 10px;border-radius:var(--dsw-radius-sm,8px);border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.1));background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-primary,#0f1115);font-size:12px;font-weight:500;cursor:pointer}',
-    '.do-btn[data-variant=primary]{background:var(--dsw-alias-brand-primary,#0f1115);color:var(--dsw-alias-label-primary-foreground,#fff);border-color:transparent}',
-    '.do-btn[data-variant=ghost]{background:transparent;border-color:transparent;color:var(--dsw-alias-label-secondary,#61666b)}',
+    '.do-btn[data-variant=primary]{background:var(--dsw-alias-state-business-primary,#4176e6);color:var(--dsw-alias-label-primary-foreground,#fff);border-color:transparent}'
+    ,'.do-btn:hover{background:var(--dsw-alias-bg-l2,#f4f5f7)}'
+    ,'.do-btn[data-variant=primary]:hover{background:var(--dsw-alias-state-business-primary,#315efb);filter:brightness(1.04)}'
+    ,'.do-btn[data-variant=ghost]{background:transparent;border-color:transparent;color:var(--dsw-alias-label-secondary,#61666b)}',
     '.do-kv{display:flex;gap:6px;flex-wrap:wrap;align-items:center}',
     '.do-empty{padding:8px 0;font-size:12px;color:var(--dsw-alias-label-tertiary,#81858c)}',
     '.do-ctx{border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));border-radius:var(--dsw-radius-md,12px);padding:10px 11px;margin:6px 0;background:var(--dsw-alias-bg-layer-1,#fff)}',
