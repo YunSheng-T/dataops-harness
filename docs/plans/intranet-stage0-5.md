@@ -24,6 +24,8 @@
 
 ### P0-A 阶段契约
 
+> 当前：`contracts/stage-contract.json` + `scripts/check-stage-contract.mjs` 已加入；运行时仍保留 Host/Client 镜像，下一步再迁移到生成/单源。
+
 唯一来源（建议）：
 
 ```text

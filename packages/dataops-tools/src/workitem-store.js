@@ -9,7 +9,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 
-const STAGES = ['requirement', 'design', 'scheme', 'develop', 'cicd', 'review']
+export const STAGES = ['requirement', 'design', 'scheme', 'develop', 'cicd', 'review']
 const STAGE_STATUSES = ['pending', 'in_progress', 'blocked', 'awaiting_approval', 'done']
 const WORK_STATUSES = ['draft', 'planning', 'executing', 'review', 'approved', 'applied', 'verified', 'abandoned']
 const APPROVAL_STATUSES = ['pending', 'approved', 'rejected', 'cancelled', 'blocked']
@@ -567,7 +567,7 @@ export function updateWorkitem(config, args) {
   return publicItem(next, id)
 }
 
-const STAGE_KINDS = {
+export const STAGE_KINDS = {
   intake: 'requirement',
   requirement: 'requirement',
   design: 'design',
@@ -579,7 +579,7 @@ const STAGE_KINDS = {
   postmortem: 'review',
   incident: 'incident'
 }
-const GATE_ROLES = {
+export const GATE_ROLES = {
   requirement: ['BA', 'requester'],
   design: ['BA'],
   'scheme.analysis': ['BA'],

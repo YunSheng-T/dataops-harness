@@ -520,6 +520,7 @@ export function createStageBrief(React, store, contextStore) {
   return {
     TURN_KEY: TURN_KEY,
     STAGES: STAGES,
+    KIND_STAGE: KIND_STAGE,
     definition: definition,
     TurnTail: TurnTail,
     CurrentCardDock: CurrentCardDock,

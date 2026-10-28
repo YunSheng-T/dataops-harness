@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "uiStages": [
+    {
+      "key": "requirement",
+      "label": "需求",
+      "short": "需求",
+      "next": "进入数据设计"
+    },
+    {
+      "key": "design",
+      "label": "设计",
+      "short": "设计",
+      "next": "进入方案"
+    },
+    {
+      "key": "scheme",
+      "label": "方案",
+      "short": "方案",
+      "next": "开始开发",
+      "subs": [
+        "数据挖掘",
+        "数据分析",
+        "需求方案设计",
+        "技术方案输出"
+      ]
+    },
+    {
+      "key": "develop",
+      "label": "开发",
+      "short": "开发",
+      "next": "进入 CICD"
+    },
+    {
+      "key": "cicd",
+      "label": "CICD",
+      "short": "CICD",
+      "next": "Stage 5 结束；Stage 6 不在本版",
+      "subs": [
+        "扫描",
+        "编译构建",
+        "测试",
+        "发布/部署"
+      ]
+    }
+  ],
+  "storeStages": [
+    "requirement",
+    "design",
+    "scheme",
+    "develop",
+    "cicd",
+    "review"
+  ],
+  "kinds": {
+    "intake": "requirement",
+    "requirement": "requirement",
+    "design": "design",
+    "analysis": "scheme",
+    "solution": "scheme",
+    "tech_plan": "scheme",
+    "develop": "develop",
+    "cicd": "cicd",
+    "postmortem": "review",
+    "incident": "incident"
+  },
+  "gates": {
+    "requirement": [
+      "BA",
+      "requester"
+    ],
+    "design": [
+      "BA"
+    ],
+    "scheme.analysis": [
+      "BA"
+    ],
+    "scheme.solution": [
+      "BA"
+    ],
+    "scheme.tech_plan": [
+      "SE"
+    ],
+    "develop.code_review": [
+      "SE"
+    ],
+    "develop.merge": [
+      "Committer"
+    ]
+  },
+  "stage6": {
+    "implemented": false,
+    "shown": false
+  },
+  "uiKinds": {
+    "intake": "requirement",
+    "requirement": "requirement",
+    "design": "design",
+    "profile": "scheme",
+    "analysis": "scheme",
+    "solution": "scheme",
+    "tech_plan": "scheme",
+    "develop": "develop",
+    "cicd": "cicd",
+    "schedule": "cicd",
+    "test": "cicd",
+    "release": "cicd",
+    "postmortem": "review"
+  }
+}
