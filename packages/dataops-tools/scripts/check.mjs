@@ -1,6 +1,7 @@
 // Offline checks for the stage tools and their contracts.
 import { createTools } from '../src/index.js'
 import { normalizeConfig } from '../src/config.js'
+import { createWorkitemStore } from '../src/workitem-store.js'
 import { normalizeTicket } from '../src/providers/devops.js'
 import { normalizeTable, normalizeLineage } from '../src/providers/catalog.js'
 import { requirementPayload } from '../src/contracts.js'
@@ -74,6 +75,44 @@ check('tool names follow the scope-action-object registry', () => {
   assert(!TOOL_REGISTRY.some(item => item.name.includes('schedule_spec') || item.name.includes('schedule_yaml')), 'artifact names must not be tool names')
   const legacy = ['dataops_requirement', 'dataops_design', 'dataops_table', 'dataops_lineage', 'dataops_tech_plan', 'dataops_evidence', 'dataops_develop', 'dataops_test', 'dataops_release', 'dataops_postmortem', 'dataops_incident']
   for (const name of legacy) assert(!tools.some(tool => tool.name === name), 'legacy tool name still registered: ' + name)
+})
+
+check('WorkitemStore seam wraps the local file adapter', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-store-'))
+  try {
+    const store = createWorkitemStore(normalizeConfig({ workitemsDir: dir }))
+    assert(store.kind === 'file', 'store kind')
+    const created = store.create({ id: 'store-item', source: { system: 'edevops', id: 'US-STORE' }, title: 'store', initialStage: 'requirement' })
+    assert(created.workitem.id === 'store-item', 'store create')
+    assert(store.get('store-item').id === 'store-item', 'store get')
+    assert(store.list().items.some(item => item.id === 'store-item'), 'store list')
+    const updated = store.update('store-item', { next: 'store seam' })
+    assert(updated.next === 'store seam', 'store update')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+check('CICD pipeline tool dispatches to the CLI adapter when configured', async () => {
+  const config = normalizeConfig({
+    workitemsDir: mkdtempSync(join(tmpdir(), 'dataops-cicd-')),
+    cicd: {
+      kind: 'cli',
+      tokenRef: undefined,
+      commands: {
+        run: ['cicd', 'run', '--target', '{target}', '--commit', '{commit}', '--json'],
+        status: ['cicd', 'status', '--run-id', '{runId}', '--json']
+      }
+    }
+  })
+  const seen = []
+  const fakeExec = (_command, args, _options, callback) => {
+    seen.push(args.join(' '))
+    callback(null, JSON.stringify({ pipelineRunId: 'run-cli-1', status: 'succeeded', artifact: { package: 'a.tar.gz', digest: 'sha256:x', manifest: 'm.json', checksum: 'c.txt' } }), '')
+  }
+  const scoped = createTools(config, { execFileImpl: fakeExec })
+  const pipeline = await scoped.find(tool => tool.name === 'dataops_cicd_pipeline').execute({ target: 'dws.x', commit: 'abc' }, { signal })
+  assert(pipeline.source === 'cicd-cli' && pipeline.mock === false && pipeline.pipelineRunId === 'run-cli-1', 'CLI tool payload')
+  assert(seen.some(line => line.includes('--target dws.x') && line.includes('--commit abc')), 'CLI args rendered')
+  rmSync(config.workitemsDir, { recursive: true, force: true })
 })
 
 check('CICD CLI runner handles sync, polling and fail-closed results', async () => {

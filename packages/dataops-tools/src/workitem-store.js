@@ -775,3 +775,20 @@ export function stageComplete(config, args) {
 }
 
 export const _internals = { parseWorkitem, serializeWorkitem, normalize, validatePatch }
+
+/**
+ * Stable storage/service seam. The current implementation is the local YAML
+ * adapter; a shared Workitem service can replace it without changing tools.
+ */
+export function createWorkitemStore(config) {
+  return {
+    kind: 'file',
+    get: id => readWorkitem(config, { id }),
+    list: () => readWorkitem(config, {}),
+    create: input => ensureWorkitem(config, input),
+    update: (id, patch, options = {}) => updateWorkitem(config, { id, patch, dryRun: options.dryRun === true }),
+    prepare: args => stagePrepare(config, args),
+    signoff: args => stageSignoff(config, args),
+    complete: args => stageComplete(config, args)
+  }
+}
