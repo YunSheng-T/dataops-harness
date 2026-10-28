@@ -110,6 +110,7 @@ External systems
 - [x] WorkitemStore seam + 文件锁 + revision CAS + 审计基础
 - [x] Host signoff service + exact route + client fetch（mock identity；SSO 后置）
 - [x] Stage 4 build failure 分支、重编译入口、build/scan 门禁
+- [x] Stage 4/5 1024/1440/1600/1920、暗色、0 console error
 - [x] Stage 6 从阶段导航移除，5/5
 - [x] 内网接入架构/ADR 0012
 

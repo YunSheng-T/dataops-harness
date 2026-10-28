@@ -518,7 +518,7 @@ async function runStage4Ui() {
     check(card.includes('Build') && card.includes('Scan') && card.includes('Deploy'), 'stage 4 validation rows visible')
     check(card.includes('manual') && card.includes('SE'), 'stage 4 manual test and SE review visible')
     await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-4-live.png'), Buffer.from(r.result.data, 'base64')) })
-    for (const width of [1600, 1920]) {
+    for (const width of [1024, 1600, 1920]) {
       await page.send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false })
       await sleep(600)
       const overflow = await page.evaluate('document.documentElement.scrollWidth - window.innerWidth')
@@ -602,7 +602,7 @@ async function runStage5Ui() {
     check(!card.includes('允许一次') && !card.includes('回滚'), 'no DSH approval / rollback action in stage 5 card')
     await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-5-live.png'), Buffer.from(r.result.data, 'base64')) })
     await page.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-5-live-full.png'), Buffer.from(r.result.data, 'base64')) })
-    for (const width of [1600, 1920]) {
+    for (const width of [1024, 1600, 1920]) {
       await page.send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false })
       await sleep(600)
       const overflow = await page.evaluate('document.documentElement.scrollWidth - window.innerWidth')
