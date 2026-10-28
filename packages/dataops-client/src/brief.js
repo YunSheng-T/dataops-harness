@@ -13,28 +13,10 @@ export function createStageBrief(React, store, contextStore) {
   var TURN_KEY = 'dataops-stage'
   var DATA_KINDS = { intake: 1, requirement: 1, design: 1, table: 1, lineage: 1, tech_plan: 1, evidence: 1, profile: 1, analysis: 1, solution: 1, develop: 1, cicd: 1, schedule: 1, test: 1, release: 1, postmortem: 1, incident: 1, workitem: 1 }
 
-  var STAGES = [
-    { key: 'requirement', label: '需求', short: '需求', next: '进入数据设计' },
-    { key: 'design', label: '设计', short: '设计', next: '进入方案' },
-    { key: 'scheme', label: '方案', short: '方案', next: '开始开发', subs: ['数据挖掘', '数据分析', '需求方案设计', '技术方案输出'] },
-    { key: 'develop', label: '开发', short: '开发', next: '进入 CICD' },
-    { key: 'cicd', label: 'CICD', short: 'CICD', next: 'Stage 5 结束；Stage 6 不在本版', subs: ['扫描', '编译构建', '测试', '发布/部署'] }
-  ]
-  var KIND_STAGE = {
-    intake: 'requirement',
-    requirement: 'requirement',
-    design: 'design',
-    profile: 'scheme',
-    analysis: 'scheme',
-    solution: 'scheme',
-    tech_plan: 'scheme',
-    develop: 'develop',
-    cicd: 'cicd',
-    schedule: 'cicd',
-    test: 'cicd',
-    release: 'cicd',
-    postmortem: 'review'
-  }
+  var STAGE_CONTRACT = globalThis.__DATAOPS_STAGE_CONTRACT
+  if (!STAGE_CONTRACT) throw new Error('dataops-client: stage contract is not initialized')
+  var STAGES = STAGE_CONTRACT.uiStages
+  var KIND_STAGE = STAGE_CONTRACT.uiKinds
   var SUBSTAGES = {
     profile: { label: '数据挖掘', index: 1, total: 4 },
     analysis: { label: '数据分析', index: 2, total: 4 },

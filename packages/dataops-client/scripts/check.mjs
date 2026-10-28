@@ -1,4 +1,5 @@
 // Offline checks for the dataops client: cards, stores, brief and tabs.
+import '../src/stage-contract.generated.js'
 import { createDataopsCards } from '../src/cards.js'
 import { createStageStore } from '../src/stage-store.js'
 import { createContextStore } from '../src/context-store.js'

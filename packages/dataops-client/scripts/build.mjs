@@ -14,6 +14,7 @@ const write = (path, body) => {
 }
 
 const SOURCES = [
+  'src/stage-contract.generated.js',
   'src/cards.js',
   'src/flow.js',
   'src/stage-store.js',

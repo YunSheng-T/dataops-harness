@@ -8,8 +8,9 @@
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
+import { GATE_ROLES, STAGE_KINDS, STAGES } from './stage-contract.generated.js'
+export { GATE_ROLES, STAGE_KINDS, STAGES }
 
-export const STAGES = ['requirement', 'design', 'scheme', 'develop', 'cicd', 'review']
 const STAGE_STATUSES = ['pending', 'in_progress', 'blocked', 'awaiting_approval', 'done']
 const WORK_STATUSES = ['draft', 'planning', 'executing', 'review', 'approved', 'applied', 'verified', 'abandoned']
 const APPROVAL_STATUSES = ['pending', 'approved', 'rejected', 'cancelled', 'blocked']
@@ -567,27 +568,6 @@ export function updateWorkitem(config, args) {
   return publicItem(next, id)
 }
 
-export const STAGE_KINDS = {
-  intake: 'requirement',
-  requirement: 'requirement',
-  design: 'design',
-  analysis: 'scheme',
-  solution: 'scheme',
-  tech_plan: 'scheme',
-  develop: 'develop',
-  cicd: 'cicd',
-  postmortem: 'review',
-  incident: 'incident'
-}
-export const GATE_ROLES = {
-  requirement: ['BA', 'requester'],
-  design: ['BA'],
-  'scheme.analysis': ['BA'],
-  'scheme.solution': ['BA'],
-  'scheme.tech_plan': ['SE'],
-  'develop.code_review': ['SE'],
-  'develop.merge': ['Committer']
-}
 
 function writeItem(dir, raw, config, planText) {
   const path = join(dir, 'item.yaml')
