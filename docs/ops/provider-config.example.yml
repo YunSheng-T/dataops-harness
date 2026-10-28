@@ -1,0 +1,83 @@
+# DataOps profile provider configuration (example only; never put tokens here).
+# Copy the needed block into profiles/dataops/cordis.patch.yml and use env/credentials refs.
+- id: dataops-tools
+  name: '@dataops/dsh-dataops-tools'
+  config:
+    provider: mock
+    timeoutMs: 8000
+    retry: 1
+    pipelineTimeoutMs: 900000
+    pipelinePollIntervalMs: 3000
+    workitemsDir: workitems
+
+    # Real domains replace mock one at a time. All URLs stay in env/config.
+    domains:
+      us:
+        kind: http
+        baseUrlEnv: DATAOPS_US_URL
+        tokenRef: DATAOPS_US_TOKEN
+        paths:
+          list: /api/v1/us
+          detail: /api/v1/us/{id}
+      datamap:
+        kind: http
+        baseUrlEnv: DATAOPS_DATAMAP_URL
+        tokenRef: DATAOPS_DATAMAP_TOKEN
+        paths:
+          asset: /api/v1/assets/{asset}
+          path: /api/v1/scenarios/{scenario}/path
+      lineage:
+        kind: http
+        baseUrlEnv: DATAOPS_LINEAGE_URL
+        tokenRef: DATAOPS_LINEAGE_TOKEN
+        paths:
+          upstream: /api/v1/lineage/upstream?table={table}
+          downstream: /api/v1/lineage/downstream?table={table}
+      profile:
+        kind: http
+        baseUrlEnv: DATAOPS_PROFILE_URL
+        tokenRef: DATAOPS_PROFILE_TOKEN
+        paths:
+          snapshot: /api/v1/profile/{table}
+      scheduler:
+        kind: cli
+        tokenRef: DATAOPS_SCHEDULER_TOKEN
+        commands:
+          jobs: ['dataops', 'scheduler', 'jobs', '--table', '{table}', '--json']
+          instances: ['dataops', 'scheduler', 'instances', '--table', '{table}', '--json']
+          logs: ['dataops', 'scheduler', 'logs', '--task', '{taskId}', '--json']
+          compile: ['dataops', 'scheduler', 'compile', '--file', '{file}', '--json']
+      code:
+        kind: cli
+        commands:
+          build: ['dataops', 'code', 'build', '--branch', '{branch}', '--json']
+          scan: ['dataops', 'code', 'scan', '--branch', '{branch}', '--json']
+          test: ['dataops', 'code', 'test', '--branch', '{branch}', '--json']
+          review: ['dataops', 'code', 'review', '--branch', '{branch}', '--json']
+          mergeStatus: ['dataops', 'code', 'merge-status', '--branch', '{branch}', '--json']
+      cicd:
+        kind: cli
+        tokenRef: DATAOPS_CICD_TOKEN
+        timeoutMs: 30000
+        commands:
+          run: ['dataops', 'cicd', 'run', '--target', '{target}', '--commit', '{commit}', '--json']
+          status: ['dataops', 'cicd', 'status', '--run-id', '{runId}', '--json']
+          artifact: ['dataops', 'cicd', 'artifact', '--run-id', '{runId}', '--json']
+          logs: ['dataops', 'cicd', 'logs', '--run-id', '{runId}', '--json']
+      release:
+        kind: http
+        baseUrlEnv: DATAOPS_RELEASE_URL
+        tokenRef: DATAOPS_RELEASE_TOKEN
+        paths:
+          environments: /api/v1/deployments/{target}/environments
+          approval: /api/v1/approvals/{id}
+      identity:
+        kind: http
+        baseUrlEnv: DATAOPS_IDENTITY_URL
+        tokenRef: DATAOPS_IDENTITY_TOKEN
+        paths:
+          me: /api/v1/me
+          roles: /api/v1/me/roles
+
+# Health: each domain adapter exposes health(); a future `dataops health`
+# command will call them without exposing tokens.

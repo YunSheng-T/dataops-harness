@@ -55,6 +55,18 @@ node scripts/check-stage-contract.mjs
 
 安装脚本只做本地链接/复制，不访问 npm。
 
+## 3.1 离线面检查
+
+```sh
+node scripts/check-offline-surface.mjs
+```
+
+检查：
+
+- 没有公网 npm 依赖
+- 没有源码里的外部 runtime URL
+- 只有 DSH peer / DataOps 本地包
+
 ## 4. 启动
 
 ```sh

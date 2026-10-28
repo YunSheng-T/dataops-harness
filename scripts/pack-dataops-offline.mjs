@@ -17,6 +17,9 @@ const name = 'dataops-harness-offline-' + stamp
 const dist = join(root, 'dist')
 const stage = join(dist, name)
 
+// Fail closed on accidental public dependencies before building.
+execFileSync(process.execPath, [join(root, 'scripts/check-offline-surface.mjs')], { stdio: 'inherit' })
+
 // Build generated artifacts before packing.
 for (const script of ['packages/dataops-client/scripts/build.mjs', 'packages/dataops-brand/scripts/build.mjs']) {
   execFileSync(process.execPath, [join(root, script)], { stdio: 'inherit' })
@@ -29,7 +32,7 @@ const copy = (from) => {
   if (!existsSync(source)) throw new Error('missing offline payload: ' + from)
   cpSync(source, join(stage, from), { recursive: true, filter: path => !path.includes('node_modules') })
 }
-for (const path of ['packages/dataops-client', 'packages/dataops-brand', 'packages/dataops-tools', 'packages/dataops-preset', 'profiles/dataops', '.agents/skills', 'contracts', 'workitems/_template', 'workitems/README.md', 'scripts/install-dataops-profile.mjs', 'scripts/install-dataops-skills.mjs', 'scripts/check-dataops-preset.mjs', 'scripts/check-dataops-workitem.mjs', 'scripts/check-stage-contract.mjs', 'upstream.json', 'README.md']) copy(path)
+for (const path of ['packages/dataops-client', 'packages/dataops-brand', 'packages/dataops-tools', 'packages/dataops-preset', 'profiles/dataops', '.agents/skills', 'contracts', 'docs/ops/provider-config.example.yml', 'workitems/_template', 'workitems/README.md', 'scripts/check-offline-surface.mjs', 'scripts/install-dataops-profile.mjs', 'scripts/install-dataops-skills.mjs', 'scripts/check-dataops-preset.mjs', 'scripts/check-dataops-workitem.mjs', 'scripts/check-stage-contract.mjs', 'upstream.json', 'README.md']) copy(path)
 
 writeFileSync(join(stage, 'OFFLINE-INSTALL.md'), `# DataOps offline install
 
