@@ -30,3 +30,6 @@ node_modules/
 # Keep them out of the source repo so a stale bundle cannot be committed.
 **/lib/client.js
 **/lib/index.js
+
+# Offline build artifacts
+/dist/
