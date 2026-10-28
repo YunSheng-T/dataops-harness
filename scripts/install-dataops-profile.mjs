@@ -105,6 +105,8 @@ for (const item of packages) {
 
 const skillsInstall = spawnSync(process.execPath, [join(root, 'scripts', 'install-dataops-skills.mjs')], { stdio: 'inherit' })
 if (skillsInstall.status !== 0) process.exit(skillsInstall.status ?? 1)
+const installCheck = spawnSync(process.execPath, [join(root, 'scripts', 'check-install.mjs'), '--home', home], { stdio: 'inherit', env: { ...process.env, DSH_HOME: home } })
+if (installCheck.status !== 0) process.exit(installCheck.status ?? 1)
 console.log('installed DataOps profile')
 console.log('  profile: ' + profileDir)
 console.log('  packages: ' + packages.map(item => item.name).join(', '))

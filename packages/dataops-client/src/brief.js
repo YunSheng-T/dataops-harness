@@ -334,7 +334,11 @@ export function createStageBrief(React, store, contextStore) {
         onClick: function () { expandedState[1](!expanded) }
       },
         h('span', { className: 'do-stagebar-title' }, '阶段简报'),
-        h('span', { className: 'do-stagebar-hint' }, action ? '当前门禁 · ' + action.spec.label + (action.blocking ? ' · 待补证' : ' · ' + action.pending.length + ' 个待签') : '当前阶段已完成 · 展开查看阶段卡'),
+        h('span', { className: 'do-stagebar-hint' }, action
+          ? (action.spec.gate === 'cicd.pipeline' && !action.blocking && !action.pending.length
+            ? '当前阶段已完成 · 展开查看制品与历史卡'
+            : '当前门禁 · ' + action.spec.label + (action.blocking ? ' · 待补证' : ' · ' + action.pending.length + ' 个待签'))
+          : '当前阶段已完成 · 展开查看阶段卡'),
         h('span', { className: 'do-stagebar-caret', 'data-expanded': expanded ? 'true' : 'false', 'aria-hidden': 'true' }, '⌄')
       ),
       expanded ? h('div', { className: 'do-stagebar-stages' },
