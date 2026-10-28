@@ -89,3 +89,7 @@
 > 现在不物理搬家：其他会话还在迭代，先靠索引和状态标记降低混乱；冻结后再做一次链接完整的归档。
 
 - [内网接入架构](intranet-architecture.md)
+
+- [架构治理清单](architecture-governance.md)
+
+- [架构文档索引](architecture-index.md)

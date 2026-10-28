@@ -84,3 +84,10 @@
 5. **3a 默认 blocked**，用户点击“补充 mock 证据”后才读 closed 证据；不静默 pass。
 6. **Stage 4/5/6 不进入本版**；CICD/release 只保留现有工具，不做真实发布。
 7. **数据全部 mock**，所有 fixture 带 mock 标记，不冒充生产事实。
+
+## Stage 4–5 实现状态（2026-10-28）
+
+- Stage 4 多产物、build/scan/deploy/test attempt、SE/Committer gate 已实现
+- Stage 5 单条 pipeline、制品包/manifest/checksum、外部环境只读已实现
+- Stage 6 不实现、不展示
+- 真实系统接入仍是 mock；adapter 骨架已建立，未接线

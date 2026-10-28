@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { SCENARIO_KEYS, buildRequirement, buildDesign, buildTechPlan, buildEvidence } from '../src/mock.js'
 import { TOOL_REGISTRY, IMPLEMENTED_TOOL_NAMES, TOOL_NAME_PATTERN } from '../src/tool-registry.js'
+import { DOMAIN_NAMES, createDomainAdapters } from '../src/providers/domain-adapters.js'
 
 const results = []
 const checks = []
@@ -110,6 +111,19 @@ check('every mock tool payload is lossless JSON', async () => {
     assert(isLossless(payload), name + ' contains undefined or non-JSON values')
     assert(JSON.parse(JSON.stringify(payload)).kind === payload.kind, name + ' must survive JSON round-trip')
   }
+})
+
+check('domain adapter skeleton registers all intranet domains', async () => {
+  const adapters = createDomainAdapters({ timeoutMs: 8000, retry: 0 })
+  assert(Object.keys(adapters).length === 9, 'expected 9 domain adapters')
+  assert(JSON.stringify(Object.keys(adapters)) === JSON.stringify(DOMAIN_NAMES), 'domain adapter order/names mismatch')
+  for (const name of DOMAIN_NAMES) {
+    const health = await adapters[name].health()
+    assert(health.ok === true && health.kind === 'mock' && health.mock === true, name + ': mock health')
+  }
+  let missing = false
+  try { await adapters.us.read('list', {}) } catch (error) { missing = /mock not implemented/.test(error.message) }
+  assert(missing, 'unwired mock domain must fail explicitly')
 })
 
 check('config normalization defaults to mock and validates providers', () => {

@@ -1,5 +1,7 @@
 # 真实数据接入：devops + 元数据/血缘
 
+> **历史/局部参考**：本文件只覆盖早期 devops + catalog provider seam。当前 9 域接入、凭据/身份/部署边界见 [内网接入架构](intranet-architecture.md) 与 [ADR 0012](../decisions/0012-real-provider-boundary.md)。
+
 > 状态：已实现 provider seam、HTTP/CLI 适配、6 个工具、客户端上下文与卡片增量；内网只需填配置。
 > 工具包：`packages/dataops-tools`；客户端：`packages/dataops-client`。
 

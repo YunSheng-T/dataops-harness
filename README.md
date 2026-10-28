@@ -98,3 +98,7 @@ cd packages/dataops-tools && npm run check    # 24 个注册工具（P3 活动�
 - **品牌只换名字/Logo**：主题 token、`@deepseek-ai/*` 包名、`dsh` 命令、`DSH_*` 环境变量都不动。
 
 - [Stage 4–5 实现蓝图](prototype/stage-4-5-blueprint.html)
+
+- [架构治理清单](docs/design/architecture-governance.md)
+
+- [架构文档索引](docs/design/architecture-index.md)
