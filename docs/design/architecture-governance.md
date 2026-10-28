@@ -129,3 +129,45 @@ External systems
 - 阶段/kind/gate 只有一张契约表通过测试。
 - `cards.js`/`index.js`/`workitem-store.js` 拆分后单文件职责可一句话说明。
 - 内网 e2e 至少覆盖 US 只读、DataMap、Stage 4 失败回流、Stage 5 制品包。
+
+---
+
+## 8. 处理节奏：现在做 vs 内网后做
+
+### 现在就能做（不依赖内网）
+
+| 项 | 预计 | 产出 |
+|---|---|---|
+| 阶段/gate/kind 共享契约 + contract test | 1–2 迭代 | 消除 `brief.js` / `workitem-store.js` / template / docs 四处重复 |
+| `cards.js` CSS/卡片拆分，`index.js` 拆分 | 2–3 迭代 | 单文件职责可一句话说明；降低改 UI 碰 Host 的风险 |
+| `WorkitemStore` 接口 + 文件 adapter 锁/CAS/审计 | 2–3 迭代 | 可切换 service 而不改 UI/payload |
+| Host 签收服务接口 + mock 身份 | 2–3 迭代 | 不再依赖 Agent 回合/DOM 点击；SSO 后续替换 |
+| UI view model + 阶段简报/失败态/窄屏打磨 | 1–2 迭代 | 弱模型下更自解释；不增加 Agent 负担 |
+| 离线打包/内网安装脚本 + 无公网依赖检查 | 1–2 迭代 | 进入内网可直接部署 |
+| contract/lossless/权限边界测试 | 持续 | 防回归 |
+
+### 需要内网/凭据/接口后才能做
+
+| 项 | 依赖 |
+|---|---|
+| US 真实只读 adapter | EDevOps API/CLI、认证、网络 |
+| DataMap / Lineage / Profile adapter | 各平台 API/权限/字段映射 |
+| Scheduler adapter | 调度平台接口/权限 |
+| Code / Stage 4 真实 build/scan/deploy/test | 代码平台/环境/Committer 权限 |
+| CICD / 制品包 / 外部环境 | 公司 CICD、制品库、发布平台 |
+| SSO/组织角色 | 内网身份系统 |
+| Workitem Service | 内网存储/并发/权限 |
+| 真实脱敏/数据分级 | 内网数据策略 |
+
+### 建议排期
+
+```text
+第 1 轮（本地）：阶段契约 + 签收服务设计 + UI 简报/失败态
+第 2 轮（本地）：卡片/CSS/工具文件拆分 + WorkitemStore 接口
+第 3 轮（本地）：离线打包与内网安装演练
+第 4 轮（内网）：US 只读 → DataMap → Lineage → Profile
+第 5 轮（内网）：Scheduler → Code/Stage4 → CICD/Stage5 → Release 只读
+第 6 轮（内网）：SSO/Workitem Service → 内网 e2e/验收
+```
+
+每轮独立提交；升级上游/接真实 provider 不混在一个 commit。

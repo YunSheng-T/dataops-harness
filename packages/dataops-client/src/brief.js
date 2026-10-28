@@ -344,10 +344,16 @@ export function createStageBrief(React, store, contextStore) {
     var subDefs = { scheme: ['数据挖掘', '数据分析', '需求方案设计', '技术方案输出'], cicd: ['扫描', '编译构建', '测试', '发布/部署'] }
     var activeCards = stageCards(payloads, selected)
     return h('div', { className: 'do-stagebar' },
-      h('div', { className: 'do-stagebar-head' },
+      h('button', {
+        type: 'button',
+        className: 'do-stagebar-head',
+        'aria-expanded': expanded ? 'true' : 'false',
+        title: expanded ? '收起阶段简报' : '展开阶段简报',
+        onClick: function () { expandedState[1](!expanded) }
+      },
         h('span', { className: 'do-stagebar-title' }, '阶段简报'),
-        h('span', { className: 'do-stagebar-hint' }, action ? '当前门禁 · ' + action.spec.label + (action.blocking ? ' · 待补证' : ' · ' + action.pending.length + ' 个待签') : '点击展开阶段导航'),
-        h('button', { className: 'do-stagebar-toggle', onClick: function () { expandedState[1](!expanded) } }, expanded ? '收起' : '展开')
+        h('span', { className: 'do-stagebar-hint' }, action ? '当前门禁 · ' + action.spec.label + (action.blocking ? ' · 待补证' : ' · ' + action.pending.length + ' 个待签') : '查看阶段进度与历史卡'),
+        h('span', { className: 'do-stagebar-caret', 'data-expanded': expanded ? 'true' : 'false', 'aria-hidden': 'true' }, '⌄')
       ),
       expanded ? h('div', { className: 'do-stagebar-stages' },
         stageDefs.map(function (def) {
