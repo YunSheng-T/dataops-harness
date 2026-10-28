@@ -180,7 +180,9 @@ function apply(ctx) {
       window.addEventListener('dataops:signoff-request', onRequest)
       return function () { window.removeEventListener('dataops:signoff-request', onRequest) }
     }, [])
-    if (!request && !notice) return null
+    if (!request) {
+      return notice ? React.createElement('div', { className: 'do-signoff-toast', role: 'status' }, notice) : null
+    }
     var text = '【签收】gate=' + request.gate + ' role=' + request.role + ' actionId=' + request.actionId + ' actor=' + request.actor + (request.comment ? ' comment=' + request.comment : '')
     function sendViaAgent() {
       if (typeof window.__dataopsCompose === 'function') window.__dataopsCompose(text)
