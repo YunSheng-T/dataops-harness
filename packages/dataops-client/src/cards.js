@@ -1385,8 +1385,8 @@ export function createDataopsCards(React) {
             var chosen = opt.id === m.chosenOption || opt.chosen === true
             return h('tr', { key: i, 'data-chosen': chosen ? 'true' : undefined },
               h('td', null, (chosen ? '● ' : '') + (opt.id || '') + ' · ' + (opt.name || '')),
-              h('td', null, (opt.scopeDelta || opt.summary || '') + (opt.impactCount != null ? ' · 影响 ' + opt.impactCount : '')),
-              h('td', null, opt.tradeoff || (opt.pros || []).join('；') || '—'),
+              h('td', null, displayValue(opt.scopeDelta || opt.summary, '') + (opt.impactCount != null ? ' · 影响 ' + opt.impactCount : '')),
+              h('td', null, joinText(opt.pros, '；') || displayValue(opt.tradeoff, '—')),
               h('td', null, chosen ? '采用' : (opt.rejectedReason || '未采用')))
           }))
         )) : null,

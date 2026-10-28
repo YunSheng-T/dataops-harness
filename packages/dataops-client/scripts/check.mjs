@@ -152,6 +152,19 @@ check('profile card renders keys and join coverage', () => {
   assert(body.includes('order_id') && body.includes('99.98%'), 'profile keys/join')
 })
 
+check('solution card tolerates string option pros from 3b payload', () => {
+  const body = text(Cards.SolutionCard({
+    block: block({
+      kind: 'solution', stage: 'scheme', substage: 'solution', status: 'draft',
+      title: '3b 需求方案', summary: '独立只读检测任务',
+      options: [{ id: 'C1', name: '独立只读检测任务', pros: '不动任务；口径一致', cons: '需自建触达', fit: '入选' }],
+      decisions: [], alternatives: [], constraints: [], dependencies: [], risks: [], gaps: []
+    })
+  }))
+  assert(body.includes('不动任务；口径一致'), 'string option pros')
+  assert(!body.includes('[object Object]'), 'no object child')
+})
+
 check('analysis and solution cards render findings/decisions', () => {
   const analysis = text(Cards.AnalysisCard({
     block: block({ kind: 'analysis', question: '口径是否可比', baseline: [{ metric: '差异', before: '1', after: '0.8', delta: '-0.2' }], findings: [{ title: '差异来自未支付', detail: '过滤 pending', severity: 'info' }], conclusion: '先补映射', source: 'mock', asOf: '2026-10-26 10:00' })
