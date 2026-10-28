@@ -304,6 +304,81 @@ export function createDataopsCards(React) {
     return out
   }
 
+  function normalizePayload(model) {
+    if (!model || typeof model !== 'object') return model
+    var kind = String(model.kind || '')
+    var listFields = {
+      requirement: ['nonGoals', 'acceptance', 'impacts', 'constraints', 'gaps', 'evidence'],
+      design: ['sources', 'metrics', 'quality', 'designEvidence', 'evidenceTrace', 'evidence', 'gaps', 'steps'],
+      analysis: ['questions', 'findings', 'baseline', 'candidates', 'gaps', 'evidence'],
+      solution: ['options', 'decisions', 'alternatives', 'dependencies', 'constraints', 'risks', 'gaps'],
+      tech_plan: ['tasks', 'dependencies', 'risks', 'gaps'],
+      develop: ['artifacts', 'tasks', 'gaps'],
+      cicd: ['reports', 'checks', 'gaps'],
+      table: ['columns', 'gaps'],
+      lineage: ['nodes', 'edges', 'downstream', 'gaps'],
+      profile: ['candidateKeys', 'joinCoverage', 'columns', 'findings', 'gaps'],
+      evidence: ['gaps'],
+      release: ['steps', 'approvals', 'gaps'],
+      postmortem: ['metrics', 'issues', 'actions', 'gaps'],
+      incident: ['timeline', 'actions', 'gaps'],
+      stage: ['approvals', 'gaps'],
+      'us-picker': ['items'],
+      'us': ['items']
+    }
+    var fields = listFields[kind] || []
+    fields.forEach(function (field) { model[field] = asArray(model[field]) })
+    if (kind === 'requirement') model.scope = displayValue(model.scope, '—')
+    if (kind === 'design') {
+      model.target = model.target && typeof model.target === 'object' ? model.target : {}
+      model.target.primaryKey = asArray(model.target.primaryKey)
+      var dm = model.dataMap && typeof model.dataMap === 'object' ? model.dataMap : (model.datamap && typeof model.datamap === 'object' ? model.datamap : {})
+      dm.path = asPath(dm.path || model.dataMapPath || [])
+      dm.assets = asArray(dm.assets)
+      model.dataMap = dm
+    }
+    if (kind === 'analysis') {
+      model.candidates = asArray(model.candidates).map(function (candidate) {
+        if (candidate && typeof candidate === 'object') candidate.pros = asArray(candidate.pros)
+        return candidate
+      })
+      model.recommendation = model.recommendation && typeof model.recommendation === 'object' ? model.recommendation : {}
+      model.recommendation.rationale = asArray(model.recommendation.rationale)
+    }
+    if (kind === 'solution') {
+      model.options = asArray(model.options).map(function (option) {
+        if (option && typeof option === 'object') option.pros = asArray(option.pros)
+        return option
+      })
+      model.scope = model.scope && typeof model.scope === 'object' ? displayValue(model.scope, '—') : model.scope
+    }
+    if (kind === 'tech_plan' && model.rollback && typeof model.rollback === 'object') {
+      model.rollback.steps = asArray(model.rollback.steps)
+      model.rollback.materials = asArray(model.rollback.materials)
+    }
+    if (kind === 'develop' && model.validation && typeof model.validation === 'object') {
+      Object.keys(model.validation).forEach(function (key) {
+        var item = model.validation[key]
+        if (item && typeof item === 'object') {
+          item.attempts = asArray(item.attempts)
+          item.blocking = asArray(item.blocking)
+        }
+      })
+    }
+    if (kind === 'us-picker' || kind === 'us') {
+      var items = asArray(model.items)
+      if (model.item && typeof model.item === 'object') items = items.concat([model.item])
+      items.forEach(function (item) {
+        if (!item || typeof item !== 'object') return
+        item.acceptance = asArray(item.acceptance)
+        item.assets = asArray(item.assets)
+        item.impacts = asArray(item.impacts)
+      })
+      if (kind === 'us-picker') model.items = items
+    }
+    return model
+  }
+
   function parseModel(block, kind) {
     var parts = textParts(block)
     for (var i = parts.length - 1; i >= 0; i--) {
@@ -311,7 +386,7 @@ export function createDataopsCards(React) {
       if (s.charAt(0) !== '{') continue
       try {
         var o = JSON.parse(s)
-        if (o && typeof o === 'object' && (!kind || o.kind === kind || o.kind === kind.replace(/_/g, '-'))) return o
+        if (o && typeof o === 'object' && (!kind || o.kind === kind || o.kind === kind.replace(/_/g, '-'))) return normalizePayload(o)
       } catch (e) { /* not the payload */ }
     }
     return null
@@ -401,6 +476,7 @@ export function createDataopsCards(React) {
   }
 
   function statusText(status) {
+    if (status && typeof status === 'object') return displayValue(status, '—')
     return ({ pending: '待处理', in_progress: '进行中', blocked: '已阻塞', awaiting_approval: '待签收', done: '已完成', approved: '已签收', rejected: '已退回', draft: '草稿', reviewed: '已复核', returned: '已退回', passed: '已通过', deferred: '待评审', advisory_pending: '待确认', advisory_ok: '已确认', advisory_object: '有异议', signed: '已签收' })[status] || status || '—'
   }
 
@@ -1222,7 +1298,7 @@ export function createDataopsCards(React) {
       pills: [h(Pill, { key: 's', tone: 'pass' }, '已完成')],
       footer: [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'postmortem.yaml'))]
     },
-      m.summary ? h('div', { className: 'do-muted', style: { marginBottom: '8px' } }, m.summary) : null,
+      m.summary ? h('div', { className: 'do-muted', style: { marginBottom: '8px' } }, displayValue(m.summary, '—')) : null,
       asArray(m.metrics).length ? h('dl', { className: 'do-grid' },
         m.metrics.map(function (metric, i) {
           return h(React.Fragment, { key: i },
@@ -1275,7 +1351,7 @@ export function createDataopsCards(React) {
             h('span', null, item.event))
         }))
       ) : null,
-      m.cause ? h('div', { style: { marginTop: '8px' } }, h('span', { className: 'do-label' }, '根因'), h('div', { className: 'do-muted' }, m.cause)) : null,
+      m.cause ? h('div', { style: { marginTop: '8px' } }, h('span', { className: 'do-label' }, '根因'), h('div', { className: 'do-muted' }, displayValue(m.cause, '—'))) : null,
       m.impact ? h(Impact, { impact: m.impact }) : null,
       (m.actions || []).length ? h('div', null,
         h('div', { className: 'do-label' }, '处置'),
@@ -1345,15 +1421,15 @@ export function createDataopsCards(React) {
         h(Btn, { key: 'open', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看交付物')
       ]
     },
-      h('div', { className: 'do-muted' }, '问题：' + (m.question || '—')),
+      h('div', { className: 'do-muted' }, '问题：' + displayValue(m.question, '—')),
       dm.path || dm.assets ? h('div', null, h('div', { className: 'do-label' }, 'DataMap 寻源'), h(DataMapPath, { path: dm.path || [] }), h(AssetCards, { assets: dm.assets || [] })) : null,
       (m.questions || []).length ? h('div', null, h('div', { className: 'do-label' }, '分析问题'), m.questions.map(function (q, i) { return h('div', { key: i, className: 'do-task' }, h('span', { className: 'do-dot', 'data-tone': q.status === 'blocked' ? 'warn' : 'pass' }), h('span', { className: 'do-task-name' }, q.id ? q.id + ' · ' + q.text : q.text), h('span', { className: 'do-task-meta' }, statusText(q.status))) })) : null,
       (m.findings || []).length ? h('div', null, h('div', { className: 'do-label' }, '发现'),
-        m.findings.map(function (f, i) { return h('div', { key: i, className: 'do-ev' }, h('span', { className: 'do-dot', 'data-tone': f.severity === 'blocking' ? 'fail' : f.severity === 'warning' ? 'warn' : 'pass' }), h('div', null, h('div', { className: 'do-et' }, f.title || f.claim), h('div', { className: 'do-es' }, f.claim || f.detail || ''), evidenceChips(f.evidence || (f.evidenceId ? [f.evidenceId] : null)))) })) : null,
+        m.findings.map(function (f, i) { return h('div', { key: i, className: 'do-ev' }, h('span', { className: 'do-dot', 'data-tone': f.severity === 'blocking' ? 'fail' : f.severity === 'warning' ? 'warn' : 'pass' }), h('div', null, h('div', { className: 'do-et' }, displayValue(f.title || f.claim, '—')), h('div', { className: 'do-es' }, displayValue(f.claim || f.detail, '')), evidenceChips(f.evidence || (f.evidenceId ? [f.evidenceId] : null)))) })) : null,
       (m.baseline || []).length ? h('div', null, h('div', { className: 'do-label' }, '基线 / 对账'), h('div', { className: 'do-cols' }, m.baseline.map(function (b, i) { return h('div', { key: i, className: 'do-task' }, h('span', { className: 'do-dot', 'data-tone': b.status === 'blocked' ? 'warn' : 'pass' }), h('span', { className: 'do-task-name' }, b.metric + ' · ' + (b.old || b.before || '—') + ' → ' + (b.new || b.after || '—')), h('span', { className: 'do-task-meta' }, b.status === 'blocked' ? 'blocked' : (b.delta || 'measured'))) }))) : null,
       candidates.length ? h('div', null, h('div', { className: 'do-label' }, '候选比较'), h('table', { className: 'do-opt-table' }, h('thead', null, h('tr', null, h('th', null, '候选'), h('th', null, '资产'), h('th', null, '结论'))), h('tbody', null, candidates.map(function (c, i) { return h('tr', { key: i }, h('td', null, c.id + (c.fit ? ' · ' + c.fit : '')), h('td', null, c.source || c.datamapAsset || '—'), h('td', null, joinText(c.pros, '；') || displayValue(c.reason, '—'))) })))) : null,
       m.recommendation ? h('div', { style: { marginTop: '7px' } }, h('span', { className: 'do-label' }, '建议'), h('div', { className: 'do-muted' }, '候选 ' + (m.recommendation.candidate || '—') + '：' + (joinText(m.recommendation.rationale, '；') || '—'))) : null,
-      m.conclusion ? h('div', { style: { marginTop: '7px' } }, h('span', { className: 'do-label' }, '结论'), h('div', { className: 'do-muted' }, m.conclusion)) : null,
+      m.conclusion ? h('div', { style: { marginTop: '7px' } }, h('span', { className: 'do-label' }, '结论'), h('div', { className: 'do-muted' }, displayValue(m.conclusion, '—'))) : null,
       evidenceChips(m.evidence),
       h(Gaps, { gaps: m.gaps }),
       blocked ? h('div', { className: 'do-signoff' }, h('span', { className: 'do-signoff-title' }, '阻塞'), h('span', { className: 'do-muted' }, 'blocking gap 未关闭，不能 pass'),
@@ -1390,11 +1466,11 @@ export function createDataopsCards(React) {
               h('td', null, chosen ? '采用' : (opt.rejectedReason || '未采用')))
           }))
         )) : null,
-      (m.decisions || []).length ? h('div', null, h('div', { className: 'do-label' }, '关键决策'), m.decisions.map(function (d, i) { return h('div', { key: i, className: 'do-ev' }, h('span', { className: 'do-dot', 'data-tone': 'pass' }), h('div', null, h('div', { className: 'do-et' }, d.question || d.decision), h('div', { className: 'do-es' }, d.reason || d.tradeoff || ''), evidenceChips(d.evidence))) })) : null,
+      (m.decisions || []).length ? h('div', null, h('div', { className: 'do-label' }, '关键决策'), m.decisions.map(function (d, i) { return h('div', { key: i, className: 'do-ev' }, h('span', { className: 'do-dot', 'data-tone': 'pass' }), h('div', null, h('div', { className: 'do-et' }, displayValue(d.question || d.decision, '—')), h('div', { className: 'do-es' }, displayValue(d.reason || d.tradeoff, '')), evidenceChips(d.evidence))) })) : null,
       (m.impacts && (m.impacts.assets || []).length) ? h('div', null, h('div', { className: 'do-label' }, '影响'), h('div', { className: 'do-kv' }, m.impacts.assets.map(function (a, i) { return h(Pill, { key: i }, (a.id || a.name) + (a.change ? ' · ' + a.change : '')) }))) : null,
       (m.dependencies || []).length ? h('div', { className: 'do-muted', style: { marginTop: '7px' } }, '依赖：' + m.dependencies.map(function (d) { return (d.id || '') + ' ' + (d.need || d.from || '') }).join('；')) : null,
-      (m.constraints || []).length ? h('div', { className: 'do-muted', style: { marginTop: '5px' } }, '约束：' + m.constraints.map(function (c) { return c.text || c }).join('；')) : null,
-      (m.risks || []).length ? h('div', { className: 'do-muted', style: { marginTop: '5px' } }, '风险：' + m.risks.map(function (r) { return r.risk || r.description || '' }).join('；')) : null,
+      (m.constraints || []).length ? h('div', { className: 'do-muted', style: { marginTop: '5px' } }, '约束：' + m.constraints.map(function (c) { return displayValue(c && c.text || c, '') }).join('；')) : null,
+      (m.risks || []).length ? h('div', { className: 'do-muted', style: { marginTop: '5px' } }, '风险：' + m.risks.map(function (r) { return displayValue(r && (r.risk || r.description), '') }).join('；')) : null,
       h(Gaps, { gaps: m.gaps }),
       h(SignoffPanel, { model: m, gate: 'scheme.solution', roles: blocked ? [] : [{ key: 'ba', label: 'BA', actor: (m.review && m.review.ba && m.review.ba.approver) || '陈璐', action: 'BA 签收' }] }),
       h(ArtifactModal, { open: artifact[0], onClose: function () { artifact[1](false) }, artifact: deliverablePath(m), value: m })

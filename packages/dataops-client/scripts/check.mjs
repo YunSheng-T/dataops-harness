@@ -213,6 +213,31 @@ check('deliverable renderer dispatches by kind', () => {
   assert(pm.includes('复盘') && pm.includes('差异 0.12%'), 'postmortem dispatch')
 })
 
+check('card renderers tolerate common string/object schema variants', () => {
+  const cases = [
+    ['requirement', Cards.RequirementCard, { kind: 'requirement', id: 'R1', title: 'T', scope: { in: ['in'], out: ['out'] }, acceptance: 'one', nonGoals: 'none', constraints: 'limit', impacts: 'dws.x' }],
+    ['design', Cards.DesignCard, { kind: 'design', target: { table: 'dws.x', primaryKey: 'dt + id' }, dataMap: { path: 'a → b', assets: [{ table: 'dws.x', fields: 2 }] }, metrics: { name: 'm' }, quality: 'q', designEvidence: { claim: 'c' } }],
+    ['analysis', Cards.AnalysisCard, { kind: 'analysis', candidates: [{ id: 'C1', pros: 'p', reason: { why: 'r' } }], findings: 'f', baseline: 'b', questions: 'q', recommendation: { rationale: 'r' } }],
+    ['solution', Cards.SolutionCard, { kind: 'solution', options: [{ id: 'C1', pros: 'p', tradeoff: { t: 1 } }], decisions: 'd', constraints: 'c', risks: 'r' }],
+    ['tech_plan', Cards.TechPlanCard, { kind: 'tech_plan', tasks: 't', dependencies: 'd', risks: 'r', rollback: { steps: 's' } }],
+    ['table', Cards.TableCard, { kind: 'table', columns: 'c' }],
+    ['lineage', Cards.LineageCard, { kind: 'lineage', nodes: 'n', edges: 'e', downstream: 'd' }],
+    ['profile', Cards.ProfileCard, { kind: 'profile', candidateKeys: 'k', joinCoverage: 'j', columns: 'c', findings: 'f' }],
+    ['postmortem', Cards.PostmortemCard, { kind: 'postmortem', summary: { text: 's' }, metrics: 'm', issues: 'i', actions: 'a' }],
+    ['incident', Cards.IncidentCard, { kind: 'incident', cause: { text: 'c' }, timeline: 't', actions: 'a' }],
+    ['release', Cards.ReleaseCard, { kind: 'release', steps: 's', approvals: 'a' }],
+    ['develop', Cards.DevelopCard, { kind: 'develop', artifacts: 'a', tasks: 't', validation: { build: { attempts: 'x', blocking: 'b' } } }],
+    ['cicd', Cards.CicdCard, { kind: 'cicd', checks: 'c' }],
+    ['stage', Cards.StageResultCard, { kind: 'stage', approvals: 'a' }],
+    ['us-picker', Cards.USPickerCard, { kind: 'us-picker', items: [{ id: 'US-1', title: 'T', acceptance: 'a', assets: 'x' }] }]
+  ]
+  for (const [name, Component, payload] of cases) {
+    let threw = null
+    try { text(Component({ block: block(payload) })) } catch (error) { threw = error }
+    assert(!threw, name + ' renderer threw: ' + (threw && threw.message))
+  }
+})
+
 check('malformed payload falls back instead of throwing', () => {
   const body = text(Cards.DesignCard({ block: { content: [{ type: 'text', text: 'not json' }] } }))
   assert(body.includes('not json'), 'fallback should show raw text')
