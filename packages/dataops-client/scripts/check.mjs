@@ -419,6 +419,20 @@ check('intake card shows US to workitem handoff', () => {
   assert(body.includes('US-3821') && body.includes('wi-3821') && body.includes('新建'), 'intake handoff')
 })
 
+check('analysis card tolerates string candidate pros from 3a payload', () => {
+  const body = text(Cards.AnalysisCard({
+    block: block({
+      kind: 'analysis', stage: 'scheme', substage: 'analysis', title: '3a 分析',
+      question: '空渠道告警基线', status: 'blocked', conclusion: '阻断',
+      candidates: [{ id: 'C1', option: '独立检测任务', pros: '不动日报任务；口径一致', cons: '需自建触达', fit: 'partial' }],
+      recommendation: { preferred: 'C1', reason: '不动机报任务' },
+      baseline: [], findings: [], gaps: [], evidence: []
+    })
+  }))
+  assert(body.includes('不动日报任务；口径一致'), 'string candidate pros')
+  assert(!body.includes('[object Object]'), 'no object child')
+})
+
 check('analysis blocked card shows supplement action', () => {
   const body = text(Cards.AnalysisCard({ block: block({ kind: 'analysis', stage: 'scheme', substage: 'analysis', status: 'blocked', question: '能否算支付口径', findings: [{ id: 'F1', title: '缺 status', claim: '枚举未登记', severity: 'blocking' }], gaps: [{ id: 'G-STATUS', message: 'status 未登记', severity: 'blocking' }], review: { ba: 'reviewed' } }) }))
   assert(body.includes('补充 mock 证据'), 'missing supplement action')

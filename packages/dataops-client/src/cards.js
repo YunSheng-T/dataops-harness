@@ -666,6 +666,12 @@ export function createDataopsCards(React) {
     return String(value)
   }
 
+  function joinText(value, separator) {
+    if (Array.isArray(value)) return value.map(item => displayValue(item, '')).filter(Boolean).join(separator || '；')
+    if (value === null || value === undefined) return ''
+    return displayValue(value, '')
+  }
+
   // ---------- cards ----------
 
   function USPickerCard(props) {
@@ -1345,8 +1351,8 @@ export function createDataopsCards(React) {
       (m.findings || []).length ? h('div', null, h('div', { className: 'do-label' }, '发现'),
         m.findings.map(function (f, i) { return h('div', { key: i, className: 'do-ev' }, h('span', { className: 'do-dot', 'data-tone': f.severity === 'blocking' ? 'fail' : f.severity === 'warning' ? 'warn' : 'pass' }), h('div', null, h('div', { className: 'do-et' }, f.title || f.claim), h('div', { className: 'do-es' }, f.claim || f.detail || ''), evidenceChips(f.evidence || (f.evidenceId ? [f.evidenceId] : null)))) })) : null,
       (m.baseline || []).length ? h('div', null, h('div', { className: 'do-label' }, '基线 / 对账'), h('div', { className: 'do-cols' }, m.baseline.map(function (b, i) { return h('div', { key: i, className: 'do-task' }, h('span', { className: 'do-dot', 'data-tone': b.status === 'blocked' ? 'warn' : 'pass' }), h('span', { className: 'do-task-name' }, b.metric + ' · ' + (b.old || b.before || '—') + ' → ' + (b.new || b.after || '—')), h('span', { className: 'do-task-meta' }, b.status === 'blocked' ? 'blocked' : (b.delta || 'measured'))) }))) : null,
-      candidates.length ? h('div', null, h('div', { className: 'do-label' }, '候选比较'), h('table', { className: 'do-opt-table' }, h('thead', null, h('tr', null, h('th', null, '候选'), h('th', null, '资产'), h('th', null, '结论'))), h('tbody', null, candidates.map(function (c, i) { return h('tr', { key: i }, h('td', null, c.id + (c.fit ? ' · ' + c.fit : '')), h('td', null, c.source || c.datamapAsset || '—'), h('td', null, (c.pros || []).join('；') || c.reason || '—')) })))) : null,
-      m.recommendation ? h('div', { style: { marginTop: '7px' } }, h('span', { className: 'do-label' }, '建议'), h('div', { className: 'do-muted' }, '候选 ' + (m.recommendation.candidate || '—') + '：' + ((m.recommendation.rationale || []).join('；') || '—'))) : null,
+      candidates.length ? h('div', null, h('div', { className: 'do-label' }, '候选比较'), h('table', { className: 'do-opt-table' }, h('thead', null, h('tr', null, h('th', null, '候选'), h('th', null, '资产'), h('th', null, '结论'))), h('tbody', null, candidates.map(function (c, i) { return h('tr', { key: i }, h('td', null, c.id + (c.fit ? ' · ' + c.fit : '')), h('td', null, c.source || c.datamapAsset || '—'), h('td', null, joinText(c.pros, '；') || displayValue(c.reason, '—'))) })))) : null,
+      m.recommendation ? h('div', { style: { marginTop: '7px' } }, h('span', { className: 'do-label' }, '建议'), h('div', { className: 'do-muted' }, '候选 ' + (m.recommendation.candidate || '—') + '：' + (joinText(m.recommendation.rationale, '；') || '—'))) : null,
       m.conclusion ? h('div', { style: { marginTop: '7px' } }, h('span', { className: 'do-label' }, '结论'), h('div', { className: 'do-muted' }, m.conclusion)) : null,
       evidenceChips(m.evidence),
       h(Gaps, { gaps: m.gaps }),
