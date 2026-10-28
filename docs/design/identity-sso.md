@@ -101,7 +101,9 @@ audit:
 - [x] `GET /api/dataops/identity`（mock identity）
 - [x] approvals 签收审计 `audit[]`
 - [ ] 真实 SSO claims/角色映射
-- [ ] UI 当前用户/无权限隐藏
+- [x] 签收确认层显示当前身份/角色（mock）
+- [x] 角色不符时 Host 拒绝，客户端不回退 Agent
+- [ ] 无权限时提前隐藏签收按钮
 - [ ] 审计服务/落盘
 
 ## 2. 接口

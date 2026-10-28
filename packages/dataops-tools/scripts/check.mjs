@@ -114,6 +114,13 @@ check('host signoff HTTP route persists a UI confirmation', async () => {
     assert(body.workitem.audit.length === 1 && body.workitem.audit[0].gate === 'requirement', 'signoff audit trail')
     const item = store.get('route-item')
     assert(item.approvals.some(a => a.gate === 'requirement' && a.signoffs.length === 1), 'signoff route persisted')
+    const restricted = createSignoffRoute({ store, identity: createLocalSignoffIdentity('只读用户', ['BA']) })
+    const denied = await restricted(new Request('http://localhost/api/dataops/signoff', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ workitemId: 'route-item', gate: 'design', role: 'SE', actionId: 'ui-route-se' })
+    }))
+    assert(denied.status === 400, 'signoff route rejects a missing role')
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

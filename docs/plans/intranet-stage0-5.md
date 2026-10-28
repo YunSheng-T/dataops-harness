@@ -38,7 +38,7 @@ Host 与 Client 各自保留轻量镜像，但由同一 contract fixture 校验�
 
 ### P0-B 签收服务
 
-> 当前：Host 侧 `createSignoffService` + `/api/dataops/signoff` exact route + Client fetch 已接（mock identity、角色校验、WorkitemStore 持久化）；Agent 消息保留为 fallback。真实 SSO 见 [identity-sso.md](../design/identity-sso.md)。
+> 当前：Host 侧 `createSignoffService` + `/api/dataops/signoff` exact route + Client fetch 已接（mock identity、角色校验、WorkitemStore 持久化）；角色拒绝不 fallback Agent。真实 SSO 见 [identity-sso.md](../design/identity-sso.md)。
 
 不依赖 Agent 回合和 DOM 发送按钮：
 

@@ -170,6 +170,14 @@ function apply(ctx) {
     var request = requestState[0]
     var noticeState = React.useState(null)
     var notice = noticeState[0]
+    var noticeToneState = React.useState('success')
+    var noticeTone = noticeToneState[0]
+    var identityState = React.useState(null)
+    var identity = identityState[0]
+    React.useEffect(function () {
+      if (typeof fetch !== 'function') return
+      fetch('/api/dataops/identity').then(function (res) { return res.ok ? res.json() : null }).then(function (body) { if (body && body.ok) identityState[1](body.user) }).catch(function () {})
+    }, [])
     React.useEffect(function () {
       var onRequest = function (event) {
         var detail = (event && event.detail) || {}
@@ -181,7 +189,7 @@ function apply(ctx) {
       return function () { window.removeEventListener('dataops:signoff-request', onRequest) }
     }, [])
     if (!request) {
-      return notice ? React.createElement('div', { className: 'do-signoff-toast', role: 'status' }, notice) : null
+      return notice ? React.createElement('div', { className: 'do-signoff-toast', role: 'status', 'data-tone': noticeTone }, notice) : null
     }
     var text = '【签收】gate=' + request.gate + ' role=' + request.role + ' actionId=' + request.actionId + ' actor=' + request.actor + (request.comment ? ' comment=' + request.comment : '')
     function sendViaAgent() {
@@ -208,14 +216,21 @@ function apply(ctx) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ workitemId: workitemId, gate: request.gate, role: request.role, comment: request.comment, actionId: request.actionId })
       }).then(function (response) {
-        if (!response.ok) throw new Error('signoff route ' + response.status)
+        if (response.status === 404 || response.status === 405) { var unavailable = new Error('route unavailable'); unavailable.routeUnavailable = true; throw unavailable }
+        if (!response.ok) return response.json().catch(function () { return {} }).then(function (body) { throw new Error((body && body.message) || ('签收被拒绝（' + response.status + '）')) })
         return response.json()
       }).then(function (body) {
-        if (!body || body.ok !== true) throw new Error('signoff route rejected')
+        if (!body || body.ok !== true) throw new Error('签收被拒绝')
         window.dispatchEvent(new CustomEvent('dataops:signoff-recorded', { detail: { workitem: body.workitem } }))
+        noticeToneState[1]('success')
         noticeState[1]('签收已记录，阶段状态已刷新')
         window.setTimeout(function () { noticeState[1](null) }, 2600)
-      }).catch(function () { sendViaAgent() })
+      }).catch(function (error) {
+        if (error && error.routeUnavailable) { sendViaAgent(); return }
+        noticeToneState[1]('error')
+        noticeState[1]('签收失败：' + (error && error.message ? error.message : '请检查身份/角色'))
+        window.setTimeout(function () { noticeState[1](null) }, 4200)
+      })
     }
     function copy() {
       if (navigator.clipboard) navigator.clipboard.writeText(text)
@@ -230,7 +245,7 @@ function apply(ctx) {
           React.createElement('span', { className: 'do-signoff-host-title' }, '确认签收'),
           React.createElement('button', { type: 'button', className: 'do-signoff-host-x', onClick: function () { requestState[1](null) } }, '关闭')
         ),
-        React.createElement('div', { className: 'do-signoff-host-meta' }, request.gate + ' · ' + request.role + ' · ' + request.actor),
+        React.createElement('div', { className: 'do-signoff-host-meta' }, request.gate + ' · ' + request.role + ' · ' + request.actor + (identity ? ' · 当前身份 ' + identity.name + '（' + (identity.roles || []).join('/') + '）' : '')),
         React.createElement('div', { className: 'do-signoff-host-label' }, '将写入输入框的正常用户消息'),
         React.createElement('pre', { className: 'do-signoff-host-preview' }, text),
         React.createElement('div', { className: 'do-signoff-host-actions' },
