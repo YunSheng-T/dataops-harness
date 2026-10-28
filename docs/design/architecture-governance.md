@@ -118,6 +118,7 @@ External systems
 - [x] provider config JSON schema/命令校验（不联网、不打印 token）
 - [x] 阶段简报展开态浏览器验证
 - [x] 一条命令本地验收：`node scripts/verify-local.mjs`
+- [x] 安装完整性检查：`node scripts/check-install.mjs`
 
 ## 6. 下一步治理顺序
 

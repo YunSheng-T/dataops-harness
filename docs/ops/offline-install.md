@@ -53,6 +53,7 @@ node scripts/check-dataops-workitem.mjs
 node scripts/check-stage-contract.mjs
 node scripts/check-dataops-health.mjs
 node scripts/check-provider-config.mjs --config docs/ops/provider-config.example.json
+node scripts/check-install.mjs --home /path/to/DSH_HOME
 ```
 
 安装脚本只做本地链接/复制，不访问 npm。
@@ -78,6 +79,16 @@ node scripts/check-dataops-health.mjs --config /path/to/config.json
 ```
 
 未配置 health endpoint 的域会显示 `configured; no health endpoint`，不会误报为已联通。
+
+## 3.3 安装完整性
+
+```sh
+node scripts/check-install.mjs --home /path/to/DSH_HOME
+```
+
+检查 profile 链接、客户端 bundle、生成契约、用户级 skills 和 legacy release 禁用。
+
+> 离线演练时如不想改真实 `~/.agents/skills`，先设置独立的 `DSH_AGENTS_HOME`。
 
 ## 4. 启动
 

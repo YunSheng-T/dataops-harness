@@ -114,3 +114,9 @@ node scripts/verify-local.mjs
 ```
 
 无网络、无浏览器、无真实平台。
+
+安装后验证：
+
+```sh
+node scripts/check-install.mjs
+```
