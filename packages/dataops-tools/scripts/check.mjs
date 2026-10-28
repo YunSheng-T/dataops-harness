@@ -3,7 +3,7 @@ import { createTools } from '../src/index.js'
 import { normalizeConfig } from '../src/config.js'
 import { createWorkitemStore } from '../src/workitem-store.js'
 import { createAdapterIdentity, createLocalSignoffIdentity, createSignoffService } from '../src/signoff-service.js'
-import { createSignoffRoute } from '../src/signoff-route.js'
+import { createIdentityRoute, createSignoffRoute } from '../src/signoff-route.js'
 import { normalizeTicket } from '../src/providers/devops.js'
 import { normalizeTable, normalizeLineage } from '../src/providers/catalog.js'
 import { requirementPayload } from '../src/contracts.js'
@@ -89,6 +89,14 @@ check('identity adapter maps a real adapter into signoff identity', async () => 
   assert(user.id === 'u-1' && user.name === '张三' && user.roles[0] === 'BA', 'identity adapter mapping')
 })
 
+check('identity route exposes the current signoff identity', async () => {
+  const route = createIdentityRoute()
+  const response = await route(new Request('http://localhost/api/dataops/identity'))
+  assert(response.status === 200, 'identity route status')
+  const body = await response.json()
+  assert(body.ok === true && body.user.name === '陈璐' && body.user.roles.includes('BA'), 'identity route body')
+})
+
 check('host signoff HTTP route persists a UI confirmation', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'dataops-signoff-route-'))
   try {
@@ -103,6 +111,7 @@ check('host signoff HTTP route persists a UI confirmation', async () => {
     assert(response.status === 200, 'signoff route status')
     const body = await response.json()
     assert(body.ok === true && body.workitem.gateStatus === 'awaiting_signoff', 'signoff route body')
+    assert(body.workitem.audit.length === 1 && body.workitem.audit[0].gate === 'requirement', 'signoff audit trail')
     const item = store.get('route-item')
     assert(item.approvals.some(a => a.gate === 'requirement' && a.signoffs.length === 1), 'signoff route persisted')
   } finally { rmSync(dir, { recursive: true, force: true }) }

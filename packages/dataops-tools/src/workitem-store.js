@@ -339,6 +339,7 @@ function publicItem(raw, id) {
     gaps: Array.isArray(item.gaps) ? item.gaps : [],
     approvals: Array.isArray(item.approvals) ? item.approvals : [],
     next: item.next || null,
+    audit: Array.isArray(item.audit) ? item.audit : [],
     legacy: item.legacy
   }
 }
@@ -736,6 +737,8 @@ function stageSignoffUnlocked(config, args) {
   approval.signoffs = Array.isArray(approval.signoffs) ? approval.signoffs : []
   const existing = approval.signoffs.find(s => s.actionId === args.actionId)
   if (!existing) approval.signoffs.push({ role, approver: args.actor || role, at: stamp(), via: 'ui', actionId: args.actionId, ...(args.comment ? { comment: args.comment } : {}) })
+  raw.audit = Array.isArray(raw.audit) ? raw.audit : []
+  if (!existing) raw.audit.push({ at: stamp(), userId: args.userId || null, actor: args.actor || role, role, gate, actionId: args.actionId, result: 'signed', sessionId: args.sessionId || null })
   const signedRoles = new Set(approval.signoffs.map(s => s.role))
   approval.status = roles.every(r => signedRoles.has(r)) ? 'approved' : 'awaiting_signoff'
   const advanced = approval.status === 'approved' ? advanceAfterSignoff(raw, gate) : null

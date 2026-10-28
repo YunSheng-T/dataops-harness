@@ -109,6 +109,7 @@ External systems
 - [x] 阶段契约单一来源生成 + host/client 生成文件 + contract test
 - [x] WorkitemStore seam + 文件锁 + revision CAS + 审计基础
 - [x] Host signoff service + exact route + client fetch（mock identity；SSO 后置）
+- [x] identity route + signoff audit[] + identity adapter seam
 - [x] Stage 4 build failure 分支、重编译入口、build/scan 门禁
 - [x] Stage 4/5 1024/1440/1600/1920、暗色、0 console error
 - [x] Stage 6 从阶段导航移除，5/5

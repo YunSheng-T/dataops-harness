@@ -94,6 +94,16 @@ audit:
 - 代码合入、部署、发布、回滚仍由代码平台/发布平台审批；
 - 不能把 DataOps 的 SSO 签收当作外部发布审批。
 
+## 1.1 当前实现进度
+
+- [x] `createSignoffService` 身份注入
+- [x] `identity` 域 adapter → `createAdapterIdentity`
+- [x] `GET /api/dataops/identity`（mock identity）
+- [x] approvals 签收审计 `audit[]`
+- [ ] 真实 SSO claims/角色映射
+- [ ] UI 当前用户/无权限隐藏
+- [ ] 审计服务/落盘
+
 ## 2. 接口
 
 ```ts

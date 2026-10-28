@@ -41,7 +41,9 @@ export function createSignoffService(options = {}) {
         actor: user.name,
         comment: input.comment,
         via: 'ui',
-        actionId: input.actionId || nextId()
+        actionId: input.actionId || nextId(),
+        userId: user.id,
+        sessionId: input.sessionId
       })
       return { ...result, actor: user.name, role: requested }
     }
