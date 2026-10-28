@@ -58,6 +58,24 @@ check('design card renders grain, sources, impact and schedule', () => {
   assert(body.includes('2026-10-25 10:00'), 'missing asOf')
 })
 
+check('design card tolerates string primaryKey, string dataMap path and numeric fields', () => {
+  const body = text(Cards.DesignCard({
+    block: block({
+      kind: 'design',
+      target: { table: 'dws.trade_channel_daily', grain: '渠道 × 日期', primaryKey: 'dt + channel_id', partition: 'dt' },
+      dataMap: { path: '交易域 → 渠道经营 → 渠道日报 → dws.trade_channel_daily', assets: [{ assetType: 'dws', table: 'dws.trade_channel_daily', fields: 5, owner: '交易组', rowCount: 12000 }] },
+      metrics: [{ name: 'empty_channel_ratio', definition: '空渠道订单占比' }],
+      quality: ['与日报同源'],
+      impact: { count: 3, top: [] },
+      review: { ba: 'pending', se: 'deferred' },
+      status: 'draft', asOf: '2026-10-28 14:45'
+    })
+  }))
+  assert(body.includes('dt + channel_id'), 'string primary key')
+  assert(body.includes('交易域') && body.includes('dws.trade_channel_daily'), 'string dataMap path')
+  assert(body.includes('5 个字段'), 'numeric fields')
+})
+
 check('requirement card renders source, owner and gaps', () => {
   const body = text(Cards.RequirementCard({
     block: block({

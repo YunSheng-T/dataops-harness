@@ -435,6 +435,18 @@ export function createDataopsCards(React) {
     )
   }
 
+  function asArray(value) {
+    if (Array.isArray(value)) return value
+    if (value === null || value === undefined || value === '') return []
+    return [value]
+  }
+
+  function asPath(value) {
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string') return value.split(/\s*(?:→|->)\s*/).map(item => item.trim()).filter(Boolean)
+    return value ? [value] : []
+  }
+
   function DataMapPath(props) {
     var path = props.path
     if (!Array.isArray(path)) path = path && typeof path === 'object' ? [path] : []
@@ -465,16 +477,18 @@ export function createDataopsCards(React) {
     var assets = props.assets || []
     if (!assets.length) return null
     return h('div', { className: 'do-assets' }, assets.map(function (asset, i) {
-      var fields = asset.fields || []
+      var fields = asset.fields
+      var fieldList = Array.isArray(fields) ? fields : []
+      var fieldCount = typeof fields === 'number' ? fields : fieldList.length
       return h('div', { key: i, className: 'do-asset' },
         h('div', { className: 'do-asset-head' },
           h('span', { className: 'do-dot', 'data-tone': 'brand' }),
-          h('span', { className: 'do-asset-name' }, asset.id || asset.name),
+          h('span', { className: 'do-asset-name' }, asset.id || asset.name || asset.table || '—'),
           h('span', { className: 'do-pill' }, asset.assetType || 'asset'),
           asset.layer ? h('span', { className: 'do-pill' }, asset.layer) : null
         ),
-        h('div', { className: 'do-asset-meta' }, [asset.owner, asset.rowCount == null ? null : asset.rowCount.toLocaleString() + ' 行', asset.platform].filter(Boolean).join(' · ')),
-        fields.length ? h('div', { className: 'do-asset-fields' }, fields.slice(0, 6).map(function (f, j) { return h('span', { key: j, className: 'do-chip', title: f.description || '' }, f.name) })) : null
+        h('div', { className: 'do-asset-meta' }, [asset.owner, asset.rowCount == null ? null : Number(asset.rowCount).toLocaleString() + ' 行', asset.platform].filter(Boolean).join(' · ')),
+        fieldList.length ? h('div', { className: 'do-asset-fields' }, fieldList.slice(0, 6).map(function (f, j) { return h('span', { key: j, className: 'do-chip', title: f.description || '' }, f.name) })) : (fieldCount ? h('div', { className: 'do-asset-meta' }, fieldCount + ' 个字段') : null)
       )
     }))
   }
@@ -779,10 +793,12 @@ export function createDataopsCards(React) {
     var artifact = React.useState(false)
     if (!m) return h(Fallback, props)
     var status = m.status || 'draft'
+    var target = m.target || {}
+    var primaryKey = asArray(target.primaryKey).map(String)
     var dm = m.dataMap || m.datamap || {}
-    var assets = dm.assets || m.assets || []
-    var path = dm.path || m.dataMapPath || []
-    var evidence = m.designEvidence || m.evidenceTrace || m.evidence || []
+    var assets = asArray(dm.assets || m.assets)
+    var path = asPath(dm.path || m.dataMapPath || [])
+    var evidence = asArray(m.designEvidence || m.evidenceTrace || m.evidence)
     var review = m.review || {}
     var se = review.se
     return h(Frame, {
@@ -804,11 +820,11 @@ export function createDataopsCards(React) {
       ]
     },
       h('dl', { className: 'do-grid' },
-        h('dt', null, '粒度'), h('dd', null, (m.target && m.target.grain) || '—'),
-        h('dt', null, '主键'), h('dd', null, h('span', { className: 'do-code' }, ((m.target && m.target.primaryKey) || []).join(' + ') || '—')),
-        h('dt', null, '分区'), h('dd', null, h('span', { className: 'do-code' }, (m.target && m.target.partition) || '—')),
+        h('dt', null, '粒度'), h('dd', null, target.grain || '—'),
+        h('dt', null, '主键'), h('dd', null, h('span', { className: 'do-code' }, primaryKey.join(' + ') || '—')),
+        h('dt', null, '分区'), h('dd', null, h('span', { className: 'do-code' }, target.partition || '—')),
         h('dt', null, '产出/SLA'), h('dd', null, ((m.schedule && m.schedule.sla) || '—') + (m.schedule && m.schedule.cron ? ' · ' + m.schedule.cron : '')),
-        h('dt', null, '来源'), h('dd', null, (m.sources || []).map(function (s, i) { return h('span', { key: i }, i ? ' ⋈ ' : '', h('span', { className: 'do-code' }, s.table)) }))
+        h('dt', null, '来源'), h('dd', null, asArray(m.sources).map(function (s, i) { return h('span', { key: i }, i ? ' ⋈ ' : '', h('span', { className: 'do-code' }, s.table)) }))
       ),
       path.length ? h('div', null, h('div', { className: 'do-label' }, 'DataMap 寻源'), h(DataMapPath, { path: path }), h(AssetCards, { assets: assets })) : null,
       evidence.length ? h('div', null,
@@ -822,8 +838,8 @@ export function createDataopsCards(React) {
           )
         })
       ) : null,
-      (m.metrics || []).length ? h('div', null, h('div', { className: 'do-label' }, '口径'), h('div', { className: 'do-kv' }, m.metrics.map(function (x, i) { return h(Pill, { key: i, tone: 'brand' }, x.name + ' · ' + (x.definition || '')) }))) : null,
-      (m.quality || []).length ? h('div', null, h('div', { className: 'do-label' }, '质量/约束'), h('div', { className: 'do-kv' }, m.quality.map(function (q, i) { return h(Pill, { key: i, tone: q.status === 'warn' ? 'warn' : q.status === 'fail' ? 'warn' : 'pass' }, q.item + ' · ' + (q.expectation || statusText(q.status))) }))) : null,
+      asArray(m.metrics).length ? h('div', null, h('div', { className: 'do-label' }, '口径'), h('div', { className: 'do-kv' }, asArray(m.metrics).map(function (x, i) { return h(Pill, { key: i, tone: 'brand' }, x.name + ' · ' + (x.definition || '')) }))) : null,
+      asArray(m.quality).length ? h('div', null, h('div', { className: 'do-label' }, '质量/约束'), h('div', { className: 'do-kv' }, asArray(m.quality).map(function (q, i) { return h(Pill, { key: i, tone: q.status === 'warn' ? 'warn' : q.status === 'fail' ? 'warn' : 'pass' }, q.item + ' · ' + (q.expectation || statusText(q.status))) }))) : null,
       h(Impact, { impact: m.impact }),
       h(Gaps, { gaps: m.gaps }),
       (m.gaps || []).some(function (g) { return g.severity === 'blocking' })
@@ -1187,7 +1203,7 @@ export function createDataopsCards(React) {
       footer: [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'postmortem.yaml'))]
     },
       m.summary ? h('div', { className: 'do-muted', style: { marginBottom: '8px' } }, m.summary) : null,
-      (m.metrics || []).length ? h('dl', { className: 'do-grid' },
+      asArray(m.metrics).length ? h('dl', { className: 'do-grid' },
         m.metrics.map(function (metric, i) {
           return h(React.Fragment, { key: i },
             h('dt', null, metric.name),
