@@ -114,6 +114,8 @@ External systems
 - [x] Stage 6 从阶段导航移除，5/5
 - [x] 内网接入架构/ADR 0012
 - [x] 离线安装包与内网安装演练
+- [x] provider health check（未配置 health endpoint 时明确 configured）
+- [x] 阶段简报展开态浏览器验证
 
 ## 6. 下一步治理顺序
 

@@ -602,6 +602,13 @@ async function runStage5Ui() {
     check(!card.includes('允许一次') && !card.includes('回滚'), 'no DSH approval / rollback action in stage 5 card')
     await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-5-live.png'), Buffer.from(r.result.data, 'base64')) })
     await page.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-5-live-full.png'), Buffer.from(r.result.data, 'base64')) })
+    const briefOpened = await page.evaluate(`(() => { const b = document.querySelector('.do-stagebar-head'); if (!b) return false; b.click(); return true })()`)
+    if (briefOpened) {
+      await sleep(300)
+      check(await page.evaluate(`!!document.querySelector('.do-stagebar-stages')`), 'stage brief expands from its header')
+      await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/stage-5-brief-expanded.png'), Buffer.from(r.result.data, 'base64')) })
+      await page.evaluate(`document.querySelector('.do-stagebar-head')?.click()`)
+    }
     for (const width of [1024, 1600, 1920]) {
       await page.send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false })
       await sleep(600)

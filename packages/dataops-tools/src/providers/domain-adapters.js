@@ -18,7 +18,7 @@ export const DOMAIN_OPERATIONS = {
   datamap: ['search', 'path', 'asset'],
   lineage: ['upstream', 'downstream'],
   profile: ['snapshot'],
-  scheduler: ['jobs', 'instances', 'logs', 'compile'],
+  scheduler: ['jobs', 'instances', 'logs', 'compile', 'health'],
   code: ['build', 'scan', 'test', 'review', 'mergeStatus'],
   cicd: ['run', 'artifact'],
   release: ['environments', 'approval'],
@@ -80,7 +80,11 @@ export function createDomainAdapter(name, rawConfig, options = {}) {
   return {
     name,
     kind: config.kind,
-    async health() { return { ok: true, kind: config.kind, mock: false } },
+    async health() {
+      const hasHealth = config.kind === 'http' ? Boolean(config.paths && config.paths.health) : Boolean(config.commands && config.commands.health)
+      if (!hasHealth) return { ok: true, kind: config.kind, mock: false, checked: false }
+      try { await transport.call('health', {}, {}); return { ok: true, kind: config.kind, mock: false, checked: true } } catch (error) { return { ok: false, kind: config.kind, mock: false, checked: true, error: error && error.code || 'UPSTREAM' } }
+    },
     async read(operation, args = {}) {
       if (!DOMAIN_OPERATIONS[name].includes(operation)) throw configError('domain-adapter: ' + name + ' does not support ' + operation)
       return transport.call(operation, args, { signal: args.signal })

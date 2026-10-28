@@ -51,6 +51,7 @@ node scripts/install-dataops-skills.mjs
 node scripts/check-dataops-preset.mjs
 node scripts/check-dataops-workitem.mjs
 node scripts/check-stage-contract.mjs
+node scripts/check-dataops-health.mjs
 ```
 
 安装脚本只做本地链接/复制，不访问 npm。
@@ -66,6 +67,16 @@ node scripts/check-offline-surface.mjs
 - 没有公网 npm 依赖
 - 没有源码里的外部 runtime URL
 - 只有 DSH peer / DataOps 本地包
+
+## 3.2 健康检查
+
+```sh
+node scripts/check-dataops-health.mjs
+# 真实配置：
+node scripts/check-dataops-health.mjs --config /path/to/config.json
+```
+
+未配置 health endpoint 的域会显示 `configured; no health endpoint`，不会误报为已联通。
 
 ## 4. 启动
 

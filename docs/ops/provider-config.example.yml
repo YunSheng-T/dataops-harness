@@ -71,6 +71,9 @@
         paths:
           environments: /api/v1/deployments/{target}/environments
           approval: /api/v1/approvals/{id}
+      # Optional per-domain health operations:
+      # us.paths.health: /api/v1/health
+      # scheduler.commands.health: ['dataops','scheduler','health','--json']
       identity:
         kind: http
         baseUrlEnv: DATAOPS_IDENTITY_URL

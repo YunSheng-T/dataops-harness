@@ -32,7 +32,7 @@ const copy = (from) => {
   if (!existsSync(source)) throw new Error('missing offline payload: ' + from)
   cpSync(source, join(stage, from), { recursive: true, filter: path => !path.includes('node_modules') })
 }
-for (const path of ['packages/dataops-client', 'packages/dataops-brand', 'packages/dataops-tools', 'packages/dataops-preset', 'profiles/dataops', '.agents/skills', 'contracts', 'docs/ops/provider-config.example.yml', 'workitems/_template', 'workitems/README.md', 'scripts/check-offline-surface.mjs', 'scripts/install-dataops-profile.mjs', 'scripts/install-dataops-skills.mjs', 'scripts/check-dataops-preset.mjs', 'scripts/check-dataops-workitem.mjs', 'scripts/check-stage-contract.mjs', 'upstream.json', 'README.md']) copy(path)
+for (const path of ['packages/dataops-client', 'packages/dataops-brand', 'packages/dataops-tools', 'packages/dataops-preset', 'profiles/dataops', '.agents/skills', 'contracts', 'docs/ops/provider-config.example.yml', 'workitems/_template', 'workitems/README.md', 'scripts/check-offline-surface.mjs', 'scripts/check-dataops-health.mjs', 'scripts/install-dataops-profile.mjs', 'scripts/install-dataops-skills.mjs', 'scripts/check-dataops-preset.mjs', 'scripts/check-dataops-workitem.mjs', 'scripts/check-stage-contract.mjs', 'upstream.json', 'README.md']) copy(path)
 
 writeFileSync(join(stage, 'OFFLINE-INSTALL.md'), `# DataOps offline install
 
