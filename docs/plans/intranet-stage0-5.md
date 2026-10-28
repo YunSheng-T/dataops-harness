@@ -38,7 +38,7 @@ Host 与 Client 各自保留轻量镜像，但由同一 contract fixture 校验�
 
 ### P0-B 签收服务
 
-> 当前仍是 Agent 回合 + 原生发送按钮；Host/Client RPC/身份尚未接入。下一轮继续。
+> 当前：Host 侧 `createSignoffService` 已建立（mock identity、角色校验、WorkitemStore 持久化）；UI 仍走 Agent 回合 + 原生发送按钮，Host/Client RPC 绑定尚未接。下一轮继续。
 
 不依赖 Agent 回合和 DOM 发送按钮：
 

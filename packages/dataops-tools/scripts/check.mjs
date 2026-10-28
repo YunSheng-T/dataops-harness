@@ -2,6 +2,7 @@
 import { createTools } from '../src/index.js'
 import { normalizeConfig } from '../src/config.js'
 import { createWorkitemStore } from '../src/workitem-store.js'
+import { createLocalSignoffIdentity, createSignoffService } from '../src/signoff-service.js'
 import { normalizeTicket } from '../src/providers/devops.js'
 import { normalizeTable, normalizeLineage } from '../src/providers/catalog.js'
 import { requirementPayload } from '../src/contracts.js'
@@ -75,6 +76,27 @@ check('tool names follow the scope-action-object registry', () => {
   assert(!TOOL_REGISTRY.some(item => item.name.includes('schedule_spec') || item.name.includes('schedule_yaml')), 'artifact names must not be tool names')
   const legacy = ['dataops_requirement', 'dataops_design', 'dataops_table', 'dataops_lineage', 'dataops_tech_plan', 'dataops_evidence', 'dataops_develop', 'dataops_test', 'dataops_release', 'dataops_postmortem', 'dataops_incident']
   for (const name of legacy) assert(!tools.some(tool => tool.name === name), 'legacy tool name still registered: ' + name)
+})
+
+check('host signoff service records approvals without an Agent turn', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-signoff-'))
+  try {
+    const store = createWorkitemStore(normalizeConfig({ workitemsDir: dir }))
+    const created = store.create({ id: 'signoff-item', source: { system: 'edevops', id: 'US-SIGN' }, title: 'signoff', initialStage: 'requirement' })
+    assert(created.workitem.stage === 'requirement', 'signoff fixture stage')
+    const service = createSignoffService({ store, identity: createLocalSignoffIdentity('陈璐', ['BA', 'requester']) })
+    const ba = await service.sign({ workitemId: 'signoff-item', gate: 'requirement', role: 'ba', actionId: 'ui-s-ba' })
+    assert(ba.gateStatus === 'awaiting_signoff' && ba.stage === 'requirement', 'host BA signoff')
+    const req = await service.sign({ workitemId: 'signoff-item', gate: 'requirement', role: 'requester', actionId: 'ui-s-req' })
+    assert(req.gateStatus === 'approved' && req.stage === 'design', 'host requester advances')
+    const item = store.get('signoff-item')
+    assert(item.approvals.some(a => a.gate === 'requirement' && a.status === 'approved'), 'signoff persisted')
+    assert(item.revision >= 2, 'signoff increments revision')
+    const wrong = createSignoffService({ store, identity: createLocalSignoffIdentity('只读用户', ['BA']) })
+    let denied = false
+    try { await wrong.sign({ workitemId: 'signoff-item', gate: 'design', role: 'SE' }) } catch (error) { denied = /does not hold role/.test(error.message) }
+    assert(denied, 'signoff identity roles are enforced')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 check('WorkitemStore seam wraps the local file adapter', () => {

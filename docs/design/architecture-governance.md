@@ -108,6 +108,7 @@ External systems
 - [x] Stage 4 评审/合入从重复两个签收 panel 收敛为一条 gate row
 - [x] 阶段契约单一来源生成 + host/client 生成文件 + contract test
 - [x] WorkitemStore seam + 文件锁 + revision CAS + 审计基础
+- [x] Host signoff service seam + mock identity + role check（UI/RPC 尚未绑定）
 - [x] Stage 4 build failure 分支、重编译入口、build/scan 门禁
 - [x] Stage 6 从阶段导航移除，5/5
 - [x] 内网接入架构/ADR 0012
