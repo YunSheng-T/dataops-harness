@@ -487,6 +487,7 @@ async function runCommitterUi() {
     check(Boolean(item && /gate:\s*develop\.merge/.test(item.text) && /role:\s*Committer/i.test(item.text)), 'committer signoff recorded')
     check(Boolean(item && /stage:\s*cicd/.test(item.text)), 'committer advances to cicd')
     check(!afterSubmit.includes('只在输入框'), 'not only filled composer')
+    check(!afterSubmit.includes('【签收】gate=develop.merge'), 'host signoff route does not compose an Agent message')
     check(page.errors.length === 0, 'no console exceptions: ' + page.errors.slice(-2).join(' | '))
     notes.push({ scenario: 'committer-ui', buttons, stage: item && (item.text.match(/^stage:\s*(\S+)/m) || [])[1] })
   } finally {

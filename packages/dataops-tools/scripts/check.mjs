@@ -3,6 +3,7 @@ import { createTools } from '../src/index.js'
 import { normalizeConfig } from '../src/config.js'
 import { createWorkitemStore } from '../src/workitem-store.js'
 import { createLocalSignoffIdentity, createSignoffService } from '../src/signoff-service.js'
+import { createSignoffRoute } from '../src/signoff-route.js'
 import { normalizeTicket } from '../src/providers/devops.js'
 import { normalizeTable, normalizeLineage } from '../src/providers/catalog.js'
 import { requirementPayload } from '../src/contracts.js'
@@ -76,6 +77,25 @@ check('tool names follow the scope-action-object registry', () => {
   assert(!TOOL_REGISTRY.some(item => item.name.includes('schedule_spec') || item.name.includes('schedule_yaml')), 'artifact names must not be tool names')
   const legacy = ['dataops_requirement', 'dataops_design', 'dataops_table', 'dataops_lineage', 'dataops_tech_plan', 'dataops_evidence', 'dataops_develop', 'dataops_test', 'dataops_release', 'dataops_postmortem', 'dataops_incident']
   for (const name of legacy) assert(!tools.some(tool => tool.name === name), 'legacy tool name still registered: ' + name)
+})
+
+check('host signoff HTTP route persists a UI confirmation', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-signoff-route-'))
+  try {
+    const store = createWorkitemStore(normalizeConfig({ workitemsDir: dir }))
+    store.create({ id: 'route-item', source: { system: 'edevops', id: 'US-ROUTE' }, title: 'route', initialStage: 'requirement' })
+    const route = createSignoffRoute({ store })
+    const response = await route(new Request('http://localhost/api/dataops/signoff', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ workitemId: 'route-item', gate: 'requirement', role: 'ba', actionId: 'ui-route-ba' })
+    }))
+    assert(response.status === 200, 'signoff route status')
+    const body = await response.json()
+    assert(body.ok === true && body.workitem.gateStatus === 'awaiting_signoff', 'signoff route body')
+    const item = store.get('route-item')
+    assert(item.approvals.some(a => a.gate === 'requirement' && a.signoffs.length === 1), 'signoff route persisted')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 check('host signoff service records approvals without an Agent turn', async () => {

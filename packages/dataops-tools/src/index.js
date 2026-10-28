@@ -10,6 +10,8 @@ import { resolve } from 'node:path'
 import { normalizeConfig } from './config.js'
 import { buildPipelinePackage } from './pipeline-package.js'
 import { createCicdCliAdapter } from './providers/cicd-cli.js'
+import { createWorkitemStore } from './workitem-store.js'
+import { registerSignoffRoute } from './signoff-route.js'
 import { buildDevelopArtifacts } from './develop-package.js'
 import { createMockProvider } from './providers/mock.js'
 import { createDevops } from './providers/devops.js'
@@ -786,6 +788,13 @@ export function createTools(config, deps) {
 export const TOOLS = createTools(normalizeConfig({}), {})
 
 export function apply(ctx, config) {
-  const tools = createTools(normalizeConfig(config), { ctx })
+  const normalized = normalizeConfig(config)
+  const tools = createTools(normalized, { ctx })
   for (const tool of tools) ctx.tools.register(tool)
+  const store = createWorkitemStore(normalized)
+  const mountSignoff = child => {
+    try { registerSignoffRoute(child, normalized, store) } catch { /* optional host service; tools stay usable */ }
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountSignoff)
+  else mountSignoff(ctx)
 }

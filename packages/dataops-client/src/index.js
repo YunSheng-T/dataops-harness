@@ -180,10 +180,7 @@ function apply(ctx) {
     }, [])
     if (!request) return null
     var text = '【签收】gate=' + request.gate + ' role=' + request.role + ' actionId=' + request.actionId + ' actor=' + request.actor + (request.comment ? ' comment=' + request.comment : '')
-    function fill() {
-      // First fill through the native composer bridge. Then click the composer's
-      // own send button. This is the same two-step path a human uses, and does
-      // not depend on a particular Lexical submit() implementation.
+    function sendViaAgent() {
       if (typeof window.__dataopsCompose === 'function') window.__dataopsCompose(text)
       else if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('dataops:compose', { detail: { text: text } }))
       requestState[1](null)
@@ -197,6 +194,22 @@ function apply(ctx) {
           else if (typeof window.__dataopsSubmit === 'function') window.__dataopsSubmit(text)
         } catch (error) { /* leave the visible draft for manual Enter */ }
       }, 140)
+    }
+    function fill() {
+      var workitemId = typeof window !== 'undefined' ? window.__dataopsActiveWorkitemId : null
+      if (!workitemId || typeof fetch !== 'function') { sendViaAgent(); return }
+      requestState[1](null)
+      fetch('/api/dataops/signoff', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ workitemId: workitemId, gate: request.gate, role: request.role, comment: request.comment, actionId: request.actionId })
+      }).then(function (response) {
+        if (!response.ok) throw new Error('signoff route ' + response.status)
+        return response.json()
+      }).then(function (body) {
+        if (!body || body.ok !== true) throw new Error('signoff route rejected')
+        window.dispatchEvent(new CustomEvent('dataops:signoff-recorded', { detail: { workitem: body.workitem } }))
+      }).catch(function () { sendViaAgent() })
     }
     function copy() {
       if (navigator.clipboard) navigator.clipboard.writeText(text)

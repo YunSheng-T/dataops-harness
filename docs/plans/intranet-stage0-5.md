@@ -38,7 +38,7 @@ Host 与 Client 各自保留轻量镜像，但由同一 contract fixture 校验�
 
 ### P0-B 签收服务
 
-> 当前：Host 侧 `createSignoffService` 已建立（mock identity、角色校验、WorkitemStore 持久化）；UI 仍走 Agent 回合 + 原生发送按钮，Host/Client RPC 绑定尚未接。下一轮继续。
+> 当前：Host 侧 `createSignoffService` + `/api/dataops/signoff` exact route + Client fetch 已接（mock identity、角色校验、WorkitemStore 持久化）；Agent 消息保留为 fallback。真实 SSO 在 P9 替换。
 
 不依赖 Agent 回合和 DOM 发送按钮：
 

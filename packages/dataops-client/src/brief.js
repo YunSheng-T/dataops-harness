@@ -422,6 +422,19 @@ export function createStageBrief(React, store, contextStore) {
     var payloads = readPayloads(props)
     var sessionId = props.sessionId
     var action = buildAction(payloads, sessionId)
+    var refreshState = React.useState(0)
+    if (typeof window !== 'undefined' && action && action.workitem && action.workitem.id) window.__dataopsActiveWorkitemId = action.workitem.id
+    if (typeof React.useEffect === 'function' && typeof window !== 'undefined') {
+      React.useEffect(function () {
+        var onRecorded = function (event) {
+          var workitem = event && event.detail && event.detail.workitem
+          if (workitem && contextStore && sessionId) contextStore.ingest(sessionId, Object.assign({}, workitem, { kind: 'workitem' }))
+          refreshState[1](function (value) { return value + 1 })
+        }
+        window.addEventListener('dataops:signoff-recorded', onRecorded)
+        return function () { window.removeEventListener('dataops:signoff-recorded', onRecorded) }
+      }, [sessionId, contextStore])
+    }
     var dockKey = action ? action.spec.gate + ':' + (action.blocking ? 'blocked' : action.pending.map(function (r) { return r.key }).join(',')) : 'none'
     var card = action && typeof props.renderCard === 'function'
       ? h('div', { className: 'do-turn-card', 'data-kind': action.spec.kind, 'data-gate': action.spec.gate }, h('div', { className: 'do-turn-card-cap' }, '当前阶段卡 · ' + action.spec.label), h(props.renderCard, { block: { content: [{ type: 'text', text: JSON.stringify(enrichedCardPayload(action)) }] } }))
