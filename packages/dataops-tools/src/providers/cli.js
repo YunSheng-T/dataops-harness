@@ -75,6 +75,14 @@ export function createCliClient(domain, options) {
       try {
         return JSON.parse(text)
       } catch {
+        // Some internal CLIs write progress lines to stdout before the JSON
+        // result. Accept only a final complete JSON line; never scan arbitrary
+        // log text for fragments.
+        const lines = text.split(/\r?\n/u).map(line => line.trim()).filter(Boolean).reverse()
+        for (const line of lines) {
+          if (!line.startsWith('{') && !line.startsWith('[')) continue
+          try { return JSON.parse(line) } catch { /* keep looking */ }
+        }
         throw formatError('CLI 输出不是 JSON（检查 --json 参数）')
       }
     }

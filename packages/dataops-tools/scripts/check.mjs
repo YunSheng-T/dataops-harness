@@ -2,7 +2,7 @@
 import { createTools } from '../src/index.js'
 import { normalizeConfig } from '../src/config.js'
 import { createWorkitemStore } from '../src/workitem-store.js'
-import { createLocalSignoffIdentity, createSignoffService } from '../src/signoff-service.js'
+import { createAdapterIdentity, createLocalSignoffIdentity, createSignoffService } from '../src/signoff-service.js'
 import { createSignoffRoute } from '../src/signoff-route.js'
 import { normalizeTicket } from '../src/providers/devops.js'
 import { normalizeTable, normalizeLineage } from '../src/providers/catalog.js'
@@ -15,6 +15,7 @@ import { SCENARIO_KEYS, buildRequirement, buildDesign, buildTechPlan, buildEvide
 import { TOOL_REGISTRY, IMPLEMENTED_TOOL_NAMES, TOOL_NAME_PATTERN } from '../src/tool-registry.js'
 import { DOMAIN_NAMES, createDomainAdapters } from '../src/providers/domain-adapters.js'
 import { createCicdPipelineRunner } from '../src/providers/cicd-cli.js'
+import { createCliClient } from '../src/providers/cli.js'
 
 const results = []
 const checks = []
@@ -77,6 +78,15 @@ check('tool names follow the scope-action-object registry', () => {
   assert(!TOOL_REGISTRY.some(item => item.name.includes('schedule_spec') || item.name.includes('schedule_yaml')), 'artifact names must not be tool names')
   const legacy = ['dataops_requirement', 'dataops_design', 'dataops_table', 'dataops_lineage', 'dataops_tech_plan', 'dataops_evidence', 'dataops_develop', 'dataops_test', 'dataops_release', 'dataops_postmortem', 'dataops_incident']
   for (const name of legacy) assert(!tools.some(tool => tool.name === name), 'legacy tool name still registered: ' + name)
+})
+
+check('identity adapter maps a real adapter into signoff identity', async () => {
+  const identity = createAdapterIdentity({ read: async operation => {
+    assert(operation === 'me', 'identity operation')
+    return { id: 'u-1', name: '张三', roles: ['BA'] }
+  } })
+  const user = await identity()
+  assert(user.id === 'u-1' && user.name === '张三' && user.roles[0] === 'BA', 'identity adapter mapping')
 })
 
 check('host signoff HTTP route persists a UI confirmation', async () => {
@@ -165,6 +175,16 @@ check('CICD pipeline tool dispatches to the CLI adapter when configured', async 
   assert(pipeline.source === 'cicd-cli' && pipeline.mock === false && pipeline.pipelineRunId === 'run-cli-1', 'CLI tool payload')
   assert(seen.some(line => line.includes('--target dws.x') && line.includes('--commit abc')), 'CLI args rendered')
   rmSync(config.workitemsDir, { recursive: true, force: true })
+})
+
+check('CLI transport accepts a final JSON line after stdout progress', async () => {
+  const client = createCliClient({ kind: 'cli', commands: { run: ['fake', '--json'] } }, {
+    timeoutMs: 1000,
+    resolveSecret: async () => undefined,
+    execFileImpl: (_cmd, _args, _opts, done) => done(null, 'starting run\n{"runId":"r1","status":"succeeded"}\n', '')
+  })
+  const value = await client.call('run', {}, {})
+  assert(value.runId === 'r1' && value.status === 'succeeded', 'final JSON line parsing')
 })
 
 check('CICD CLI runner handles sync, polling and fail-closed results', async () => {

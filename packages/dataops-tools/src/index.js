@@ -12,6 +12,8 @@ import { buildPipelinePackage } from './pipeline-package.js'
 import { createCicdCliAdapter } from './providers/cicd-cli.js'
 import { createWorkitemStore } from './workitem-store.js'
 import { registerSignoffRoute } from './signoff-route.js'
+import { createAdapterIdentity } from './signoff-service.js'
+import { createDomainAdapters } from './providers/domain-adapters.js'
 import { buildDevelopArtifacts } from './develop-package.js'
 import { createMockProvider } from './providers/mock.js'
 import { createDevops } from './providers/devops.js'
@@ -817,8 +819,12 @@ export function apply(ctx, config) {
   const tools = createTools(normalized, { ctx })
   for (const tool of tools) ctx.tools.register(tool)
   const store = createWorkitemStore(normalized)
+  const adapters = createDomainAdapters(normalized, { timeoutMs: normalized.timeoutMs, retry: normalized.retry })
+  const identity = normalized.domains && normalized.domains.identity && normalized.domains.identity.kind !== 'mock'
+    ? createAdapterIdentity(adapters.identity)
+    : undefined
   const mountSignoff = child => {
-    try { registerSignoffRoute(child, normalized, store) } catch { /* optional host service; tools stay usable */ }
+    try { registerSignoffRoute(child, normalized, store, identity) } catch { /* optional host service; tools stay usable */ }
   }
   if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountSignoff)
   else mountSignoff(ctx)

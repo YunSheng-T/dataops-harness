@@ -42,10 +42,10 @@ export function createSignoffRoute(options) {
   }
 }
 
-export function registerSignoffRoute(ctx, config, store) {
+export function registerSignoffRoute(ctx, config, store, identity) {
   const connection = ctx && typeof ctx.get === 'function' ? ctx.get('connection') : null
   if (!connection || !connection.fetch || typeof connection.fetch.register !== 'function') return null
-  const route = createSignoffRoute({ store })
+  const route = createSignoffRoute({ store, identity })
   const dispose = connection.fetch.register({
     path: '/api/dataops/signoff',
     methods: ['POST'],

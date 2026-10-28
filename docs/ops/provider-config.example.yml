@@ -13,12 +13,11 @@
     # Real domains replace mock one at a time. All URLs stay in env/config.
     domains:
       us:
-        kind: http
-        baseUrlEnv: DATAOPS_US_URL
+        kind: cli
         tokenRef: DATAOPS_US_TOKEN
-        paths:
-          list: /api/v1/us
-          detail: /api/v1/us/{id}
+        commands:
+          list: ['edevops', 'us', 'list', '--json']
+          ticket: ['edevops', 'us', 'get', '--id', '{ticketId}', '--json']
       datamap:
         kind: http
         baseUrlEnv: DATAOPS_DATAMAP_URL

@@ -11,7 +11,7 @@
 | P0 本地契约 | 阶段/gate/kind、签收接口、WorkitemStore 接口 | 无 | contract tests；mock 全通过 |
 | P1 本地 UI | 阶段简报、卡密度、失败态、弱模型可读性 | P0 | 1440/1600/1920、暗色、0 console |
 | P2 离线交付 | 内网安装包、profile、无公网依赖、健康检查 | P1 | 断网安装演练 |
-| P3 US 只读 | EDevOps US list/detail → USPicker/workitem | 内网 API | 真实 US 卡；无 mock 回退 |
+| P3 US 只读 | EDevOps US CLI list/detail → USPicker/workitem | 内网 CLI | 真实 US 卡；无 mock 回退 |
 | P4 元数据只读 | DataMap / lineage / profile 三域分开 | 内网 API | 路径/资产/血缘/画像可追 |
 | P5 调度只读 | jobs/instances/logs/compile | 内网 API/CLI | 3c 时间带/日志真实 |
 | P6 代码平台 | build/scan/test/review/merge 状态 | 代码平台 | Stage 4 真实回流 |
@@ -38,7 +38,7 @@ Host 与 Client 各自保留轻量镜像，但由同一 contract fixture 校验�
 
 ### P0-B 签收服务
 
-> 当前：Host 侧 `createSignoffService` + `/api/dataops/signoff` exact route + Client fetch 已接（mock identity、角色校验、WorkitemStore 持久化）；Agent 消息保留为 fallback。真实 SSO 在 P9 替换。
+> 当前：Host 侧 `createSignoffService` + `/api/dataops/signoff` exact route + Client fetch 已接（mock identity、角色校验、WorkitemStore 持久化）；Agent 消息保留为 fallback。真实 SSO 见 [identity-sso.md](../design/identity-sso.md)。
 
 不依赖 Agent 回合和 DOM 发送按钮：
 

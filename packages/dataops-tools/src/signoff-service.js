@@ -51,3 +51,21 @@ export function createSignoffService(options = {}) {
 export function createLocalSignoffIdentity(name = '陈璐', roles = ['BA', 'requester', 'SE', 'Committer']) {
   return async () => ({ id: 'local:' + name, name, roles })
 }
+
+/**
+ * Adapt a domain `identity` adapter to the signoff identity function.
+ * The adapter output is expected to contain id/name/roles; no browser-provided
+ * actor is trusted.
+ */
+export function createAdapterIdentity(adapter) {
+  if (!adapter || typeof adapter.read !== 'function') throw configError('identity adapter is required')
+  return async () => {
+    const me = await adapter.read('me', {})
+    if (!me || typeof me !== 'object') throw configError('identity adapter returned no user')
+    return {
+      id: String(me.id || me.userId || ''),
+      name: String(me.name || me.displayName || me.userName || ''),
+      roles: Array.isArray(me.roles) ? me.roles.map(String) : []
+    }
+  }
+}

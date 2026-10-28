@@ -6,7 +6,7 @@
   "pipelinePollIntervalMs": 3000,
   "workitemsDir": "workitems",
   "domains": {
-    "us": { "kind": "http", "baseUrlEnv": "DATAOPS_US_URL", "tokenRef": "DATAOPS_US_TOKEN", "paths": { "list": "/api/v1/us", "detail": "/api/v1/us/{id}" } },
+    "us": { "kind": "cli", "tokenRef": "DATAOPS_US_TOKEN", "commands": { "list": ["edevops", "us", "list", "--json"], "ticket": ["edevops", "us", "get", "--id", "{ticketId}", "--json"] } },
     "datamap": { "kind": "http", "baseUrlEnv": "DATAOPS_DATAMAP_URL", "tokenRef": "DATAOPS_DATAMAP_TOKEN", "paths": { "asset": "/api/v1/assets/{asset}", "path": "/api/v1/scenarios/{scenario}/path" } },
     "lineage": { "kind": "http", "baseUrlEnv": "DATAOPS_LINEAGE_URL", "tokenRef": "DATAOPS_LINEAGE_TOKEN", "paths": { "upstream": "/api/v1/lineage/upstream?table={table}", "downstream": "/api/v1/lineage/downstream?table={table}" } },
     "profile": { "kind": "http", "baseUrlEnv": "DATAOPS_PROFILE_URL", "tokenRef": "DATAOPS_PROFILE_TOKEN", "paths": { "snapshot": "/api/v1/profile/{table}" } },

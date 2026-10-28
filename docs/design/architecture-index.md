@@ -16,6 +16,7 @@
 | [用户旅程索引](user-journey/README.md) | 0+1 → Stage 5 文档入口 |
 | [ADR 0011](../decisions/0011-stage-4-5-implementation.md) | Stage 4/5 实现决策 |
 | [ADR 0012](../decisions/0012-real-provider-boundary.md) | 真实系统接入边界 |
+| [P9 SSO 身份](identity-sso.md) | 身份、角色映射、签收审计 |
 | [领导演示脚本](../demo/stage0-5-leadership-demo.md) | 现场 runbook |
 
 ## 2. 当前实现事实
