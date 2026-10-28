@@ -13,7 +13,9 @@ export const DEFAULTS = {
   maxDepth: 3,
   maxNodes: 200,
   mockDelayMs: 0,
-  workitemsDir: 'workitems'
+  workitemsDir: 'workitems',
+  pipelineTimeoutMs: 900000,
+  pipelinePollIntervalMs: 3000
 }
 
 function positiveInt(value, fallback, min, max) {
@@ -72,6 +74,9 @@ export function normalizeConfig(config) {
     workitemsDir: typeof input.workitemsDir === 'string' && input.workitemsDir.trim() !== '' ? input.workitemsDir.trim() : DEFAULTS.workitemsDir,
     disabledTools: Array.isArray(input.disabledTools) ? input.disabledTools.filter(item => typeof item === 'string') : [],
     devops: normalizeDomain(input.devops, provider, 'devops'),
-    catalog: normalizeDomain(input.catalog, provider, 'catalog')
+    catalog: normalizeDomain(input.catalog, provider, 'catalog'),
+    cicd: normalizeDomain(input.cicd, 'mock', 'cicd'),
+    pipelineTimeoutMs: positiveInt(input.pipelineTimeoutMs, DEFAULTS.pipelineTimeoutMs, 1000, 3600000),
+    pipelinePollIntervalMs: positiveInt(input.pipelinePollIntervalMs, DEFAULTS.pipelinePollIntervalMs, 100, 60000)
   }
 }

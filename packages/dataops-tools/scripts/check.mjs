@@ -11,6 +11,7 @@ import { join } from 'node:path'
 import { SCENARIO_KEYS, buildRequirement, buildDesign, buildTechPlan, buildEvidence } from '../src/mock.js'
 import { TOOL_REGISTRY, IMPLEMENTED_TOOL_NAMES, TOOL_NAME_PATTERN } from '../src/tool-registry.js'
 import { DOMAIN_NAMES, createDomainAdapters } from '../src/providers/domain-adapters.js'
+import { createCicdPipelineRunner } from '../src/providers/cicd-cli.js'
 
 const results = []
 const checks = []
@@ -73,6 +74,51 @@ check('tool names follow the scope-action-object registry', () => {
   assert(!TOOL_REGISTRY.some(item => item.name.includes('schedule_spec') || item.name.includes('schedule_yaml')), 'artifact names must not be tool names')
   const legacy = ['dataops_requirement', 'dataops_design', 'dataops_table', 'dataops_lineage', 'dataops_tech_plan', 'dataops_evidence', 'dataops_develop', 'dataops_test', 'dataops_release', 'dataops_postmortem', 'dataops_incident']
   for (const name of legacy) assert(!tools.some(tool => tool.name === name), 'legacy tool name still registered: ' + name)
+})
+
+check('CICD CLI runner handles sync, polling and fail-closed results', async () => {
+  const good = { pipelineRunId: 'run-1', status: 'succeeded', artifact: { package: 'a.tar.gz', digest: 'sha256:x', manifest: 'manifest.json', checksum: 'checksums.txt' } }
+  const sync = createCicdPipelineRunner({ transport: { commands: {}, call: async () => good }, pollIntervalMs: 1 })
+  assert((await sync.run({ target: 'dws.x' })).status === 'succeeded', 'sync CICD result')
+
+  let calls = 0
+  const asyncTransport = {
+    commands: { status: true },
+    async call(op) {
+      calls++
+      if (op === 'run') return { runId: 'run-2', status: 'running' }
+      return calls === 2 ? { runId: 'run-2', status: 'running' } : good
+    }
+  }
+  const polled = createCicdPipelineRunner({ transport: asyncTransport, pollIntervalMs: 1, sleep: async () => {} })
+  assert((await polled.run({ target: 'dws.x' })).status === 'succeeded', 'polled CICD result')
+  assert(calls === 3, 'CICD should poll status')
+
+  const failed = createCicdPipelineRunner({ transport: { commands: {}, call: async () => ({ pipelineRunId: 'run-3', status: 'failed' }) } })
+  let failedBlocked = false
+  try { await failed.run({}) } catch (error) { failedBlocked = /pipeline failed/.test(error.message) }
+  assert(failedBlocked, 'failed CICD result must fail closed')
+
+  const missing = createCicdPipelineRunner({ transport: { commands: {}, call: async () => ({ pipelineRunId: 'run-4', status: 'succeeded', artifact: { package: 'a.tar.gz' } }) } })
+  let artifactBlocked = false
+  try { await missing.run({}) } catch (error) { artifactBlocked = /artifact\.digest/.test(error.message) }
+  assert(artifactBlocked, 'missing artifact metadata must fail closed')
+
+  let clock = 0
+  const timeout = createCicdPipelineRunner({
+    transport: { commands: { status: true }, call: async op => op === 'run' ? { runId: 'run-5', status: 'running' } : { runId: 'run-5', status: 'running' } },
+    pollIntervalMs: 1,
+    pipelineTimeoutMs: 5,
+    now: () => (clock += 10),
+    sleep: async () => {}
+  })
+  let timedOut = false
+  try { await timeout.run({}) } catch (error) { timedOut = /轮询超时/.test(error.message) }
+  assert(timedOut, 'pipeline polling timeout')
+
+  const cfg = normalizeConfig({ cicd: { kind: 'cli', commands: { run: ['dataops', 'cicd', 'run', '--json'] }, tokenRef: 'CICD_TOKEN' } })
+  assert(cfg.cicd.kind === 'cli' && cfg.cicd.commands.run[0] === 'dataops', 'cicd CLI config')
+  assert(cfg.pipelinePollIntervalMs === 3000 && cfg.pipelineTimeoutMs === 900000, 'pipeline defaults')
 })
 
 check('every mock tool payload is lossless JSON', async () => {

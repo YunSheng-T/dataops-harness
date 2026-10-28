@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { normalizeConfig } from './config.js'
 import { buildPipelinePackage } from './pipeline-package.js'
+import { createCicdCliAdapter } from './providers/cicd-cli.js'
 import { buildDevelopArtifacts } from './develop-package.js'
 import { createMockProvider } from './providers/mock.js'
 import { createDevops } from './providers/devops.js'
@@ -641,13 +642,22 @@ export function createTools(config, deps) {
     textTool({
       name: 'dataops_cicd_pipeline',
       description: '触发/读取一条 mock 数据 CICD pipeline：build/scan/test/package、制品包 manifest/checksum、外部环境只读状态；不执行真实部署。',
-      parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：完成后把 workitem cicd 阶段标为 done。' } }),
+      parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：完成后把 workitem cicd 阶段标为 done。' }, target: { type: 'string', description: '真实 CICD CLI 的目标表；mock 下忽略。' }, commit: { type: 'string', description: '真实 CICD CLI 的 commit；mock 下忽略。' } }),
       execute: async args => {
-        const value = { ...CICD_PIPELINE, mock: true }
-        if (args.workitemId) {
+        let value = { ...CICD_PIPELINE, mock: true }
+        if (config.cicd.kind === 'cli') {
+          const adapter = createCicdCliAdapter(config, {
+            resolveSecret,
+            execFileImpl: options.execFileImpl,
+            pollIntervalMs: config.pipelinePollIntervalMs,
+            pipelineTimeoutMs: config.pipelineTimeoutMs
+          })
+          const run = await adapter.run({ target: args.target || value.target, commit: args.commit || value.commit, workitemId: args.workitemId })
+          value = { ...value, ...run, source: 'cicd-cli', mock: false, status: run.status }
+        } else if (args.workitemId) {
           value.artifact = buildPipelinePackage(resolve(config.workitemsDir), args.workitemId, { target: value.target, commit: value.commit })
-          value.workitem = stageComplete(config, { id: args.workitemId })
         }
+        if (args.workitemId) value.workitem = stageComplete(config, { id: args.workitemId })
         return value
       },
       summary: value => 'CICD：' + value.pipelineRunId + '｜' + value.status + '｜' + value.artifact.package

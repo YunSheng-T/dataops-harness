@@ -102,3 +102,5 @@ cd packages/dataops-tools && npm run check    # 24 个注册工具（P3 活动�
 - [架构治理清单](docs/design/architecture-governance.md)
 
 - [架构文档索引](docs/design/architecture-index.md)
+
+- [内网 Stage 0–5 实施计划](docs/plans/intranet-stage0-5.md)
