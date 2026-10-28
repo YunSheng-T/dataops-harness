@@ -42,7 +42,8 @@
 4. 列表转文本统一 `joinText(value, separator)`。
 5. `statusText` 对 object status 也返回文本。
 6. 未识别的对象字段序列化兜底，不直接渲染。
-7. 出错时 `CardBoundary` 只损坏当前卡，不拖垮整个 slot。
+7. `h` 在创建 React 元素前用 `safeChild` 把普通对象转为文本；React 元素本身不转换。
+8. 出错时 `CardBoundary` 只损坏当前卡，不拖垮整个 slot。
 
 ## 4. 覆盖范围
 

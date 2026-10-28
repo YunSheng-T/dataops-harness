@@ -482,6 +482,20 @@ check('lineage v2 card renders design timeband', () => {
   assert(body.includes('设计血缘') && body.includes('03:12') && body.includes('22m'), 'v2 lineage preview')
 })
 
+check('tech plan tolerates object target and estimate from 3c payload', () => {
+  const body = text(Cards.TechPlanCard({
+    block: block({
+      kind: 'tech_plan', stage: 'scheme', substage: 'tech_plan', status: 'draft',
+      title: '3c 技术方案', target: { table: 'dws.trade_channel_daily', grain: '渠道 × 日期', partition: 'dt=${bizdate}', primaryKey: 'dt + channel_id', readOnly: true, note: '只读' },
+      estimate: { total: '3.5 人日' }, tasks: [{ id: 'T1', name: '基线表' }],
+      dependencies: [], risks: [], gaps: [], rollback: { steps: [], materials: [] }
+    })
+  }))
+  assert(body.includes('dws.trade_channel_daily'), 'object target')
+  assert(body.includes('3.5 人日'), 'object estimate')
+  assert(!body.includes('[object Object]'), 'no object child')
+})
+
 check('tech plan renders task and embedded lineage', () => {
   const body = text(Cards.TechPlanCard({ block: block({ kind: 'tech_plan', stage: 'scheme', target: 'dws.trade_channel_daily', status: 'draft', tasks: [{ id: 'T1', name: '支付口径聚合', platform: 'spark', owner: '交易组' }], estimate: '2 人日', risks: [], gaps: [], review: { se: 'pending', dev: 'deferred' }, lineage: { table: 'dws.trade_channel_daily', graph: { nodes: [{ id: 'table:dws.trade_channel_daily', type: 'physical_table', label: 'dws.trade_channel_daily' }], edges: [] }, timeband: { upstreamReadyAt: '03:12', sla: '05:00', buffer: '22m', points: [] } } }) }))
   assert(body.includes('支付口径聚合') && body.includes('设计血缘') && body.includes('SE 确认'), 'tech plan preview')

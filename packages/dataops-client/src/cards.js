@@ -7,7 +7,16 @@
  * no palette literals in feature code.
  */
 export function createDataopsCards(React) {
-  var h = React.createElement
+  function safeChild(value) {
+    if (Array.isArray(value)) return value.map(safeChild)
+    if (value && typeof value === 'object' && !value.$$typeof && !(value.type && value.props)) return displayValue(value)
+    return value
+  }
+
+  var h = function (type, props) {
+    var children = Array.prototype.slice.call(arguments, 2).map(safeChild)
+    return React.createElement.apply(React, [type, props].concat(children))
+  }
 
   var STYLE_ID = 'dataops-cards-styles'
 
@@ -1049,7 +1058,7 @@ export function createDataopsCards(React) {
     var tasks = m.tasks || []
     var review = m.review || {}
     return h(Frame, {
-      title: '技术方案 · ' + (m.target || '') + ' · ' + tasks.length + ' 个任务',
+      title: '技术方案 · ' + displayValue(m.target && typeof m.target === 'object' ? m.target.table : m.target, '') + ' · ' + tasks.length + ' 个任务',
       state: 'done',
       tone: blocked ? 'warn' : 'pass',
       pills: [h(Pill, { key: 's', tone: blocked ? 'warn' : 'pass' }, statusText(m.status || 'draft')), h(Pill, { key: 'owner' }, 'SE ' + ((review.se && review.se.approver) || m.owner || '王工'))],
@@ -1061,9 +1070,9 @@ export function createDataopsCards(React) {
       ]
     },
       h('dl', { className: 'do-grid' },
-        h('dt', null, '目标'), h('dd', null, m.target || '—'),
+        h('dt', null, '目标'), h('dd', null, displayValue(m.target && typeof m.target === 'object' ? (m.target.table || m.target) : m.target, '—')),
         h('dt', null, '周期/SLA'), h('dd', null, (m.sla && (m.sla.scheduleConstraints && m.sla.scheduleConstraints.cron || m.sla.outputBy)) || '—'),
-        h('dt', null, '工时'), h('dd', null, (m.estimate && (m.estimate.total || m.estimate)) || '—'),
+        h('dt', null, '工时'), h('dd', null, displayValue(m.estimate && typeof m.estimate === 'object' ? m.estimate.total : m.estimate, '—')),
         h('dt', null, '签收'), h('dd', null, 'SE ' + statusText((review.se && review.se.status) || 'pending') + ' · Dev ' + statusText((review.dev && review.dev.status) || 'deferred'))
       ),
       lineage ? h('div', null, h('div', { className: 'do-label' }, '设计血缘 · 一层直接上游'), h(LineageV2Preview, { lineage: lineage })) : h('div', { className: 'do-muted', style: { marginTop: '7px' } }, '血缘待补：未取得独立血缘 payload'),
@@ -1165,7 +1174,7 @@ export function createDataopsCards(React) {
         h(Btn, { key: 'open', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看产物')]
     },
       h('dl', { className: 'do-grid' },
-        h('dt', null, '目标'), h('dd', null, m.target || '—'),
+        h('dt', null, '目标'), h('dd', null, displayValue(m.target && typeof m.target === 'object' ? (m.target.table || m.target) : m.target, '—')),
         h('dt', null, '分支'), h('dd', null, h('span', { className: 'do-code' }, m.branch || '—')),
         h('dt', null, '产物'), h('dd', null, artifacts.length + ' 个 · ' + Object.keys(counts).map(function (k) { return counts[k] + ' ' + k }).join(' / ')),
         h('dt', null, '任务'), h('dd', null, tasks.filter(function (t) { return t.status === 'done' }).length + '/' + tasks.length + ' 完成')
