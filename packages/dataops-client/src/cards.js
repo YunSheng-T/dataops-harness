@@ -652,6 +652,20 @@ export function createDataopsCards(React) {
       }))
   }
 
+  function displayValue(value, fallback) {
+    if (value === null || value === undefined || value === '') return fallback || '—'
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value)
+    if (Array.isArray(value)) return value.map(item => displayValue(item, '')).filter(Boolean).join('；') || (fallback || '—')
+    if (typeof value === 'object') {
+      var parts = []
+      if (Array.isArray(value.in) && value.in.length) parts.push('范围：' + value.in.join('；'))
+      if (Array.isArray(value.out) && value.out.length) parts.push('非目标：' + value.out.join('；'))
+      if (parts.length) return parts.join('；')
+      return JSON.stringify(value)
+    }
+    return String(value)
+  }
+
   // ---------- cards ----------
 
   function USPickerCard(props) {
@@ -766,8 +780,8 @@ export function createDataopsCards(React) {
     },
       h('dl', { className: 'do-grid' },
         h('dt', null, '来源'), h('dd', null, (source || '—') + (m.requester ? ' · 需求方 ' + m.requester : '')),
-        h('dt', null, '目标'), h('dd', null, m.goal || '—'),
-        h('dt', null, '范围'), h('dd', null, m.scope || '—'),
+        h('dt', null, '目标'), h('dd', null, displayValue(m.goal)),
+        h('dt', null, '范围'), h('dd', null, displayValue(m.scope)),
         h('dt', null, '非目标'), h('dd', null, (m.nonGoals || []).join('；') || '—'),
         h('dt', null, '验收'), h('dd', null, (m.acceptance || []).join('；') || '—'),
         h('dt', null, '负责人'), h('dd', null, (m.owner || '—') + (m.requester ? ' · 需求方 ' + m.requester : ''))
@@ -1357,7 +1371,7 @@ export function createDataopsCards(React) {
       pills: [h(Pill, { key: 's', tone: blocked ? 'warn' : 'pass' }, statusText(m.status || 'draft')), h(Pill, { key: 'd' }, (m.decisions || []).length + ' 个决策')],
       footer: [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'solution.yaml')), h(Btn, { key: 'open', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看交付物')]
     },
-      m.summary || m.scope ? h('div', { className: 'do-muted' }, m.summary || m.scope) : null,
+      m.summary || m.scope ? h('div', { className: 'do-muted' }, displayValue(m.summary || m.scope, '')) : null,
       options.length ? h('div', null, h('div', { className: 'do-label' }, '方案选择'),
         h('table', { className: 'do-opt-table' },
           h('thead', null, h('tr', null, h('th', null, '方案'), h('th', null, '范围/影响'), h('th', null, 'Tradeoff'), h('th', null, '结论'))),

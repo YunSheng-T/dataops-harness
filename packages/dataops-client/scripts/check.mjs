@@ -76,6 +76,20 @@ check('design card tolerates string primaryKey, string dataMap path and numeric 
   assert(body.includes('5 个字段'), 'numeric fields')
 })
 
+check('requirement card renders scope object and never passes an object as a React child', () => {
+  const body = text(Cards.RequirementCard({
+    block: block({
+      kind: 'requirement', id: 'US-3838', title: '日报空渠道告警',
+      goal: '空渠道超阈值告警', owner: '陈璐', requester: '渠道运营',
+      scope: { in: ['当日分区空渠道占比检测'], out: ['不改表结构', '不做自动重跑'] },
+      acceptance: ['5 分钟内触达'], impacts: [], status: 'draft', gaps: []
+    })
+  }))
+  assert(body.includes('范围：当日分区空渠道占比检测'), 'scope in')
+  assert(body.includes('非目标：不改表结构'), 'scope out')
+  assert(!body.includes('[object Object]'), 'no object child')
+})
+
 check('requirement card renders source, owner and gaps', () => {
   const body = text(Cards.RequirementCard({
     block: block({
