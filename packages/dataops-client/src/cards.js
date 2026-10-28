@@ -194,6 +194,8 @@ export function createDataopsCards(React) {
     '.do-dev-detail{min-width:0;color:var(--dsw-alias-label-secondary,#61666b);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.do-dev-attempts{margin-top:4px;padding-top:4px;border-top:1px dashed var(--dsw-alias-border-l2,rgba(0,0,0,.12))}',
     '.do-dev-attempt-line{font-size:9px;line-height:16px;color:var(--dsw-alias-label-tertiary,#81858c)}',
+    '.do-dev-gates{margin-top:8px;padding-top:7px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06))}',
+    '.do-dev-gate-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px}',
     '.do-dev-warning{margin-top:7px;padding:6px 8px;border-radius:6px;background:color-mix(in srgb,var(--dsw-alias-state-warn-primary,#f59e0b) 10%,transparent);color:var(--dsw-alias-state-warn-primary,#b45309);font-size:10px}',
     '.do-dev-artifacts{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:7px}',
     '.do-cicd-pipeline{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0;padding:7px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));border-radius:8px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
@@ -1049,9 +1051,25 @@ export function createDataopsCards(React) {
         h('dt', null, '产物'), h('dd', null, artifacts.length + ' 个 · ' + Object.keys(counts).map(function (k) { return counts[k] + ' ' + k }).join(' / ')),
         h('dt', null, '任务'), h('dd', null, tasks.filter(function (t) { return t.status === 'done' }).length + '/' + tasks.length + ' 完成')
       ),
+      h('div', { className: 'do-dev-gates' },
+        h('div', { className: 'do-label' }, '评审与合入'),
+        h('div', { className: 'do-dev-gate-row' },
+          h(Pill, { key: 'se', tone: (review.se && review.se.status === 'approved') ? 'pass' : 'warn' }, 'SE 评审 · ' + statusText((review.se && review.se.status) || 'pending')),
+          gateReady && (!review.se || review.se.status !== 'approved')
+            ? h(Btn, { key: 'se-action', variant: 'ghost', onClick: function () { signoff('develop.code_review', 'se', (review.se && review.se.approver) || '王工') } }, 'SE 通过')
+            : null,
+          h(Pill, { key: 'committer', tone: merge.status === 'merged' ? 'pass' : 'warn' }, 'Committer · ' + statusText(merge.status || (review.committer && review.committer.status) || 'waiting')),
+          gateReady && (!merge.status || merge.status === 'pending') && (!review.committer || ['pending', 'waiting'].includes(review.committer.status))
+            ? h(Btn, { key: 'merge-action', variant: 'primary', onClick: function () { signoff('develop.merge', 'committer', (review.committer && review.committer.approver) || '代码平台') } }, '记录合入')
+            : null,
+          merge.commit ? h('span', { className: 'do-muted do-meta' }, merge.commit) : null
+        ),
+        h('div', { className: 'do-muted', style: { marginTop: '3px' } }, '合入由外部代码平台/Committer 执行；DataOps 只记录状态')
+      ),
       artifacts.length ? h('div', { className: 'do-dev-artifacts' },
         h('div', { className: 'do-label' }, '实现包'),
-        artifacts.map(function (a, i) { return h('span', { key: i, className: 'do-chip', title: a.path || '' }, (a.type || 'artifact') + ' · ' + (a.path || '').split('/').pop()) })
+        artifacts.slice(0, 5).map(function (a, i) { return h('span', { key: i, className: 'do-chip', title: a.path || '' }, (a.type || 'artifact') + ' · ' + (a.path || '').split('/').pop()) }),
+        artifacts.length > 5 ? h('span', { className: 'do-muted' }, '+' + (artifacts.length - 5) + ' 个，查看产物') : null
       ) : null,
       Object.keys(validation).length ? h('div', { className: 'do-dev-validation' },
         h('div', { className: 'do-label' }, '验证循环'),
@@ -1059,8 +1077,10 @@ export function createDataopsCards(React) {
         h('div', { className: 'do-dev-attempts' }, ['build', 'scan', 'deploy', 'test'].map(function (key) {
           var v = validation[key]
           if (!v || !Array.isArray(v.attempts)) return null
-          return h('div', { key: key, className: 'do-dev-attempt-line' }, v.attempts.map(function (a, i) {
-            return h('div', { key: i }, 'attempt ' + (a.attempt || i + 1) + ' · ' + statusText(a.status) + ' · ' + (a.error || a.reason || a.note || a.action || '—'))
+          var failed = v.attempts.filter(function (a) { return a.status !== 'passed' }).slice(0, 1)
+          if (!failed.length) return null
+          return h('div', { key: key, className: 'do-dev-attempt-line' }, failed.map(function (a, i) {
+            return h('div', { key: i }, '此前 attempt ' + (a.attempt || i + 1) + ' · ' + statusText(a.status) + ' · ' + (a.error || a.reason || a.note || a.action || '—'))
           }))
         }))
       ) : null,
@@ -1076,14 +1096,6 @@ export function createDataopsCards(React) {
         })
       ) : null,
       (m.gaps || []).length ? h(Gaps, { gaps: m.gaps }) : null,
-      h('div', { className: 'do-review' },
-        h('span', { className: 'do-review-label' }, '评审/合入'),
-        h(Pill, { key: 'se', tone: (review.se && review.se.status === 'approved') ? 'pass' : 'warn' }, 'SE · ' + statusText((review.se && review.se.status) || 'pending')),
-        h(Pill, { key: 'committer', tone: merge.status === 'merged' ? 'pass' : 'warn' }, 'Committer · ' + statusText(merge.status || (review.committer && review.committer.status) || 'waiting')),
-        merge.commit ? h('span', { className: 'do-muted do-meta' }, merge.commit) : null
-      ),
-      h(SignoffPanel, { model: m, gate: 'develop.code_review', roles: gateReady ? [{ key: 'se', label: 'SE 评审', actor: (review.se && review.se.approver) || '王工', action: 'SE 通过' }] : [] }),
-      h(SignoffPanel, { model: m, gate: 'develop.merge', roles: gateReady ? [{ key: 'committer', label: 'Committer', actor: (review.committer && review.committer.approver) || '代码平台', action: '记录合入' }] : [] }),
       h(ArtifactModal, { open: artifact[0], onClose: function () { artifact[1](false) }, artifact: deliverablePath(m), value: m })
     )
   }

@@ -1,48 +1,41 @@
 ---
 name: dataops-demo
-description: 用户要演示 DataOps 工作台的 6 阶段流程或排障场景时使用；按 P2 交付物路径走 mock 演示，不写业务系统。
+description: 用户要演示 DataOps 工作台 Stage 0–5 或排障场景时使用；按已确认的 mock/seed 路径演示，不写业务系统，不展示 Stage 6。
 ---
 
-# DataOps Demo（P2）
+# DataOps Demo（Stage 0–5）
 
 ## 何时用
 
-用户说「跑一遍完整演示」「走 6 个阶段」「演示排障」「用 mock 数据看看」时。
+用户说「跑一遍完整演示」「走 0 到 5」「演示开发验证」「演示数据 CICD」「演示排障」「用 mock 数据看看」时。
 
-## 6 阶段
+## 主线
 
-默认 `scenario=channel-report`，按 `dataops-workflow` 推进，不跳过：
+1. **US**：`dataops_shared_read_us` → USPicker；选中 US-3821；`dataops_shared_ensure_workitem`。
+2. **需求**：需求卡；BA + 需求方签收。
+3. **设计**：DesignCard + DataMap 路径/资产；独立血缘/画像。
+4. **3a/3b/3c**：Analysis → Solution → TechPlan；3a blocking 不能进 3b；3c 只展开一层设计血缘。
+5. **Stage 4**：`dataops_shared_read_develop` 产多产物；Build/Scan/Deploy/Test attempt；SE review + Committer merge；DataOps 不执行 merge。
+6. **Stage 5**：`dataops_cicd_pipeline` 一条 pipeline + 制品包 + manifest/checksum + 外部环境只读。
+7. **停止**：Stage 5 完成即停；Stage 6 不实现、不展示。
 
-1. 需求：用 `dataops-deliverable-templates` 产 `deliverables/requirement.yaml` → presenter
-2. 设计：产 `deliverables/design.yaml` → presenter
-3. 方案：
-   - 分析：`deliverables/analysis.yaml`
-   - 需求方案：`deliverables/solution.yaml`
-   - 技术方案：`deliverables/tech-plan.yaml`
-   - 都走 presenter
-4. 开发：产 `deliverables/change.sql` + `deliverables/develop.yaml` → presenter；用 `sql-review` 自查
-5. CICD：
-   - 扫描：`dataops_cicd_scan`
-   - 编译：`dataops_cicd_compile`
-   - 测试：`dataops_cicd_test`
-   - 发布：`dataops_cicd_release`（必须走 DSH 原生审批）
-6. 复盘：产 `deliverables/postmortem.yaml` → presenter
+## 快速演示
 
-不要把内容阶段交给已下线的旧内容工具；事实用 `dataops_shared_read_table` / `_lineage` / `_evidence` / `_profile`。
+- 固定 demo：`node scripts/seed-dataops-demo.mjs --stage develop`
+- 只读历史卡：`dataops_shared_read_stage` 按 stage 读取。
+- 契约彩排：`node scripts/e2e/dataops-stage0-5-contract.mjs`
+- 浏览器旅程：`node scripts/e2e/dataops-p1.4.mjs --scenario journey-ui --keep`
 
-## 排障
+## 失败/回流
 
-另开会话：
-
-1. `dataops_shared_read_logs` 取信号
-2. `pipeline-debug` 判断时间线/根因/处置
-3. 产 `deliverables/incident.yaml` → presenter
-
-不调用 `dataops_incident_triage`。
+- 3a：blocking 未关不能签收。
+- Stage 4：build/scan failed → 隐藏合入 → 修复后重新编译。
+- Stage 5：pipeline 失败回 Stage 4；外部环境 pending/拒绝不改变 DataOps pass。
 
 ## 边界
 
 - 所有数据是 mock；明确说不是生产结论。
-- 发布审批拒绝/取消/不可用时不说“已发布”。
-- 不调用写平台接口，不创建真实任务。
-- 6 阶段和排障都要给阶段/交付物/证据/gaps 的摘要，不逐条复述工具名。
+- 不使用 `dataops_cicd_release`；Stage 5 不接 DSH 原生 approval。
+- 不执行真实部署、发布、回滚、US 写回。
+- 不展示 Stage 6 假页面。
+- 不逐条复述工具名；用户看阶段、卡片、证据和 gaps。

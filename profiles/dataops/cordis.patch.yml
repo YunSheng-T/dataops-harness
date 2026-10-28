@@ -19,6 +19,7 @@
           - dataops_develop_generate_code
           - dataops_review_write_postmortem
           - dataops_incident_triage
+          - dataops_cicd_release
     - id: dataops-brand
       name: '@dataops/dsh-dataops-brand'
     - id: dataops-client

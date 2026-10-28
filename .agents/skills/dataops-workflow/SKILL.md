@@ -43,7 +43,7 @@ decision.md    # 审批记录
 1. 调 `dataops_shared_update_workitem` 更新 `stage` / `stages[stage]` / `substage`
 2. 同一 patch 更新 `deliverables`、`gaps`、`next`；不确定时先 `dryRun: true`
 3. 工具会在 `plan.md` 追加一行：时间 + 变更 + via update
-4. 发布前把 `approvals[gate=release].status` 置为 `pending`，停下来等人确认
+4. Stage 5 不通过 DSH approval 发布；外部部署审批由公司发布平台负责，workitem 只记录外部审批 ID/状态
 
 不确定交付物或只问一句时，不强行建目录。
 
