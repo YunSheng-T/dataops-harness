@@ -38,6 +38,8 @@ Host 与 Client 各自保留轻量镜像，但由同一 contract fixture 校验�
 
 ### P0-B 签收服务
 
+> 当前仍是 Agent 回合 + 原生发送按钮；Host/Client RPC/身份尚未接入。下一轮继续。
+
 不依赖 Agent 回合和 DOM 发送按钮：
 
 ```text
@@ -47,6 +49,8 @@ UI action → Host signoff service → identity/role/gate validation → workite
 本地先用 mock identity；真实 SSO 在 P9 替换。
 
 ### P0-C WorkitemStore
+
+> 当前：`createWorkitemStore` seam + 文件锁 + revision CAS；service adapter 未接。
 
 ```ts
 interface WorkitemStore {

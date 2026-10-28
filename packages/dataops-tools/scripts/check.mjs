@@ -86,8 +86,18 @@ check('WorkitemStore seam wraps the local file adapter', () => {
     assert(created.workitem.id === 'store-item', 'store create')
     assert(store.get('store-item').id === 'store-item', 'store get')
     assert(store.list().items.some(item => item.id === 'store-item'), 'store list')
-    const updated = store.update('store-item', { next: 'store seam' })
-    assert(updated.next === 'store seam', 'store update')
+    const first = store.update('store-item', { next: 'store seam' })
+    assert(first.next === 'store seam' && first.revision === 1, 'store update revision')
+    let stale = false
+    try { store.update('store-item', { next: 'stale' }, { revision: 0 }) } catch (error) { stale = /revision conflict/.test(error.message) }
+    assert(stale, 'store CAS rejects stale revision')
+    const second = store.update('store-item', { next: 'store seam 2' }, { revision: 1 })
+    assert(second.revision === 2 && second.next === 'store seam 2', 'store CAS accepts current revision')
+    writeFileSync(join(dir, 'store-item', '.lock'), 'test', 'utf8')
+    let locked = false
+    try { store.update('store-item', { next: 'locked' }) } catch (error) { locked = /workitem: busy/.test(error.message) }
+    rmSync(join(dir, 'store-item', '.lock'), { force: true })
+    assert(locked, 'store rejects a concurrent writer')
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

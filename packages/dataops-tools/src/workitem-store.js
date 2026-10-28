@@ -6,7 +6,7 @@
  * format, not an arbitrary YAML service; unknown keys still round-trip through
  * the parser/serializer.
  */
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 import { GATE_ROLES, STAGE_KINDS, STAGES } from './stage-contract.generated.js'
 export { GATE_ROLES, STAGE_KINDS, STAGES }
@@ -324,6 +324,7 @@ function publicItem(raw, id) {
   return {
     kind: 'workitem',
     id: item.id,
+    revision: item.revision || 0,
     title: item.title,
     type: item.type,
     status: item.status,
@@ -543,12 +544,15 @@ function planLine(patch) {
   return '- ' + stamp() + ' · 工作项更新 · ' + (parts.join(' · ') || 'patch') + ' · via dataops_shared_update_workitem\n'
 }
 
-export function updateWorkitem(config, args) {
+function updateWorkitemUnlocked(config, args) {
   const id = args && args.id
   if (!id) throw new Error('workitem: id is required')
   const root = rootDir(config)
   const dir = itemDir(root, id)
   const raw = readRaw(root, id)
+  if (args.expectedRevision !== undefined && Number(raw.revision || 0) !== Number(args.expectedRevision)) {
+    throw new Error('workitem: revision conflict (expected ' + args.expectedRevision + ', actual ' + (raw.revision || 0) + ')')
+  }
   validatePatch(args.patch)
   validateStageAdvance(raw, args.patch)
   const next = applyPatch(raw, args.patch)
@@ -559,6 +563,7 @@ export function updateWorkitem(config, args) {
   if (args.dryRun === true) {
     return { ...publicItem(next, id), dryRun: true, previewPlanEntry: entry }
   }
+  next.revision = Number(next.revision || 0) + 1
   const path = itemPath(root, id)
   const temp = path + '.tmp-' + process.pid
   writeFileSync(temp, serializeWorkitem(next), 'utf8')
@@ -570,6 +575,7 @@ export function updateWorkitem(config, args) {
 
 
 function writeItem(dir, raw, config, planText) {
+  raw.revision = Number(raw.revision || 0) + 1
   const path = join(dir, 'item.yaml')
   const temp = path + '.tmp-' + process.pid
   writeFileSync(temp, serializeWorkitem(raw), 'utf8')
@@ -599,7 +605,7 @@ function ensureStageAllowed(raw, stage, substage) {
   if (stage === 'cicd' && !gates.has('develop.merge')) throw new Error('stage: develop.merge gate is not approved')
 }
 
-export function stagePrepare(config, args) {
+function stagePrepareUnlocked(config, args) {
   const id = args && args.id
   if (!id) throw new Error('stage: id is required')
   const kind = args.kind
@@ -683,7 +689,7 @@ function advanceAfterSignoff(raw, gate) {
   return null
 }
 
-export function stageSignoff(config, args) {
+function stageSignoffUnlocked(config, args) {
   const id = args && args.id
   if (!id) throw new Error('stage: id is required')
   const gate = args.gate
@@ -738,7 +744,7 @@ export function stageSignoff(config, args) {
   return { ...publicItem(raw, id), advanced, gateStatus: approval.status }
 }
 
-export function stageComplete(config, args) {
+function stageCompleteUnlocked(config, args) {
   const id = args && args.id
   if (!id) throw new Error('stage: id is required')
   const root = rootDir(config)
@@ -756,6 +762,45 @@ export function stageComplete(config, args) {
 
 export const _internals = { parseWorkitem, serializeWorkitem, normalize, validatePatch }
 
+function withItemLock(dir, fn) {
+  const lockPath = join(dir, '.lock')
+  let fd
+  try { fd = openSync(lockPath, 'wx') } catch (error) {
+    if (error && error.code === 'EEXIST') throw new Error('workitem: busy (another writer holds .lock)')
+    throw error
+  }
+  try {
+    writeFileSync(fd, String(process.pid), 'utf8')
+    return fn()
+  } finally {
+    try { closeSync(fd) } catch {}
+    try { unlinkSync(lockPath) } catch {}
+  }
+}
+
+function lockedWrite(config, id, fn) {
+  const root = rootDir(config)
+  const dir = itemDir(root, id)
+  if (!existsSync(dir)) throw new Error('workitem: not found ' + id)
+  return withItemLock(dir, fn)
+}
+
+export function updateWorkitem(config, args) {
+  return lockedWrite(config, args && args.id, () => updateWorkitemUnlocked(config, args))
+}
+
+export function stagePrepare(config, args) {
+  return lockedWrite(config, args && args.id, () => stagePrepareUnlocked(config, args))
+}
+
+export function stageSignoff(config, args) {
+  return lockedWrite(config, args && args.id, () => stageSignoffUnlocked(config, args))
+}
+
+export function stageComplete(config, args) {
+  return lockedWrite(config, args && args.id, () => stageCompleteUnlocked(config, args))
+}
+
 /**
  * Stable storage/service seam. The current implementation is the local YAML
  * adapter; a shared Workitem service can replace it without changing tools.
@@ -766,7 +811,7 @@ export function createWorkitemStore(config) {
     get: id => readWorkitem(config, { id }),
     list: () => readWorkitem(config, {}),
     create: input => ensureWorkitem(config, input),
-    update: (id, patch, options = {}) => updateWorkitem(config, { id, patch, dryRun: options.dryRun === true }),
+    update: (id, patch, options = {}) => updateWorkitem(config, { id, patch, dryRun: options.dryRun === true, expectedRevision: options.revision }),
     prepare: args => stagePrepare(config, args),
     signoff: args => stageSignoff(config, args),
     complete: args => stageComplete(config, args)

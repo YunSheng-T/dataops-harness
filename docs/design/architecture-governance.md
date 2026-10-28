@@ -106,7 +106,8 @@ External systems
 - [x] workflow 删除 `approvals[gate=release]` 旧规则
 - [x] profile 禁用 legacy `dataops_cicd_release`
 - [x] Stage 4 评审/合入从重复两个签收 panel 收敛为一条 gate row
-- [x] 阶段契约 fixture + host/client mirror contract test（运行时仍保留镜像，下一步再收敛）
+- [x] 阶段契约单一来源生成 + host/client 生成文件 + contract test
+- [x] WorkitemStore seam + 文件锁 + revision CAS + 审计基础
 - [x] Stage 4 build failure 分支、重编译入口、build/scan 门禁
 - [x] Stage 6 从阶段导航移除，5/5
 - [x] 内网接入架构/ADR 0012
