@@ -1,0 +1,75 @@
+# ============================================================
+# 样例：.dataops/build.yaml（脱敏版）
+# 说明：本文件为结构样例；覆盖各 toolChain 的制品参数写法。
+#       packageName 需唯一；files 为相对代码仓根目录的路径。
+#       operationType: develop=上线 / offline=下线。
+# ============================================================
+# yaml-language-server: $schema=./build-schema.json
+version: 1.2
+
+packages:
+  # ---- LTS 调度任务（data_schedule）----
+  - packageName: lts_demo_01
+    toolChain: data_schedule
+    serviceType: data_schedule_service
+    pipelineType: his_data_schedule
+    operationType: develop
+    files:
+      - path: lts_code/<任务目录>/*
+      - path: lts_code/<任务目录>/*.properties   # 环境占位符清单
+
+  # ---- 离线 SQL（data_models，DDL/DML/Rollback 三段式）----
+  - packageName: offlinesql_demo_01
+    toolChain: data_models
+    serviceType: data_model_datapipeline_service
+    pipelineType: datapipeline_offline_sql
+    operationType: develop
+    files:
+      - path: defaultGroup/DataModels/DataModelDatapipelineService/OfflineSQL/<业务目录>/DDL/*
+      - path: defaultGroup/DataModels/DataModelDatapipelineService/OfflineSQL/<业务目录>/DML/*
+      - path: defaultGroup/DataModels/DataModelDatapipelineService/OfflineSQL/<业务目录>/Rollback/*
+
+  # ---- FlashSync 数据传输（adms）----
+  - packageName: adms_demo_01
+    toolChain: extract_transform_load
+    serviceType: flashsync
+    pipelineType: adms
+    operationType: develop
+    files:
+      - path: default/ETL/FlashSync/FlashSync/<目录>/*
+
+  # ---- FlashSync 数据加工（adms_etl）----
+  - packageName: adms_etl_demo_01
+    toolChain: extract_transform_load
+    serviceType: flashsync
+    pipelineType: adms_etl
+    operationType: develop
+    files:
+      - path: default/ETL/FlashSync/FlashSyncETL/<目录>/*
+
+  # ---- BDS HIVE 上线（zip 打包作业）----
+  - packageName: bds_hive_demo_01
+    toolChain: extract_transform_load
+    serviceType: big_data_service
+    pipelineType: BDS_HIVE
+    operationType: develop
+    files:
+      - path: default/ETL/BDS/HIVE/<目录>/*.zip
+
+  # ---- BDS 下线（uninstall 目录）----
+  - packageName: bds_hive_offline_demo_01
+    toolChain: extract_transform_load
+    serviceType: big_data_service
+    pipelineType: BDS_HIVE
+    operationType: offline
+    files:
+      - path: default/ETL/BDS/<引擎>/uninstall/<目录>/*
+
+  # ---- 数据服务 API（data_api，发布 zip）----
+  - packageName: data_api_demo_01
+    toolChain: data_service_type
+    serviceType: data_service
+    pipelineType: data_api
+    operationType: develop
+    files:
+      - path: default/DataService/DataService/DataApi/<目录>/<release>.zip

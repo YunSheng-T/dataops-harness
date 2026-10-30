@@ -1,0 +1,30 @@
+# ============================================================
+# 样例：.dataops/manifest.yaml（脱敏版）
+# 说明：本文件为结构样例，敏感值一律以 <占位符> 呈现。
+#       真实仓库中的 manifest 位于代码仓根目录 .dataops/manifest.yaml
+# ============================================================
+version: 1.2
+
+structure:
+  ref:
+    etl:                       # ETL 族目录映射
+      flashsync: default/ETL/FlashSync
+      data-plus: data-plus
+    data-schedule:             # 调度族目录映射
+      lts: lts_code            # LTS 调度代码根目录
+    data-service:              # 数据服务族（可空）
+
+config:
+  code-repository:             # 代码仓元信息（内部地址已脱敏）
+    url: <代码仓地址>
+    branch: <分支名>
+    auto-commit: false
+
+# ---- 说明（不参与解析的注释）----
+# 结构映射含义：构建时 dataops 依据 ref 将不同 toolChain 的制品
+# 定位到对应仓库目录；LTS 制品固定从 lts_code/ 下收集。
+#
+# CI 构建流水线（两阶段，脱敏）：
+#   merge-request 流水线：source -> compile(无) -> GATE(门禁) / scan(轻量)
+#   build 流水线：source -> compile(无) -> build -> <包>.zip -> GATE(门禁)
+#              -> release(transfer2CI) -> deploy(仅 beta 环境)
