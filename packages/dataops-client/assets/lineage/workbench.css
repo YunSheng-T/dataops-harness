@@ -134,3 +134,6 @@
 }
 .do-surface-canvas > .react-flow{height:100%;min-height:340px}
 .do-lineage-surface[data-density="focus"] .do-surface-canvas > .react-flow{min-height:470px}
+/* The embedded surface reuses workbench node styles, but must not inherit the
+   full-screen overlay positioning applied to .do-workbench-overlay. */
+.do-surface-body.do-workbench-overlay{position:static;inset:auto;z-index:auto;height:auto;width:auto;margin:0;background:transparent;overflow:visible}

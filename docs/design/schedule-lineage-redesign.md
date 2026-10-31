@@ -1,7 +1,7 @@
 # 血缘卡：三视图合并
 
 > 状态：已实现第一版。右栏血缘入口使用嵌入式三视图卡。  
-> 卡内三视图截图：[lineage-surface-card.png](../../prototype/shots/lineage-surface-card.png)
+> 卡内三视图截图：[lineage-surface-card.png](../../prototype/shots/lineage-surface-card.png) · 真机 3080：[lineage-tab-fixed.png](../../prototype/shots/lineage-tab-fixed.png)
 
 ## 1. 目标
 
@@ -62,6 +62,12 @@ LineageSurface
 ## 4.1 样式边界
 
 嵌入式 surface 复用原工作台的节点和图标样式，因此 surface body 需要带 `do-workbench-overlay` scope；否则 `.rf-icon img` 等规则不会命中，节点图标会失控。
+
+## 4.2 真机确认
+
+已在 `127.0.0.1:3080` 的 dataops 真机确认：右栏血缘 tab 是一张 720px 上限的卡，不再 fixed 全屏。
+
+之前全屏的原因是 surface body 为恢复图标样式复用了 `do-workbench-overlay`，而构建时该类同时带 `position:fixed; inset:0; z-index:95`。现用 `.do-surface-body.do-workbench-overlay` 覆盖为 static。
 
 ## 5. 边界
 
