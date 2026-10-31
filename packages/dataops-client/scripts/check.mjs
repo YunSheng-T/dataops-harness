@@ -468,6 +468,14 @@ check('lineage tab renders schedule view from task/job lineage', () => {
   assert(!body.includes('设计血缘'), 'right tab must not default to design lineage')
 })
 
+check('lineage tab uses embedded three-view surface when available', () => {
+  const EmbeddedTabs = createDataopsTabs(React, ContextStore, {
+    LineageSurface: () => React.createElement('div', null, '三视图 surface')
+  })
+  const body = text(EmbeddedTabs.tabs[1].body.Component({ sessionId: 's-surface' }))
+  assert(body.includes('三视图 surface'), 'embedded surface was not used')
+})
+
 check('three right-sidebar tabs read the context store', () => {
   assert(Tabs.definitions.length === 3, 'expected three tab types')
   const kinds = Tabs.definitions.map(item => item.kind)

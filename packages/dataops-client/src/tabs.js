@@ -302,6 +302,9 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   }
 
   function LineageBody(props) {
+    if (Flow && typeof Flow.LineageSurface === 'function') {
+      return h('div', { className: 'do-lineage-inline' }, h(Flow.LineageSurface, { initialView: 'schedule' }))
+    }
     var context = useContext(props.sessionId) || {}
     var lineage = context.lineage
     var design = context.design

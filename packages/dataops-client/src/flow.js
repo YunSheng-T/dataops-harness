@@ -660,6 +660,58 @@ function content(info, tab) {
 
 
 
+  function LineageSurface(props) {
+    ensureWorkbenchStyles()
+    var initial = props.initialView || 'schedule'
+    var viewState = React.useState(VIEWS[initial] ? initial : 'schedule')
+    var selectedState = React.useState(null)
+    var selectedTab = React.useState('overview')
+    var densityState = React.useState('compact')
+    var view = viewState[0]
+    var selectedId = selectedState[0]
+    var tab = selectedTab[0]
+    var density = densityState[0]
+    var flow = buildFlow(view)
+    var nodes = flow.nodes
+    var edges = flow.edges
+    var info = selectedId ? INFO[selectedId] : null
+    var selected = selectedId ? nodes.find(function (node) { return node.id === selectedId }) : null
+    var nodeTypes = React.useMemo(function () { return { rich: RichNode, taskGroup: GroupNode } }, [])
+    function onNodeClick(_event, node) {
+      selectedState[1](node.id)
+      selectedTab[1](node.type === 'taskGroup' ? 'schedule' : defaultTab(node.id))
+    }
+    return h('section', { className: 'do-lineage-surface', 'data-density': density, 'aria-label': '血缘视图' },
+      h('header', { className: 'do-surface-head' },
+        h('div', { className: 'do-surface-title' },
+          h('span', { className: 'do-surface-mark' }, '血缘'),
+          h('div', null,
+            h('strong', null, VIEWS[view].title),
+            h('span', null, VIEWS[view].summary))),
+        h('div', { className: 'do-surface-actions' },
+          h('div', { className: 'do-surface-tabs', role: 'tablist' },
+            ['design', 'production', 'schedule'].map(function (key) {
+              return h('button', { key: key, type: 'button', className: 'do-surface-tab', 'data-active': String(view === key), onClick: function () { viewState[1](key); selectedState[1](null) } }, VIEWS[key].tabs)
+            })),
+          h('button', { type: 'button', className: 'do-surface-focus', onClick: function () { densityState[1](density === 'focus' ? 'compact' : 'focus') } }, density === 'focus' ? '退出聚焦' : '聚焦'))),
+      h('div', { className: 'do-surface-body' },
+        h('div', { className: 'do-surface-canvas' },
+          h('div', { className: 'do-surface-canvas-note' }, h('span', null, VIEWS[view].tag), h('span', null, '点击节点查看详情 · 滚轮缩放')),
+          h(ReactFlow, {
+            nodes: nodes, edges: edges, nodeTypes: nodeTypes,
+            onNodeClick: onNodeClick, onPaneClick: function () { selectedState[1](null) },
+            fitView: true, fitViewOptions: { padding: 0.16 },
+            minZoom: 0.2, maxZoom: 1.8, nodesDraggable: false, nodesConnectable: false, elementsSelectable: false
+          })),
+        h('aside', { className: 'do-surface-detail' },
+          h(Detail, {
+            info: info, selected: selected, selectedId: selectedId, tab: tab,
+            setTab: selectedTab[1], setSelectedId: selectedState[1],
+            setToast: function () {}
+          }))),
+      h('div', { className: 'do-surface-foot' }, h('span', null, '设计 / 生产 / 调度三视图'), h('span', null, '只读 · 来自血缘模型')))
+  }
+
   function LineageWorkbench(props) {
     if (!props.open) return null;
     ensureWorkbenchStyles();
@@ -679,5 +731,5 @@ function content(info, tab) {
     document.head.appendChild(style);
   }
 
-  return { LineageWorkbench: LineageWorkbench };
+  return { LineageWorkbench: LineageWorkbench, LineageSurface: LineageSurface };
 }

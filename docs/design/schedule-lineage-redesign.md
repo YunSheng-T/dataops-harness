@@ -1,115 +1,72 @@
-# 调度血缘与代码预览重设计
+# 血缘卡：三视图合并
 
-> 状态：已实现第一版（compact / focus 单卡，源码右侧分栏）。  
-> 原型：[schedule-lineage-redesign.html](../../prototype/schedule-lineage-redesign.html)  
-> 截图：[紧凑卡](../../prototype/shots/schedule-lineage-redesign.png) · [聚焦卡](../../prototype/shots/schedule-lineage-redesign-focus.png)
+> 状态：已实现第一版。右栏血缘入口使用嵌入式三视图卡。  
+> 相关原型：[schedule-lineage-redesign.html](../../prototype/schedule-lineage-redesign.html)
 
-## 1. 结论
+## 1. 目标
 
-不再保留“紧凑血缘卡 + 全宽血缘工作台”两套表面。
-
-改为 **一张卡，两个密度**：
-
-| 密度 | 场景 |
-|---|---|
-| compact | 对话、文件预览、右栏 |
-| focus | 同一文件面板内放大，不跳页，不打开全屏工作台 |
-
-focus 只改变当前卡片布局，不创建新的页面、tab 或 overlay。
-
-## 1.1 右栏血缘入口
-
-右栏 `血缘` tab 优先渲染**调度视图**：
-
-- 有 `lineage` 或 `design` 的 task/job 数据时，使用 `schedule` 视图
-- 读取 `taskId`、cron、SLA、retries、dependsOn
-- 只展示当前 task 的 job，不混入其他 task
-- 卡片内显示 task group、job 节点、inspector
-- 没有调度数据时才回退到设计血缘
-- 不再打开全宽工作台
-
-## 2. 设计原则
-
-- 文件上下文不丢失
-- 选中作业、图谱、view 状态在 compact / focus 之间共享
-- 卡片自己就是血缘表面，不再有“打开工作台”这个跳转
-- 源码继续放在文件预览的右侧分栏
-- 默认不展示源码
-- 没有数据就显示空状态，不拿 mock 填满
-
-## 3. 卡片结构
+把原来的“血缘预览卡”和“全宽血缘工作台”合并成一张卡，同时保留原来的三视图：
 
 ```text
-调度血缘 / 调度视图
-channel_daily_mixed
-周期任务 · 02:10 每日
+设计视图
+生产视图
+调度视图
+```
 
-[调度视图] [1 任务] [6 作业] [7 依赖] [未发现阻断]
+右栏“血缘”入口直接渲染这张卡，不再打开独立全宽工作台。
 
-关键路径
-DAG
+## 2. 结构
 
-作业 inspector
-
-任务参数 / 占位符 [聚焦] [源码]
+```text
+LineageSurface
+├─ header
+│  ├─ 当前视图标题 / summary
+│  ├─ 设计 / 生产 / 调度 tabs
+│  └─ 聚焦 / 退出聚焦
+├─ body
+│  ├─ ReactFlow 图
+│  └─ 节点详情 inspector
+└─ footer
 ```
 
 ### compact
 
-- 卡片在当前文件预览列内
-- DAG 在上，inspector 在下
-- 右侧仍可展开源码分栏
-- 高度随内容
+- 右栏内默认密度
+- 图 + 详情
+- 宽容器左右排，窄容器上下排
 
 ### focus
 
-- 同一张卡在当前面板内增高
-- DAG 与 inspector 左右排列
-- 源码分栏暂时收起
-- 顶部按钮变为“退出聚焦”
-- 不覆盖整个应用，不出现第二套 header
+- 同一张卡在当前容器内增高
+- 不跳页，不 overlay，不出现第二套 header
+- 切换视图时保留当前选中节点
 
-## 4. 交互
+## 3. 数据
 
-- 点击作业：更新 inspector，同时同步源码选中行
-- 点击“聚焦”：卡片切换密度，保留选中作业
-- 点击“退出聚焦”：回到 compact，仍在同一文件
-- 点击“源码”：退出聚焦，切到源码分栏
-- Esc：退出聚焦或从源码回到分栏
-- 拖动分隔条调整预览/源码宽度
-- 1024 / 1440 / 1600 / 1920 无横向溢出
+第一版复用 `flow.js` 里已有的 `VIEWS.design / production / schedule` 内容，先把三视图和合并后的卡壳落地。
 
-## 5. 编辑器
+后续再把 `VIEWS` 的 mock 数据替换成：
 
-采用 **CodeMirror**，不是 Monaco。
+- 设计视图：设计血缘 / DataMap
+- 生产视图：生产链路
+- 调度视图：调度任务和作业
 
-- 当前实现使用 CodeMirror 5.65 standalone，避免引入打包器
-- YAML / SQL 只读高亮
-- 行号、复制、主题
-- 后续可升级 CodeMirror 6
+不把 task.yaml 解析出来的简化 DAG 当作调度视图内容。
 
-## 6. 原型范围
+## 4. 文件预览
 
-包含：
+`task.yaml` 仍保留左右分栏：左侧血缘卡，右侧 CodeMirror 源码。
 
-- 一张卡
-- compact / focus 两种密度
-- 右侧源码分栏
-- 路径与任务参数
-- 明暗主题
+右侧源码分栏是文件预览的能力，不塞进右栏三视图卡。
 
-不包含：
+## 5. 边界
 
-- 全宽工作台
-- 新的页面或路由
-- 真实调度平台数据
-- 写操作
+- 不再从卡片打开全宽工作台
+- 右栏 tab 是同一张卡的宿主，不是第二个组件
+- `LineageWorkbench` 只保留为未来复杂图谱的底层渲染器，不再作为入口
+- 没有数据时显示空状态，不用 mock 冒充上下文
 
-## 7. 旧全宽工作台
+## 6. 待确认
 
-保留 `flow.js` 作为未来复杂图谱的渲染器，但当前产品入口不再默认使用它；复杂图谱需要时再单独设计 focus/full 模式。
-
-## 8. 待确认
-
-- compact 下 inspector 是否一直显示，还是仅在选中作业后出现？
-- focus 是否允许用户手动调整卡片高度？
+- 右栏首次打开默认调度视图，是否合适？
+- focus 是否要允许用户拖动改变高度？

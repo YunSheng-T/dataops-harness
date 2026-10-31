@@ -246,4 +246,4 @@ Agent tool：暴露 A/B/C 只读入口
 
 血缘卡使用 `compact / focus` 两种密度；右栏血缘入口和文件预览卡都渲染同一张卡，不再打开独立全宽工作台。
 
-右栏血缘入口优先调度视图：从 lineage task/job 数据生成 schedule payload，展示 task group、job 和 cron/SLA/依赖；无调度数据时才回退设计血缘。
+右栏血缘入口渲染嵌入式 `LineageSurface`，保留设计 / 生产 / 调度三视图；同一张卡内 compact/focus，不再打开独立全宽工作台。

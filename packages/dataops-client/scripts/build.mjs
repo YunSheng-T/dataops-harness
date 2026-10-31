@@ -122,11 +122,16 @@ ${inlined}
     var HeaderStage = createHeaderStage(React, StageStore)
     var ContextStore = createContextStore()
     var LineageWorkbenchImpl = null
+    var LineageSurfaceImpl = null
     var LineageFlow = {
       LineageWorkbench: function (props) {
         if (!props.open) return null
         if (!LineageWorkbenchImpl) LineageWorkbenchImpl = createLineageWorkbench(React, require('react-dom')).LineageWorkbench
         return React.createElement(LineageWorkbenchImpl, props)
+      },
+      LineageSurface: function (props) {
+        if (!LineageSurfaceImpl) LineageSurfaceImpl = createLineageWorkbench(React, require('react-dom')).LineageSurface
+        return React.createElement(LineageSurfaceImpl, props)
       }
     }
     var Tabs = createDataopsTabs(React, ContextStore, LineageFlow, Cards)
