@@ -68,6 +68,9 @@
   .file-tabs{display:flex;align-items:center;gap:2px;margin-left:auto;background:var(--panel2);border:1px solid var(--line);padding:2px;border-radius:7px}
   .file-tabs button{border:0;background:transparent;color:var(--muted);font-size:11px;padding:4px 9px;border-radius:5px;cursor:pointer}
   .file-tabs button[data-active="true"]{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  .file-mode{display:inline-flex;align-items:center;font-size:10px;color:var(--faint);padding:4px 9px}
+  .drawer-copy{margin-left:6px}
+  .source{line-height:1.8}
   .source-hint{color:var(--faint);font-size:10.5px;margin-top:8px}
   .schedule-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
   .card-head{display:flex;align-items:flex-start;gap:12px;padding:15px 16px 12px}
@@ -144,9 +147,10 @@
   .hint{color:var(--faint);font-size:10px}
   .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--text);color:var(--bg);font-size:11px;padding:7px 11px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .16s;z-index:50}
   .toast.show{opacity:1}
-  .drawer-mask{position:fixed;inset:0;background:rgba(15,23,42,.28);z-index:40;display:none}
-  .drawer-mask.open{display:block}
-  .drawer{position:absolute;right:0;top:0;bottom:0;width:min(620px,92vw);background:var(--panel);border-left:1px solid var(--line);box-shadow:-12px 0 30px rgba(15,23,42,.12);display:flex;flex-direction:column}
+  .drawer-mask{position:fixed;inset:0;background:rgba(15,23,42,.28);z-index:40;display:block;opacity:0;pointer-events:none;transition:opacity .18s}
+  .drawer-mask.open{opacity:1;pointer-events:auto}
+  .drawer-mask.open .drawer{transform:translateX(0)}
+  .drawer{position:absolute;right:0;top:0;bottom:0;width:min(540px,92vw);background:var(--panel);border-left:1px solid var(--line);box-shadow:-12px 0 30px rgba(15,23,42,.12);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .2s ease}
   .drawer-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600}
   .drawer-head .mono{font-size:10px;font-weight:400;color:var(--faint)}
   .drawer-head .btn{margin-left:auto}
@@ -210,10 +214,7 @@
             <h1 class="file-title">task.yaml</h1>
             <p class="file-sub">lts_code/channel_daily/task.yaml · <span class="mono">formatVersion: 2</span> · 173 行</p>
           </div>
-          <div class="file-tabs" role="tablist" aria-label="文件预览">
-            <button data-active="true">结构</button>
-            <button id="openSourceTop">源码</button>
-          </div>
+          <div class="file-tabs" aria-label="文件预览"><span class="file-mode">结构预览</span></div>
         </div>
         <div class="schedule-card">
           <div class="card-head">
@@ -298,7 +299,7 @@
 </div>
 <div class="drawer-mask" id="drawerMask">
   <aside class="drawer" role="dialog" aria-modal="true" aria-label="源码">
-    <div class="drawer-head"><span>源码</span><span class="mono">lts_code/channel_daily/task.yaml</span><button class="btn ghost" id="closeDrawer">关闭</button></div>
+    <div class="drawer-head"><span>源码</span><span class="mono">lts_code/channel_daily/task.yaml</span><span class="spacer"></span><button class="btn ghost drawer-copy" id="copySource">复制</button><button class="btn ghost" id="closeDrawer">关闭</button></div>
     <pre class="source" id="sourceBody"></pre>
   </aside>
 </div>
@@ -414,17 +415,19 @@ $('modeWork').onclick=()=>setMode('work');
 $('openWork').onclick=()=>setMode('work');
 $('backToFile').onclick=()=>setMode('file');
 $('openSource').onclick=openSource;
-$('openSourceTop').onclick=openSource;
 $('openSourceFoot').onclick=openSource;
 $('openSourceWork').onclick=openSource;
 $('closeDrawer').onclick=closeSource;
+$('copySource').onclick=()=>{navigator.clipboard?.writeText(sourceText);toast('源码已复制')};
 $('drawerMask').onclick=(e)=>{if(e.target===$('drawerMask'))closeSource()};
 $('focusWork').onclick=()=>{selected.id='calc_sql';setMode('work');renderAll();toast('已聚焦 calc_sql')};
 $('theme').onclick=()=>{const root=document.documentElement;const dark=root.dataset.theme!=='dark';root.dataset.theme=dark?'dark':'light';$('theme').textContent=dark?'浅色':'深色'};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSource()});
-const initialMode = new URLSearchParams(location.search).get('mode') === 'work' ? 'work' : 'file';
+const query = new URLSearchParams(location.search);
+const initialMode = query.get('mode') === 'work' ? 'work' : 'file';
 setMode(initialMode);
 renderAll();
+if (query.get('drawer') === 'source') openSource();
 </script>
 </body>
 </html>

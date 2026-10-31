@@ -47,7 +47,7 @@
 - 从文件卡打开时直接进入调度视图
 - 保留 `internal-code-repo / lts_code / channel_daily / task.yaml` 面包屑
 - 点击作业只更新右侧 inspector，不重排图
-- 源码在抽屉或右栏来源 tab，不压在图下面
+- 源码统一从右侧抽屉打开，不压在图下面，不再做源码 tab
 
 ## 3. 节点语义
 
