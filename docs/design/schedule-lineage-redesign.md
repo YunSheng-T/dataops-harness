@@ -1,7 +1,7 @@
 # 血缘卡：三视图合并
 
 > 状态：已实现第一版。右栏血缘入口使用嵌入式三视图卡。  
-> 卡内三视图截图：[lineage-surface-card.png](../../prototype/shots/lineage-surface-card.png) · 真机 3080：[lineage-tab-fixed.png](../../prototype/shots/lineage-tab-fixed.png)
+> 卡内三视图截图：[lineage-surface-card.png](../../prototype/shots/lineage-surface-card.png) · 真机 3080：[lineage-tab-fixed.png](../../prototype/shots/lineage-tab-fixed.png) · YAML 真实数据：[lineage-yaml-real.png](../../prototype/shots/lineage-yaml-real.png)
 
 ## 1. 目标
 
