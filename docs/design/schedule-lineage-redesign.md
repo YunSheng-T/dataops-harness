@@ -75,13 +75,14 @@
 
 ## 4.1 编辑器选型
 
-采用 **CodeMirror 6**，不是 Monaco：
+采用 **CodeMirror**，不是 Monaco。第一版先用 CodeMirror 5.65 standalone 落地，后续可升级到 CodeMirror 6：
 
 - 模块化，按 YAML / SQL 语言包加载
 - 只读预览不需要 VS Code 级语言服务
 - 比 Monaco 更轻，适合侧栏和离线 bundle
 - 支持行号、语法高亮、搜索、折叠、主题
 - 与 DSH 主题 token 对齐，不做第二套颜色系统
+- 第一版使用 CodeMirror 5.65 的 UMD lib + YAML/SQL mode，避免引入打包器
 
 第一版先只读，不提供编辑、保存、提交。
 

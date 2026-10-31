@@ -239,3 +239,7 @@ channel_backfill    2 jobs（回填/重试）
 Agent tool：暴露 A/B/C 只读入口
 真实 CLI：--json 或稳定 exit code/log contract
 ```
+
+## 文件预览与源码
+
+`task.yaml` 默认使用左右分栏：左侧 `LineageV2Card` 调度预览，右侧只读 CodeMirror 5.65 编辑器。窄容器自动单列；顶部可切换 分栏 / 预览 / 源码。

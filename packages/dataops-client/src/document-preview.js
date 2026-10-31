@@ -169,16 +169,103 @@ export function createDataopsDocumentPreview(React, Cards) {
     return h('div', { className: 'do-doc-muted' }, 'YAML / 文本 · ' + summary.keys + ' 个顶层键')
   }
 
+  var editorStylesReady = false
+  function ensureEditorStyles() {
+    if (editorStylesReady || typeof document === 'undefined') return
+    editorStylesReady = true
+    var style = document.createElement('style')
+    style.setAttribute('data-dataops-code-editor', 'true')
+    style.textContent = (typeof CODEMIRROR_CSS === 'string' ? CODEMIRROR_CSS : '') + `
+      .do-doc-split{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden}
+      .do-doc-split .do-doc-head{flex:none}
+      .do-doc-viewtabs{display:flex;gap:2px;margin-left:auto;padding:2px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));border-radius:6px;background:var(--dsw-alias-bg-l2,#f7f8fa)}
+      .do-doc-viewtabs button{border:0;background:transparent;color:var(--dsw-alias-label-tertiary,#8b93a2);font-size:10px;line-height:18px;padding:0 7px;border-radius:4px;cursor:pointer}
+      .do-doc-viewtabs button[data-active=true]{background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-primary,#171a20);box-shadow:0 1px 2px rgba(15,23,42,.06)}
+      .do-doc-panes{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(280px,.94fr);gap:10px;min-height:0;flex:1;margin-top:10px}
+      .do-doc-preview-pane{min-width:0;overflow:auto;padding-right:2px}
+      .do-doc-editor{min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));border-radius:8px;background:var(--dsw-alias-bg-layer-1,#fff);overflow:hidden}
+      .do-doc-editor-head{display:flex;align-items:center;gap:6px;padding:7px 9px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));min-height:32px;flex:none}
+      .do-doc-editor-name{font-size:10px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .do-doc-editor-kind{font-family:ui-monospace,Menlo,monospace;font-size:8px;line-height:15px;padding:0 4px;border-radius:3px;background:var(--dsw-alias-bg-l2,#f7f8fa);color:var(--dsw-alias-label-tertiary,#8b93a2)}
+      .do-doc-editor-meta{font-size:8.5px;color:var(--dsw-alias-label-tertiary,#8b93a2);margin-left:auto}
+      .do-doc-editor-copy{border:0;background:transparent;color:var(--dsw-alias-label-tertiary,#8b93a2);font-size:9px;line-height:18px;padding:0 4px;cursor:pointer}
+      .do-doc-editor-copy:hover{color:var(--dsw-alias-state-business-primary,#4176e6)}
+      .do-doc-editor-body{flex:1;min-height:280px;overflow:auto;background:var(--dsw-alias-bg-layer-1,#fff)}
+      .do-doc-editor-fallback{margin:0;padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:9px;line-height:1.7;white-space:pre;color:var(--dsw-alias-label-secondary,#61666b)}
+      .do-doc-editor-foot{flex:none;padding:4px 9px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.05));font-size:8px;color:var(--dsw-alias-label-quaternary,#b6bbc3)}
+      .do-doc-editor .CodeMirror{height:100%;background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-secondary,#61666b);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;line-height:1.65}
+      .do-doc-editor .CodeMirror-scroll{min-height:100%}
+      .do-doc-editor .CodeMirror-gutters{background:var(--dsw-alias-bg-l2,#f7f8fa);border-right:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.05))}
+      .do-doc-editor .CodeMirror-linenumber{color:var(--dsw-alias-label-quaternary,#b6bbc3);font-size:8.5px}
+      .do-doc-editor .CodeMirror-cursor{border-left-color:var(--dsw-alias-state-business-primary,#4176e6)}
+      .do-doc-editor .cm-keyword{color:var(--dsw-alias-state-business-primary,#4176e6)}
+      .do-doc-editor .cm-string{color:var(--dsw-alias-state-success-primary,#17835c)}
+      .do-doc-editor .cm-number{color:var(--dsw-alias-state-warn-primary,#9a6700)}
+      .do-doc-editor .cm-atom{color:var(--dsw-alias-state-business-primary,#4176e6)}
+      .do-doc-editor .cm-comment{color:var(--dsw-alias-label-quaternary,#b6bbc3)}
+      .do-doc-split[data-mode=preview] .do-doc-panes{grid-template-columns:1fr}
+      .do-doc-split[data-mode=preview] .do-doc-editor{display:none}
+      .do-doc-split[data-mode=source] .do-doc-panes{grid-template-columns:1fr}
+      .do-doc-split[data-mode=source] .do-doc-preview-pane{display:none}
+      @container (max-width:760px){.do-doc-panes{grid-template-columns:1fr}.do-doc-editor{min-height:320px}}
+    `
+    ;(document.head || document.documentElement).appendChild(style)
+  }
+
+  function SourceEditor(props) {
+    var copied = React.useState(false)
+    var all = props.lines || []
+    var shown = all.slice(0, 2000)
+    var cmRef = { current: null }
+    var canEditor = typeof ensureCodeMirrorRuntime === 'function' && typeof document !== 'undefined'
+    function copy() {
+      try {
+        var text = cmRef.current ? cmRef.current.getValue() : all.join('\n')
+        if (navigator.clipboard) navigator.clipboard.writeText(text)
+        copied[1](true)
+        setTimeout(function () { copied[1](false) }, 1400)
+      } catch (error) { /* clipboard optional */ }
+    }
+    function mount(el) {
+      if (props.scrollportRef) props.scrollportRef.current = el
+      if (!el || !canEditor || el.getAttribute('data-editor-ready') === 'true') return
+      el.setAttribute('data-editor-ready', 'true')
+      ensureEditorStyles()
+      try {
+        var CodeMirrorRuntime = ensureCodeMirrorRuntime()
+        if (typeof CodeMirrorRuntime !== 'function') return
+        cmRef.current = CodeMirrorRuntime(el, {
+          value: shown.join('\n'),
+          mode: props.kind === 'SQL' ? 'text/x-sql' : 'text/x-yaml',
+          readOnly: true,
+          lineNumbers: true,
+          lineWrapping: false,
+          viewportMargin: Infinity,
+          tabSize: 2
+        })
+      } catch (error) { /* the surrounding page can show the raw file */ }
+    }
+    return h('aside', { className: 'do-doc-editor', 'aria-label': '源码预览' },
+      h('div', { className: 'do-doc-editor-head' },
+        h('span', { className: 'do-doc-editor-name' }, props.name),
+        h('span', { className: 'do-doc-editor-kind' }, props.kind || 'TEXT'),
+        h('span', { className: 'do-doc-editor-meta' }, all.length + ' 行 · 只读'),
+        h('button', { type: 'button', className: 'do-doc-editor-copy', onClick: copy }, copied[0] ? '已复制' : '复制')),
+      h('div', { className: 'do-doc-editor-body', ref: mount, tabIndex: 0, role: 'textbox', 'aria-readonly': 'true', 'aria-label': props.name + ' 源码' },
+        canEditor ? null : h('pre', { className: 'do-doc-editor-fallback' }, shown.join('\n')),
+        all.length > 2000 ? h('div', { className: 'do-doc-muted' }, '只显示前 2000 行') : null),
+      h('div', { className: 'do-doc-editor-foot' }, '只读源码 · CodeMirror 5.65 运行时'))
+  }
+
   function Body(props) {
     var content = props.content
-    var showSource = React.useState(false)
+    var modeState = React.useState('split')
+    var mode = modeState[0]
     if (!content || content.kind !== 'text') return null
     var text = String(content.text || '')
     var name = fileName(props.resourceAddress)
     var summary = describe(name, text)
     var all = lines(text)
-    var max = 2000
-    var source = all.slice(0, max).join('\n')
     var ltsCard = null
     if (summary.type === 'lts' && Cards && typeof Cards.LineageV2Card === 'function' && summary.jobs.length) {
       var lineage = {
@@ -198,16 +285,18 @@ export function createDataopsDocumentPreview(React, Cards) {
       }
       ltsCard = h(Cards.LineageV2Card, { block: { content: [{ type: 'text', text: JSON.stringify(lineage) }] } })
     }
-    return h('div', { className: 'do-doc', ref: props.scrollportRef },
+    return h('div', { className: 'do-doc do-doc-split', 'data-mode': mode },
       h('div', { className: 'do-doc-head' },
         h('span', { className: 'do-doc-badge' }, kindLabel(summary)),
         h('b', { className: 'do-doc-name' }, name),
         h('span', { className: 'do-doc-meta' }, all.length + ' 行' + (content.eof === false ? ' · 持续加载' : '')),
-        h('button', { type: 'button', className: 'do-doc-toggle', onClick: function () { showSource[1](!showSource[0]) } }, showSource[0] ? '收起源码' : '查看源码')),
-      h('div', { className: 'do-doc-summary' }, ltsCard || h(Summary, { summary: summary })),
-      showSource[0] ? h('div', { className: 'do-doc-source-wrap' },
-        h('pre', { className: 'do-doc-source' }, source),
-        all.length > max ? h('div', { className: 'do-doc-muted' }, '只显示前 ' + max + ' 行') : null) : null)
+        h('div', { className: 'do-doc-viewtabs', role: 'group', 'aria-label': '文件视图' },
+          [['split', '分栏'], ['preview', '预览'], ['source', '源码']].map(function (item) {
+            return h('button', { key: item[0], type: 'button', 'data-active': mode === item[0] ? 'true' : undefined, onClick: function () { modeState[1](item[0]) } }, item[1])
+          }))),
+      h('div', { className: 'do-doc-panes' },
+        h('div', { className: 'do-doc-preview-pane' }, h('div', { className: 'do-doc-summary' }, ltsCard || h(Summary, { summary: summary }))),
+        h(SourceEditor, { name: name, kind: kindLabel(summary), lines: all, scrollportRef: props.scrollportRef })))
   }
 
   return {

@@ -197,7 +197,7 @@ export function createDataopsCards(React) {
     '.do-substage[data-s="done"]{color:var(--dsw-alias-success-primary,#067647);background:var(--dsw-alias-success-bg,#ecfdf3);border-color:var(--dsw-alias-success-border,#bbf7d0)}',
     '.do-substage[data-s="active"]{color:var(--dsw-alias-brand-primary,#4f5ed7);background:var(--dsw-alias-brand-primary-bg,#eef0ff);border-color:var(--dsw-alias-brand-primary-border,#dde2ff);font-weight:600}',
 
-    '.do-doc{height:100%;overflow:auto;padding:16px 18px;box-sizing:border-box;color:var(--dsw-alias-label-primary,#171a20);font-size:12px;line-height:1.55;background:var(--dsw-alias-bg-layer-1,#fff)}',
+    '.do-doc{height:100%;overflow:auto;padding:16px 18px;box-sizing:border-box;color:var(--dsw-alias-label-primary,#171a20);font-size:12px;line-height:1.55;background:var(--dsw-alias-bg-layer-1,#fff);container-type:inline-size}',
     '.do-doc-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06))}',
     '.do-doc-badge{font-size:10px;line-height:18px;padding:0 6px;border-radius:5px;background:var(--dsw-alias-brand-primary-bg,rgba(77,107,254,.08));color:var(--dsw-alias-state-business-primary,#4176e6);font-weight:600}',
     '.do-doc-name{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',

@@ -67,6 +67,33 @@ function buildWorkbenchRuntime() {
 }
 
 const WORKBENCH_RUNTIME = buildWorkbenchRuntime()
+function buildCodeMirrorRuntime() {
+  const dir = join(root, 'assets/codemirror')
+  const lib = readFileSync(join(dir, 'codemirror.js'), 'utf8').replace(/\(this,\s*\(function\s*\(\)/u, '(window, (function ()')
+  const css = readFileSync(join(dir, 'codemirror.css'), 'utf8')
+  const transformMode = path => readFileSync(join(dir, path), 'utf8').replace(
+    /^\(function\s*\(mod\)\s*\{[\s\S]*?\}\)\(function\s*\(CodeMirror\)\s*\{/mu,
+    '(function (CodeMirror) {'
+  )
+  return [
+    'var CODEMIRROR_CSS = ' + JSON.stringify(css) + ';',
+    'var CodeMirror = null;',
+    'function ensureCodeMirrorRuntime() {',
+    '  if (typeof CodeMirror === "function") return CodeMirror;',
+    '  if (typeof window === "undefined" || typeof document === "undefined") return null;',
+    '  var module = { exports: {} };',
+    '  var exports = module.exports;',
+    lib,
+    '  CodeMirror = module.exports;',
+    transformMode('mode/yaml/yaml.js'),
+    transformMode('mode/sql/sql.js'),
+    '  return CodeMirror;',
+    '}'
+  ].join('\n')
+}
+
+const CODEMIRROR_RUNTIME = buildCodeMirrorRuntime()
+
 
 const inlined = SOURCES.map(path => {
   const body = read(path).replace(/^export\s+/mu, '')
@@ -86,6 +113,7 @@ window.__ModuleLoader__.load({
     var React = require("react")
 
 ${WORKBENCH_RUNTIME}
+${CODEMIRROR_RUNTIME}
 ${inlined}
 
     var Cards = createDataopsCards(React)
