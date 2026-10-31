@@ -12,6 +12,7 @@ import { buildPipelinePackage } from './pipeline-package.js'
 import { createCicdCliAdapter } from './providers/cicd-cli.js'
 import { createWorkitemStore } from './workitem-store.js'
 import { registerSignoffRoute } from './signoff-route.js'
+import { registerRepoRoute } from './repo/route.js'
 import { createAdapterIdentity } from './signoff-service.js'
 import { createDomainAdapters } from './providers/domain-adapters.js'
 import { buildDevelopArtifacts } from './develop-package.js'
@@ -828,4 +829,9 @@ export function apply(ctx, config) {
   }
   if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountSignoff)
   else mountSignoff(ctx)
+  const mountRepo = child => {
+    try { registerRepoRoute(child, normalized) } catch { /* optional host service; tools stay usable */ }
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountRepo)
+  else mountRepo(ctx)
 }

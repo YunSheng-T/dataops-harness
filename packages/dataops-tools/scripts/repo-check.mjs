@@ -6,6 +6,7 @@ import { indexRepository, parseBuildConfig, parseManifest, resolveManifestExpres
 import { parseLtsTask, parseProperties } from '../src/lts.js'
 import { createBuildAdapter } from '../src/repo/build.js'
 import { createDeployAdapter } from '../src/repo/deploy.js'
+import { createRepoRoute } from '../src/repo/route.js'
 
 const root = resolve(import.meta.dirname, '..')
 const fixtures = join(root, 'test', 'fixtures')
@@ -122,6 +123,25 @@ check('DeployAdapter rejects a missing artifact before spawning', async () => {
     let rejected = false
     try { await adapter.run({ packageName: 'missing' }) } catch { rejected = true }
     assert(rejected && !spawned, 'missing artifact rejected before spawn')
+  } finally { rmSync(temp, { recursive: true, force: true }) }
+})
+
+check('repo route returns packages and LTS findings without browser path input', async () => {
+  const temp = mkdtempSync(join(tmpdir(), 'dataops-route-'))
+  try {
+    mkdirSync(join(temp, '.dataops'), { recursive: true })
+    mkdirSync(join(temp, 'schedule', 'demo'), { recursive: true })
+    writeFileSync(join(temp, 'schedule', 'demo', 'task.yaml'), read('lts/task.yaml'))
+    writeFileSync(join(temp, 'schedule', 'demo', 'parameters.properties'), read('lts/parameters.properties'))
+    writeFileSync(join(temp, '.dataops', 'manifest.yaml'), 'version: "1.2"\nstructure:\n  ref:\n    data-schedule:\n      lts: schedule\n')
+    writeFileSync(join(temp, '.dataops', 'build.yaml'), 'version: "1.2"\npackages:\n  - packageName: lts_demo\n    toolChain: data_schedule\n    serviceType: data_schedule_service\n    pipelineType: his_data_schedule\n    operationType: develop\n    files:\n      - path: schedule/demo/*\n')
+    const route = createRepoRoute({ repoRoot: temp })
+    const response = await route(new Request('http://localhost/api/dataops/repo'))
+    assert(response.status === 200, 'route status')
+    const body = await response.json()
+    assert(body.ok && body.packages.length === 1 && body.packages[0].files.includes('schedule/demo/task.yaml'), 'route package')
+    assert(body.packages[0].lts.length === 1 && body.packages[0].lts[0].ok, 'route lts')
+    assert(!JSON.stringify(body).includes('formatVersion'), 'route does not expose source content')
   } finally { rmSync(temp, { recursive: true, force: true }) }
 })
 

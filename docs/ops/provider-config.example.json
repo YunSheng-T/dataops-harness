@@ -4,7 +4,7 @@
   "retry": 1,
   "pipelineTimeoutMs": 900000,
   "pipelinePollIntervalMs": 3000,
-  "workitemsDir": "workitems",
+  "workitemsDir": "workitems", "repoRoot": "/path/to/internal-code-repo", "repoManifestPath": ".dataops/manifest.yaml", "repoBuildPath": ".dataops/build.yaml",
   "domains": {
     "us": { "kind": "cli", "tokenRef": "DATAOPS_US_TOKEN", "commands": { "list": ["edevops", "us", "list", "--json"], "ticket": ["edevops", "us", "get", "--id", "{ticketId}", "--json"] } },
     "datamap": { "kind": "http", "baseUrlEnv": "DATAOPS_DATAMAP_URL", "tokenRef": "DATAOPS_DATAMAP_TOKEN", "paths": { "asset": "/api/v1/assets/{asset}", "path": "/api/v1/scenarios/{scenario}/path" } },

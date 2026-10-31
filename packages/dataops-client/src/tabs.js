@@ -282,6 +282,102 @@ export function createDataopsTabs(React, contextStore, LineageFlow) {
     )
   }
 
+  function RepoBody(props) {
+    var state = React.useState(typeof window !== 'undefined' && typeof fetch === 'function' ? { status: 'loading' } : { status: 'idle' })
+    var selected = React.useState(null)
+    var current = state[0] || { status: 'idle' }
+    React.useEffect(function () {
+      if (typeof window === 'undefined' || typeof fetch !== 'function') return
+      var alive = true
+      state[1]({ status: 'loading' })
+      fetch('/api/dataops/repo', { headers: { accept: 'application/json' } }).then(function (response) {
+        return response.json().then(function (body) { return { ok: response.ok, body: body } })
+      }).then(function (result) {
+        if (!alive) return
+        if (!result.ok || !result.body || result.body.ok !== true) {
+          state[1]({ status: 'error', message: (result.body && result.body.message) || '代码仓读取失败' })
+          return
+        }
+        state[1]({ status: 'ready', data: result.body })
+      }).catch(function (error) {
+        if (alive) state[1]({ status: 'error', message: error && error.message ? error.message : '代码仓读取失败' })
+      })
+      return function () { alive = false }
+    }, [])
+    function refresh() {
+      if (typeof fetch !== 'function') return
+      state[1]({ status: 'loading' })
+      fetch('/api/dataops/repo', { headers: { accept: 'application/json' } }).then(function (response) { return response.json() }).then(function (body) {
+        if (body && body.ok) state[1]({ status: 'ready', data: body })
+        else state[1]({ status: 'error', message: (body && body.message) || '代码仓读取失败' })
+      }).catch(function (error) { state[1]({ status: 'error', message: error && error.message ? error.message : '代码仓读取失败' }) })
+    }
+    if (current.status === 'loading') return h('div', { className: 'do-ctx do-repo-loading' }, h('span', { className: 'do-dot' }), '读取代码仓…')
+    if (current.status === 'error') {
+      return h('div', { className: 'do-ctx do-repo-empty' }, h('div', { className: 'do-ctx-title' }, '代码仓未就绪'), h('div', { className: 'do-ctx-sub' }, current.message), h('div', { className: 'do-repo-hint' }, '配置 dataops-tools.repoRoot 后刷新'))
+    }
+    if (current.status !== 'ready') {
+      return h('div', { className: 'do-ctx do-repo-empty' }, h('div', { className: 'do-ctx-title' }, '代码仓'), h('div', { className: 'do-ctx-sub' }, '尚未读取；配置 repoRoot 后刷新。'))
+    }
+    var data = current.data || {}
+    var packages = data.packages || []
+    var selectedName = selected[0]
+    var pkg = packages.filter(function (item) { return item.packageName === selectedName })[0] || packages[0]
+    var platforms = (data.manifest && data.manifest.platforms) || []
+    var totalFiles = packages.reduce(function (sum, item) { return sum + (item.files || []).length }, 0)
+    var issues = packages.reduce(function (sum, item) { return sum + (item.missing || []).length + (item.unresolved || []).length }, 0)
+    function renderLts(item) {
+      var meta = []
+      if (item.taskCount) meta.push(item.taskCount + ' 个任务')
+      if (item.jobCount) meta.push(item.jobCount + ' 个作业')
+      if (item.placeholders && item.placeholders.length) meta.push(item.placeholders.length + ' 个占位符')
+      return h('div', { key: item.file, className: 'do-repo-lts-item', 'data-ok': item.ok ? 'true' : 'false' },
+        h('div', { className: 'do-repo-lts-head' }, h('span', { className: 'do-dot', 'data-tone': item.ok ? 'pass' : 'fail' }), h('b', null, item.file), h('span', null, item.ok ? '通过' : '有问题')),
+        meta.length ? h('div', { className: 'do-repo-muted' }, meta.join(' · ')) : null,
+        (item.findings || []).slice(0, 4).map(function (finding, index) {
+          return h('div', { key: index, className: 'do-repo-finding', 'data-severity': finding.severity }, (finding.severity === 'error' ? '错误 · ' : '提示 · ') + finding.message)
+        }))
+    }
+    function renderDetail(item) {
+      var bad = (item.missing || []).length + (item.unresolved || []).length
+      var files = item.files || []
+      return h('div', { className: 'do-repo-detail' },
+        h('div', { className: 'do-repo-detail-head' },
+          h('div', null, h('div', { className: 'do-repo-detail-name' }, item.packageName), h('div', { className: 'do-repo-detail-meta' }, [item.toolChain, item.platform, item.operationType].filter(Boolean).join(' · '))),
+          h('span', { className: 'do-repo-state' }, bad ? '需处理' : '就绪')),
+        h('div', { className: 'do-repo-file-block' },
+          h('div', { className: 'do-label' }, '文件 · ' + files.length),
+          files.slice(0, 12).map(function (file) { return h('div', { key: file, className: 'do-repo-file' }, file) }),
+          files.length > 12 ? h('div', { className: 'do-repo-muted' }, '还有 ' + (files.length - 12) + ' 个文件') : null,
+          (item.missing || []).length ? h('div', { className: 'do-repo-warn' }, '缺失：' + item.missing.join('、')) : null,
+          (item.unresolved || []).length ? h('div', { className: 'do-repo-warn' }, '未解析：' + item.unresolved.join('、')) : null),
+        (item.lts || []).length
+          ? h('div', { className: 'do-repo-lts' }, h('div', { className: 'do-label' }, 'LTS 源检查'), (item.lts || []).map(renderLts))
+          : h('div', { className: 'do-repo-muted' }, '没有 LTS 源文件'))
+    }
+    return h('div', { className: 'do-repo' },
+      h('div', { className: 'do-repo-hero' },
+        h('div', null, h('div', { className: 'do-repo-title' }, '代码仓 · ' + (data.repo || '—')), h('div', { className: 'do-repo-sub' }, 'manifest ' + ((data.manifest && data.manifest.version) || '—') + ' · ' + packages.length + ' 个包 · ' + totalFiles + ' 个文件')),
+        h('button', { type: 'button', className: 'do-repo-refresh', onClick: refresh }, '刷新')),
+      h('div', { className: 'do-repo-stats' },
+        h('div', { className: 'do-repo-stat' }, h('b', null, platforms.length), h('span', null, '平台')),
+        h('div', { className: 'do-repo-stat' }, h('b', null, packages.length), h('span', null, '包')),
+        h('div', { className: 'do-repo-stat' }, h('b', null, totalFiles), h('span', null, '文件')),
+        h('div', { className: 'do-repo-stat' + (issues ? ' is-warn' : '') }, h('b', null, issues), h('span', null, '待处理'))),
+      platforms.length ? h('div', { className: 'do-repo-platforms' }, platforms.map(function (platform) { return h('span', { key: platform.id, className: 'do-repo-platform', title: platform.path }, platform.id) })) : null,
+      h('div', { className: 'do-repo-split' },
+        h('div', { className: 'do-repo-list' }, h('div', { className: 'do-label' }, '包'), packages.map(function (item) {
+          var bad = (item.missing || []).length + (item.unresolved || []).length
+          return h('button', { key: item.packageName, type: 'button', className: 'do-repo-pkg', 'data-selected': pkg && item.packageName === pkg.packageName ? 'true' : undefined, onClick: function () { selected[1](item.packageName) } },
+            h('span', { className: 'do-repo-pkg-name' }, item.packageName),
+            h('span', { className: 'do-repo-pkg-meta' }, item.toolChain + ' · ' + item.operationType),
+            bad ? h('span', { className: 'do-repo-pkg-warn' }, bad + ' 项待处理') : h('span', { className: 'do-repo-pkg-ok' }, '已索引'))
+        })),
+        pkg ? renderDetail(pkg) : h('div', { className: 'do-repo-muted' }, '没有包')),
+      h('div', { className: 'do-repo-foot' }, '只读索引 · 构建/部署需单独触发 · ' + (data.asOf ? data.asOf.replace('T', ' ').slice(0, 16) : ''))
+    )
+  }
+
   function tab(id, kind, label, description, order, Body) {
     return {
       definition: {
@@ -297,7 +393,8 @@ export function createDataopsTabs(React, contextStore, LineageFlow) {
   var tabs = [
     tab('asset', 'dataops-asset', '资产', '目标表与字段', 10, AssetBody),
     tab('lineage', 'dataops-lineage', '血缘', '上下游影响面', 20, LineageBody),
-    tab('evidence', 'dataops-evidence', '证据', '结论背后的查询', 30, EvidenceBody)
+    tab('evidence', 'dataops-evidence', '证据', '结论背后的查询', 30, EvidenceBody),
+    tab('repo', 'dataops-repo', '代码仓', '平台 / 包 / LTS 检查', 40, RepoBody)
   ]
 
   return {

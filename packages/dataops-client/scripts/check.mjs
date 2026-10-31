@@ -425,10 +425,10 @@ check('design impact draws a synthetic lineage graph', () => {
   assert(body.includes('来自设计卡影响面'), 'synthetic marker')
 })
 
-check('three right-sidebar tabs read the context store', () => {
-  assert(Tabs.definitions.length === 3, 'expected three tab types')
+check('four right-sidebar tabs read the context store', () => {
+  assert(Tabs.definitions.length === 4, 'expected four tab types')
   const kinds = Tabs.definitions.map(item => item.kind)
-  assert(new Set(kinds).size === 3, 'tab kinds must be unique')
+  assert(new Set(kinds).size === 4, 'tab kinds must be unique')
   const asset = Tabs.tabs[0]
   const empty = text(asset.body.Component({ sessionId: 's-empty' }))
   assert(empty.includes('还没有资产上下文'), 'empty state')
@@ -438,6 +438,8 @@ check('three right-sidebar tabs read the context store', () => {
   assert(text(lineage.body.Component({ sessionId: 's2' })).includes('dwd.y'), 'lineage tab should read context')
   const evidence = Tabs.tabs[2]
   assert(text(evidence.body.Component({ sessionId: 's-empty' })).includes('还没有证据'), 'evidence empty state')
+  const repo = Tabs.tabs[3]
+  assert(text(repo.body.Component({ sessionId: 's-empty' })).includes('代码仓'), 'repo empty state')
 })
 
 

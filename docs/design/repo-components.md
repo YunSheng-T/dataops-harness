@@ -182,6 +182,17 @@ dataops deploy execute --package <pkg> --artifact <zip> --config .dataops/build.
 - no dry-run
 - no deployment receipt
 
+## 6.1 UI 代码仓 tab
+
+右侧栏新增 `代码仓` tab，直接读取 Host `GET /api/dataops/repo`：
+
+- 只读，不需要 Agent 回合
+- 需要 dataops-tools config 配置 `repoRoot`
+- 未配置时显示未就绪
+- 展示平台/包/文件数/待处理项
+- 展示 LTS 任务数、作业数、占位符和 findings
+- 不展示源码正文、token、绝对路径
+
 ## 7. 后续
 
 ```text

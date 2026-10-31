@@ -9,6 +9,9 @@
     pipelineTimeoutMs: 900000
     pipelinePollIntervalMs: 3000
     workitemsDir: workitems
+    repoRoot: /path/to/internal-code-repo
+    repoManifestPath: .dataops/manifest.yaml
+    repoBuildPath: .dataops/build.yaml
 
     # Real domains replace mock one at a time. All URLs stay in env/config.
     domains:

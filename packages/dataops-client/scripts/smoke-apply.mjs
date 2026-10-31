@@ -68,9 +68,9 @@ const expect = (condition, message) => { if (!condition) failures.push(message) 
 
 expect(byName('tool.call.toolview').length === 14, 'expected 14 toolview registrations')
 expect(byName('conversation.session.header.actions').length === 1, 'expected 1 header chip')
-expect(byName('sidebar.right.pane.tab').length === 3, 'expected 3 right-sidebar tab bodies')
+expect(byName('sidebar.right.pane.tab').length === 4, 'expected 4 right-sidebar tab bodies')
 expect(byName('conversation.chat.turnTail').length === 1, 'expected 1 turn brief')
-expect(tabTypes.length === 3, 'expected 3 right-sidebar tab types')
+expect(tabTypes.length === 4, 'expected 4 right-sidebar tab types')
 expect(definitions.length === 1, 'expected 1 conversation definition')
 expect(byName('sidebar.right.pane.tab').every(item => tabTypes.some(type => type.id === item.options.key)), 'tab body keys must match type ids')
 expect(tabTypes.every(type => Array.isArray(type.guide) && type.guide.length === 1), 'tab types need guide entries')
@@ -83,5 +83,5 @@ if (failures.length) {
   for (const failure of failures) console.error(' - ' + failure)
   process.exit(1)
 }
-console.log('smoke-apply ok: 14 toolviews · 1 header chip · 3 tabs · 1 turn brief')
+console.log('smoke-apply ok: 14 toolviews · 1 header chip · 4 tabs · 1 turn brief')
 console.log('injections:', injections.join(', '))
