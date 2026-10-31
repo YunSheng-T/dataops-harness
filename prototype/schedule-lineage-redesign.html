@@ -79,6 +79,16 @@
   .split-layout[data-view="preview"] .source-pane,.split-layout[data-view="preview"] .split-resizer{display:none}
   .split-layout[data-view="source"]{grid-template-columns:minmax(0,1fr)}
   .split-layout[data-view="source"] .preview-pane,.split-layout[data-view="source"] .split-resizer{display:none}
+  .split-layout[data-focus="true"]{grid-template-columns:minmax(0,1fr)}
+  .split-layout[data-focus="true"] .source-pane,.split-layout[data-focus="true"] .split-resizer{display:none}
+  .schedule-card[data-density="focus"]{height:calc(100vh - 190px);min-height:620px;display:flex;flex-direction:column}
+  .schedule-card[data-density="focus"] .card-head,.schedule-card[data-density="focus"] .meta-row,.schedule-card[data-density="focus"] .card-foot{flex:none}
+  .schedule-card[data-density="focus"] .card-body{flex:1;min-height:0;grid-template-columns:minmax(0,1fr) 252px;overflow:hidden}
+  .schedule-card[data-density="focus"] .graph-panel{overflow:auto;display:flex;flex-direction:column;min-height:0}
+  .schedule-card[data-density="focus"] .graph-scroll{flex:1;min-height:0}
+  .schedule-card[data-density="focus"] .graph-canvas{height:470px}
+  .split-layout[data-focus="true"] .schedule-card[data-density="focus"] .card-body{grid-template-columns:minmax(0,1fr) 262px}
+  .split-layout[data-focus="true"] .schedule-card[data-density="focus"] .inspector{display:block;border-left:1px solid var(--line);border-top:0;overflow:auto}
   .preview-pane{min-width:0}
   .split-layout[data-view="split"] .card-body{grid-template-columns:1fr}
   .split-layout[data-view="split"] .inspector{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) 210px;column-gap:18px}
@@ -216,10 +226,6 @@
     <div class="brand"><span class="brand-mark">∞</span><span>DataOps</span></div>
     <div class="crumb"><span>internal-code-repo</span><span>/</span><span class="path">lts_code / channel_daily / task.yaml</span></div>
     <div class="spacer"></div>
-    <div class="mode-switch" role="group" aria-label="预览模式">
-      <button id="modeFile" data-active="true">文件预览</button>
-      <button id="modeWork" data-active="false">全宽调度</button>
-    </div>
     <button class="theme" id="theme">深色</button>
   </header>
   <div class="shell">
@@ -258,7 +264,7 @@
         </div>
         <div class="split-layout" id="splitLayout" data-view="split">
           <div class="preview-pane">
-        <div class="schedule-card">
+        <div class="schedule-card" id="scheduleCard" data-density="compact">
           <div class="card-head">
             <div>
               <div class="card-kicker">调度血缘 / 调度视图</div>
@@ -266,7 +272,7 @@
               <p class="card-sub">周期任务 · 02:10 每日 · 提交前检查</p>
             </div>
             <div class="card-actions">
-              <button class="btn primary" id="openWork">打开调度视图</button>
+              <button class="btn primary" id="focusCard">聚焦</button>
               <button class="btn ghost" id="openSource">源码</button>
             </div>
           </div>
@@ -289,7 +295,7 @@
             <span class="muted">任务参数 bizdate / env · 占位符在部署时替换</span>
             <span class="spacer"></span>
             <button class="btn ghost" id="openSourceFoot">查看源码</button>
-            <button class="btn" id="focusWork">聚焦 calc_sql</button>
+
           </div>
         </div>
           </div>
@@ -313,45 +319,12 @@
           <div class="notes-head"><span class="eyebrow">DESIGN DIRECTION</span><h2>把文件预览做成调度检查器，而不是第二套文档 UI</h2></div>
           <div class="notes-grid">
             <article><b>文件预览</b><p>一眼看懂任务、cron、作业拓扑和关键路径。默认不展开源码。</p></article>
-            <article><b>全宽工作台</b><p>同一个 task.yaml 的展开视图，左边任务，中间 DAG，右边作业参数。</p></article>
-            <article><b>交互原则</b><p>点击作业只更新 inspector；源码独立抽屉；打开全宽不丢失文件上下文。</p></article>
+            <article><b>聚焦模式</b><p>同一张卡在当前文件面板内放大，不跳页；图谱和 inspector 共享同一份状态。</p></article>
+            <article><b>交互原则</b><p>点击作业只更新 inspector；聚焦/收起保留选中节点；源码在右侧分栏。</p></article>
           </div>
         </section>
       </section>
 
-      <section class="view" id="workView" hidden>
-        <div class="wb">
-          <div class="wb-top">
-            <div class="wb-crumb"><b>internal-code-repo</b> / lts_code / channel_daily / <b>task.yaml</b></div>
-            <div class="wb-tabs" role="tablist">
-              <button>设计视图</button>
-              <button>生产视图</button>
-              <button data-active="true">调度视图</button>
-            </div>
-            <div class="spacer"></div>
-            <button class="btn ghost" id="backToFile">返回文件</button>
-            <button class="btn ghost" id="openSourceWork">源码</button>
-          </div>
-          <div class="wb-body">
-            <aside class="wb-left">
-              <div class="section-label">任务</div>
-              <button class="tree-row" data-active="true"><span class="tree-mark">●</span><span class="tree-label">channel_daily_mixed</span></button>
-              <button class="tree-row"><span class="tree-mark">○</span><span class="tree-label">order_daily_serial</span></button>
-              <button class="tree-row"><span class="tree-mark">○</span><span class="tree-label">channel_backfill</span></button>
-              <button class="tree-row"><span class="tree-mark">○</span><span class="tree-label">channel_alert_trigger</span></button>
-              <div class="rail-sep"></div>
-              <div class="section-label">概览</div>
-              <div class="rail-note">6 个作业<br>7 条依赖<br>6 个占位符<br><br>cron 0 10 2 * * ?</div>
-            </aside>
-            <section class="wb-canvas">
-              <div class="graph-note"><b>调度血缘</b><span>channel_daily_mixed</span><span>·</span><span>点击作业查看右侧详情</span></div>
-              <div class="graph-scroll"><div class="graph-canvas" id="workGraph"></div></div>
-            </section>
-            <aside class="wb-right"><aside class="inspector" id="workInspector" aria-live="polite"></aside></aside>
-          </div>
-          <div class="wb-foot"><span>只读视图 · 来自 task.yaml</span><span>·</span><span>参数在 deploy 阶段替换</span><span class="spacer"></span><span class="hint">React Flow 原型示意</span></div>
-        </div>
-      </section>
     </main>
   </div>
 </div>
@@ -447,16 +420,8 @@ function inspectorHtml(){
 }
 function renderAll(){
   renderGraph($('cardGraph'));
-  renderGraph($('workGraph'));
   $('cardInspector').innerHTML=inspectorHtml();
-  $('workInspector').innerHTML=inspectorHtml();
   renderSource();
-}
-function setMode(mode){
-  $('fileView').hidden=mode!=='file';
-  $('workView').hidden=mode!=='work';
-  $('modeFile').dataset.active=String(mode==='file');
-  $('modeWork').dataset.active=String(mode==='work');
 }
 const jobLine = { load_check: 18, G_1006: 23, calc_sql: 29, export_shell: 34, wait_upstream: 38, notify: 42 };
 function setViewMode(view){
@@ -464,6 +429,17 @@ function setViewMode(view){
   $('splitLayout').dataset.view = target;
   document.querySelectorAll('#viewSwitch button').forEach(button=>button.dataset.active=String(button.dataset.view===target));
   if (target === 'source') renderSource();
+}
+function setFocus(next){
+  const focused = Boolean(next);
+  $('scheduleCard').dataset.density = focused ? 'focus' : 'compact';
+  $('splitLayout').dataset.focus = String(focused);
+  $('focusCard').textContent = focused ? '退出聚焦' : '聚焦';
+  $('focusCard').dataset.active = String(focused);
+  if (focused) {
+    $('splitLayout').dataset.view = 'split';
+    document.querySelectorAll('#viewSwitch button').forEach(button=>button.dataset.active=String(button.dataset.view==='split'));
+  }
 }
 function highlightLine(line){
   const raw = esc(line);
@@ -484,31 +460,21 @@ function renderSource(){
     active.scrollIntoView({block:'center'});
   }
 }
-function setMode(mode){
-  $('fileView').hidden=mode!=='file';
-  $('workView').hidden=mode!=='work';
-  $('modeFile').dataset.active=String(mode==='file');
-  $('modeWork').dataset.active=String(mode==='work');
-}
 function openSource(){
-  setMode('file');
+  setFocus(false);
   setViewMode('source');
 }
 function closeSource(){
+  setFocus(false);
   setViewMode('split');
 }
 function toast(text){const el=$('toast');el.textContent=text;el.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove('show'),1500)}
-$('modeFile').onclick=()=>setMode('file');
-$('modeWork').onclick=()=>setMode('work');
-$('openWork').onclick=()=>{setMode('work');setViewMode('split')};
-$('backToFile').onclick=()=>setMode('file');
 $('openSource').onclick=openSource;
 $('openSourceFoot').onclick=openSource;
-$('openSourceWork').onclick=openSource;
 $('copySource').onclick=()=>{navigator.clipboard?.writeText(sourceText);toast('源码已复制')};
-$('focusWork').onclick=()=>{selected.id='calc_sql';setMode('work');renderAll();toast('已聚焦 calc_sql')};
+$('focusCard').onclick=()=>{setFocus($('scheduleCard').dataset.density!=='focus');toast($('scheduleCard').dataset.density==='focus'?'已聚焦当前卡片':'已收起')};
 $('theme').onclick=()=>{const root=document.documentElement;const dark=root.dataset.theme!=='dark';root.dataset.theme=dark?'dark':'light';$('theme').textContent=dark?'浅色':'深色'};
-document.querySelectorAll('#viewSwitch button').forEach(button=>button.onclick=()=>setViewMode(button.dataset.view));
+document.querySelectorAll('#viewSwitch button').forEach(button=>button.onclick=()=>{setFocus(false);setViewMode(button.dataset.view)});
 let splitDragging = false;
 $('splitResizer').onpointerdown = (event) => { splitDragging = true; $('splitResizer').setPointerCapture?.(event.pointerId); document.body.style.cursor='col-resize'; };
 window.addEventListener('pointermove', (event) => {
@@ -520,13 +486,14 @@ window.addEventListener('pointermove', (event) => {
 window.addEventListener('pointerup', () => { if (!splitDragging) return; splitDragging = false; document.body.style.cursor=''; });
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  if ($('splitLayout').dataset.view === 'source') setViewMode('split');
+  if ($('splitLayout').dataset.focus === 'true') setFocus(false);
+  else if ($('splitLayout').dataset.view === 'source') setViewMode('split');
 });
 
 const query = new URLSearchParams(location.search);
-const initialMode = query.get('mode') === 'work' ? 'work' : 'file';
-setMode(initialMode);
-setViewMode(query.get('view') || (query.get('drawer') === 'source' ? 'source' : 'split'));
+const initialFocus = query.get('density') === 'focus';
+setFocus(initialFocus);
+setViewMode(initialFocus ? 'split' : (query.get('view') || 'split'));
 renderAll();
 </script>
 </body>
