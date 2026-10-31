@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataOps · 发行与安装蓝图</title>
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#f6f7f9; --panel:#fff; --panel2:#f1f3f7; --panel3:#e9edf4;
+    --text:#111318; --muted:#5f6673; --faint:#8b93a2;
+    --line:#dfe4ec; --line2:#cdd5e1;
+    --brand:#4d6bfe; --brand-bg:#eef2ff; --brand-line:#d9e0ff; --brand-text:#35406c; --brand-strong:#24315f;
+    --shared:#0b7a6d; --shared-bg:#eaf8f4; --shared-line:#b9e3d8; --shared-text:#0b6258;
+    --owned:#a86412; --owned-bg:#fff5e5; --owned-line:#efd2a6; --owned-text:#72511b;
+    --external:#596171; --external-bg:#eef1f5;
+    --warn:#b42318; --warn-bg:#fff0ee; --warn-line:#f4c7c1; --warn-text:#7a241d;
+    --add:#2563eb; --add-bg:#eef4ff; --add-line:#c7d7fe;
+    --topbar:rgba(246,247,249,.9); --mark-bg:#111318; --mark-fg:#fff;
+    --chip:#fff; --code-bg:#f6f8fb; --code-text:#3c4658;
+    --shadow:0 1px 2px rgba(15,23,42,.04),0 10px 30px rgba(15,23,42,.05);
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text)}
+  body{font:13px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;overflow-x:hidden}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  button{font:inherit}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .shell{max-width:1560px;margin:0 auto;padding:0 22px 56px}
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;height:54px;background:var(--topbar);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+  .brand-mark{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:7px;background:var(--mark-bg);color:var(--mark-fg);font-size:16px;font-weight:600}
+  .crumb{display:flex;align-items:center;gap:8px;color:var(--faint);font-size:11px;white-space:nowrap}
+  .crumb b{color:var(--text);font-weight:600}
+  .dot{width:3px;height:3px;border-radius:50%;background:var(--line2);display:inline-block}
+  .spacer{flex:1}
+  .nav{display:flex;align-items:center;gap:2px;margin-left:6px}
+  .nav a{font-size:10.5px;color:var(--muted);padding:5px 7px;border-radius:5px;white-space:nowrap}
+  .nav a:hover{background:var(--panel2);color:var(--text);text-decoration:none}
+  .theme{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:7px;padding:5px 9px;cursor:pointer;font-size:11px;white-space:nowrap}
+  .theme:hover{border-color:var(--line2);color:var(--text)}
+  .section{scroll-margin-top:66px}
+  .hero{padding:34px 0 20px}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:26px;align-items:end}
+  .hero h1{margin:0;font-size:31px;line-height:1.15;letter-spacing:-.7px;font-weight:750}
+  .hero h1 em{font-style:normal;color:var(--brand)}
+  .hero p{margin:9px 0 0;max-width:780px;color:var(--muted);font-size:13px;line-height:1.7}
+  .hero-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+  .tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;line-height:18px;padding:1px 7px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);white-space:nowrap}
+  .tag i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+  .tag.brand{color:var(--brand);background:var(--brand-bg);border-color:var(--brand-line)}
+  .tag.shared{color:var(--shared);background:var(--shared-bg);border-color:var(--shared-line)}
+  .tag.owned{color:var(--owned);background:var(--owned-bg);border-color:var(--owned-line)}
+  .tag.warn{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-line)}
+  .tag.external{color:var(--external);background:var(--external-bg);border-color:var(--line2)}
+  .prompt{border:1px solid var(--line);background:var(--panel);border-radius:11px;box-shadow:var(--shadow);padding:13px 14px}
+  .prompt .k{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:7px}
+  .prompt .k span:last-child{color:var(--brand);letter-spacing:0;text-transform:none;font-weight:600}
+  .prompt p{margin:0;font-size:12.5px;line-height:1.65;color:var(--text)}
+  .prompt .hint{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);font-size:10px;color:var(--faint)}
+  .section{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:18px;overflow:hidden}
+  .section-head{display:flex;align-items:center;gap:12px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+  .section-kicker{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .section-head h2{margin:1px 0 0;font-size:17px;line-height:1.3;letter-spacing:-.2px}
+  .section-head .desc{color:var(--muted);font-size:11.5px;max-width:720px;margin-left:auto;text-align:right}
+  .section-body{padding:16px 18px 18px}
+  .callout{display:flex;gap:10px;padding:11px 12px;border:1px solid var(--brand-line);background:var(--brand-bg);border-radius:8px;font-size:10.5px;color:var(--brand-text);line-height:1.65}
+  .callout b{color:var(--brand-strong)}
+  .callout.keep{border-color:var(--shared-line);background:var(--shared-bg);color:var(--shared-text)}
+  .callout.keep b{color:var(--shared-text)}
+  .callout.warn{border-color:var(--warn-line);background:var(--warn-bg);color:var(--warn-text)}
+  .callout.warn b{color:var(--warn-text)}
+  .tagline{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+  .card{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 12px;min-width:0}
+  .card.soft{background:var(--panel2)}
+  .card.owned{border-color:var(--owned-line);background:linear-gradient(180deg,var(--owned-bg),var(--panel))}
+  .card.shared{border-color:var(--shared-line);background:linear-gradient(180deg,var(--shared-bg),var(--panel))}
+  .card.brand{border-color:var(--brand-line);background:linear-gradient(180deg,var(--brand-bg),var(--panel))}
+  .card.warn{border-color:var(--warn-line);background:linear-gradient(180deg,var(--warn-bg),var(--panel))}
+  .card .k{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .card h3{margin:4px 0 4px;font-size:12.5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .card p{margin:0;font-size:10px;line-height:1.6;color:var(--muted)}
+  .card ul{margin:6px 0 0;padding-left:16px;color:var(--muted);font-size:9.5px;line-height:1.65}
+  .card li+li{margin-top:2px}
+  .card .tiny{margin-top:7px;padding-top:6px;border-top:1px dashed var(--line);font-size:9px;color:var(--faint);line-height:1.55}
+  .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+  .metric{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:8px 9px}
+  .metric b{display:block;font-size:18px;line-height:1.2;letter-spacing:-.3px;color:var(--text)}
+  .metric span{display:block;margin-top:2px;font-size:9px;color:var(--muted);line-height:1.45}
+  .rail-wrap{overflow-x:auto;padding-bottom:3px}
+  .flow{display:grid;grid-template-columns:repeat(7,minmax(158px,1fr));gap:8px;min-width:1190px}
+  .flow .step{position:relative;border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 10px 10px;min-height:190px}
+  .flow .step:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--phase,var(--brand));opacity:.8;border-radius:9px 9px 0 0}
+  .flow .step .lane{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .flow .step .no{float:right;font-size:8px;color:var(--faint);font-weight:700}
+  .flow .step h3{margin:6px 0 2px;font-size:12.5px;line-height:1.3}
+  .flow .step .own{font-size:9px;color:var(--faint)}
+  .flow .step p{margin:7px 0 0;font-size:9.5px;line-height:1.55;color:var(--muted)}
+  .flow .step .code{margin-top:7px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;line-height:1.6;background:var(--code-bg);border:1px solid var(--line);border-radius:4px;padding:4px 5px;color:var(--code-text);word-break:break-word}
+  .flow .step .gate{margin-top:7px;border-left:2px solid var(--owned-line);padding-left:6px;font-size:8.5px;line-height:1.5;color:var(--muted)}
+  .lane-legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:9.5px;color:var(--muted);margin:10px 0 0}
+  .lane-legend b{display:inline-flex;align-items:center;gap:5px;font-weight:600;color:var(--text)}
+  .lane-legend i{width:16px;height:3px;border-radius:2px;background:var(--brand);display:inline-block}
+  .lane-legend .l2 i{background:var(--owned)}
+  .lane-legend .l3 i{background:var(--shared)}
+  .topo{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.5fr);gap:14px}
+  .layers{display:flex;flex-direction:column;gap:0}
+  .layer{display:grid;grid-template-columns:104px minmax(0,1fr);gap:9px;align-items:stretch}
+  .layer-label{text-align:right;padding-top:12px;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700;line-height:1.35}
+  .layer-label b{display:block;color:var(--muted);font-size:10px;letter-spacing:0;text-transform:none;margin-top:2px}
+  .layer-main{min-width:0}
+  .box{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:9px 10px;min-width:0}
+  .box h4{margin:0;font-size:11.5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;line-height:1.35}
+  .box p{margin:4px 0 0;font-size:9.5px;line-height:1.55;color:var(--muted)}
+  .box.soft{background:var(--panel2)}
+  .box.official{border-color:var(--shared-line);background:linear-gradient(180deg,var(--shared-bg),var(--panel))}
+  .box.dataops{border-color:var(--brand-line);background:linear-gradient(180deg,var(--brand-bg),var(--panel))}
+  .box.user{border-style:dashed;background:var(--panel)}
+  .box.ext{background:var(--external-bg);border-color:var(--line2)}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .chip{font-size:8.5px;line-height:17px;padding:0 5px;border-radius:4px;background:var(--chip);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  .arrowrow{display:flex;align-items:center;gap:7px;padding:3px 0 3px 113px;color:var(--faint);font-size:8.5px}
+  .arrowrow:before{content:"";width:1px;height:10px;background:var(--line2);margin-left:43px}
+  .arrowrow b{font-weight:600;color:var(--muted)}
+  .side{display:flex;flex-direction:column;gap:8px}
+  .side .card b{display:block;font-size:10px;margin-bottom:3px}
+  .side .card p{margin:0;font-size:9.5px;line-height:1.58;color:var(--muted)}
+  .dep-tree{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9.5px;line-height:1.75;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:10px 11px;color:var(--code-text);white-space:pre;overflow-x:auto}
+  .dep-tree b{color:var(--brand)}
+  .dep-tree .dim{color:var(--faint)}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:820px;font-size:10.5px}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);background:var(--panel2);font-weight:700}
+  td{color:var(--muted)}
+  td b{color:var(--text);font-weight:600}
+  td code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;color:var(--code-text);background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:0 3px;word-break:break-word}
+  tr:last-child td{border-bottom:0}
+  .journey{display:grid;grid-template-columns:repeat(6,minmax(176px,1fr));gap:8px;min-width:1120px}
+  .jstep{position:relative;border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 10px 10px;min-height:168px}
+  .jstep:before{content:"";position:absolute;left:0;top:0;right:0;height:2px;background:var(--brand);opacity:.7;border-radius:9px 9px 0 0}
+  .jstep .no{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .jstep h3{margin:5px 0 2px;font-size:12.5px}
+  .jstep .own{font-size:9px;color:var(--faint)}
+  .jstep p{margin:7px 0 0;font-size:9.5px;line-height:1.55;color:var(--muted)}
+  .jstep .code{margin-top:7px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);border-radius:4px;padding:4px 5px;color:var(--code-text);word-break:break-word}
+  .jstep .ok{margin-top:6px;font-size:8.5px;color:var(--shared);font-weight:600}
+  .branch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:11px}
+  .fail{border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--panel2)}
+  .fail b{display:block;font-size:10px;margin-bottom:3px}
+  .fail span{display:block;font-size:9px;line-height:1.55;color:var(--muted)}
+  .fail.warn{border-color:var(--warn-line);background:var(--warn-bg)}
+  .fail.good{border-color:var(--shared-line);background:var(--shared-bg)}
+  .entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .entry{border:1px solid var(--line);border-radius:9px;padding:12px 13px;background:var(--panel)}
+  .entry.cli{border-color:var(--brand-line);background:linear-gradient(180deg,var(--brand-bg),var(--panel))}
+  .entry.desktop{border-color:var(--shared-line);background:linear-gradient(180deg,var(--shared-bg),var(--panel))}
+  .entry .k{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .entry h3{margin:4px 0 5px;font-size:14px}
+  .entry p{margin:0;font-size:10px;line-height:1.6;color:var(--muted)}
+  .entry ul{margin:8px 0 0;padding-left:16px;font-size:9.5px;line-height:1.7;color:var(--muted)}
+  .entry code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;background:var(--chip);border:1px solid var(--line);border-radius:3px;padding:0 3px;word-break:break-word}
+  .modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:11px}
+  .mode{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:10px 11px}
+  .mode .k{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .mode h3{margin:4px 0 4px;font-size:12px}
+  .mode p{margin:0;font-size:9.5px;line-height:1.6;color:var(--muted)}
+  .mode .st{margin-top:6px;display:inline-block}
+  .life{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .lstep{position:relative;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:10px 11px}
+  .lstep:after{content:"→";position:absolute;right:-8px;top:50%;transform:translateY(-50%);color:var(--line2);font-size:12px;background:var(--panel);border-radius:50%;width:14px;text-align:center;z-index:1}
+  .lstep:last-child:after{display:none}
+  .lstep .no{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .lstep h3{margin:4px 0 3px;font-size:12px}
+  .lstep p{margin:0;font-size:9.5px;line-height:1.55;color:var(--muted)}
+  .lstep .cmd{margin-top:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;line-height:1.5;background:var(--chip);border:1px solid var(--line);border-radius:3px;padding:3px 4px;color:var(--code-text);word-break:break-word}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9.5px;line-height:1.7;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:10px 11px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--code-text)}
+  .mono b{color:var(--brand)}
+  .mono .dim{color:var(--faint)}
+  .trust{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));gap:8px;min-width:940px}
+  .tstep{position:relative;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:9px 10px}
+  .tstep .no{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .tstep h3{margin:4px 0 3px;font-size:11px}
+  .tstep p{margin:0;font-size:9px;line-height:1.55;color:var(--muted)}
+  .tstep:after{content:"→";position:absolute;right:-7px;top:50%;transform:translateY(-50%);color:var(--line2);font-size:11px}
+  .tstep:last-child:after{display:none}
+  .rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .rule{border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--panel2)}
+  .rule b{display:block;font-size:10.5px;margin-bottom:3px}
+  .rule span{display:block;font-size:9.5px;color:var(--muted);line-height:1.55}
+  .road{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+  .phase{border:1px solid var(--line);border-radius:9px;padding:11px 12px;background:var(--panel)}
+  .phase.p0{border-color:var(--shared-line);background:linear-gradient(180deg,var(--shared-bg),var(--panel))}
+  .phase.p1{border-color:var(--brand-line);background:linear-gradient(180deg,var(--brand-bg),var(--panel))}
+  .phase.p2{border-color:var(--owned-line);background:linear-gradient(180deg,var(--owned-bg),var(--panel))}
+  .phase .k{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .phase h3{margin:4px 0 5px;font-size:13px}
+  .phase ul{margin:0;padding-left:15px;font-size:9.5px;line-height:1.65;color:var(--muted)}
+  .phase li+li{margin-top:3px}
+  .phase .exit{margin-top:8px;padding-top:7px;border-top:1px dashed var(--line);font-size:9px;color:var(--faint)}
+  .open-table td:first-child{white-space:nowrap}
+  .tbd{display:inline-block;font-size:8px;line-height:17px;padding:0 5px;border-radius:3px;border:1px solid var(--owned-line);color:var(--owned);background:var(--owned-bg);font-weight:700;white-space:nowrap}
+  .tbd.soft{color:var(--external);background:var(--external-bg);border-color:var(--line2)}
+  .foot{margin-top:22px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--faint);font-size:10px;line-height:1.7}
+  .foot b{color:var(--muted)}
+  .foot .state{color:var(--owned);font-weight:600}
+  @media (max-width:1180px){
+    .nav{display:none}
+    .hero-grid,.topo{grid-template-columns:1fr;gap:14px}
+    .metrics,.rules,.grid-4{grid-template-columns:1fr 1fr}
+    .grid-3,.modes,.road{grid-template-columns:1fr 1fr}
+    .life{grid-template-columns:1fr 1fr}
+    .lstep:nth-child(2):after{display:none}
+    .layer{grid-template-columns:1fr;gap:3px}
+    .layer-label{text-align:left;padding:5px 0 0}
+    .layer-label b{display:inline;margin-left:5px}
+    .arrowrow{padding-left:0}
+    .arrowrow:before{margin-left:0}
+  }
+  @media (max-width:760px){
+    .shell{padding:0 12px 34px}
+    .hero{padding:24px 0 14px}.hero h1{font-size:23px}
+    .section-head{align-items:flex-start;flex-direction:column;gap:4px}
+    .section-head .desc{margin-left:0;text-align:left}
+    .metrics,.grid-2,.grid-3,.grid-4,.entry-grid,.branch,.modes,.life,.rules,.road{grid-template-columns:1fr}
+    .lstep:after{display:none}
+    .chart-note{display:block}
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --bg:#0f1218; --panel:#161b24; --panel2:#1c222d; --panel3:#232b38;
+      --text:#eef2f8; --muted:#a9b3c3; --faint:#758093;
+      --line:#2a3341; --line2:#3a4555;
+      --brand:#8da2ff; --brand-bg:#1c2544; --brand-line:#2b376a; --brand-text:#c7d1ff; --brand-strong:#e4e9ff;
+      --shared:#6ed4be; --shared-bg:#142823; --shared-line:#2c5047; --shared-text:#b8f0e2;
+      --owned:#f0bc72; --owned-bg:#2b2318; --owned-line:#5a4627; --owned-text:#f5d6a8;
+      --external:#aeb8c7; --external-bg:#1b222d;
+      --warn:#ff9b91; --warn-bg:#351b1a; --warn-line:#64302c; --warn-text:#ffc4bd;
+      --add:#9db7ff; --add-bg:#18233d; --add-line:#2c4170;
+      --topbar:rgba(15,18,24,.9); --mark-bg:#eef2f8; --mark-fg:#0f1218;
+      --chip:#1b222d; --code-bg:#11161e; --code-text:#c3ccda;
+      --shadow:0 1px 2px rgba(0,0,0,.35),0 16px 40px rgba(0,0,0,.2);
+    }
+    :root:not([data-theme="light"]) .callout.keep{color:var(--shared-text)}
+    :root:not([data-theme="light"]) .chip{background:var(--chip);border-color:var(--line)}
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0f1218; --panel:#161b24; --panel2:#1c222d; --panel3:#232b38;
+    --text:#eef2f8; --muted:#a9b3c3; --faint:#758093;
+    --line:#2a3341; --line2:#3a4555;
+    --brand:#8da2ff; --brand-bg:#1c2544; --brand-line:#2b376a; --brand-text:#c7d1ff; --brand-strong:#e4e9ff;
+    --shared:#6ed4be; --shared-bg:#142823; --shared-line:#2c5047; --shared-text:#b8f0e2;
+    --owned:#f0bc72; --owned-bg:#2b2318; --owned-line:#5a4627; --owned-text:#f5d6a8;
+    --external:#aeb8c7; --external-bg:#1b222d;
+    --warn:#ff9b91; --warn-bg:#351b1a; --warn-line:#64302c; --warn-text:#ffc4bd;
+    --add:#9db7ff; --add-bg:#18233d; --add-line:#2c4170;
+    --topbar:rgba(15,18,24,.9); --mark-bg:#eef2f8; --mark-fg:#0f1218;
+    --chip:#1b222d; --code-bg:#11161e; --code-text:#c3ccda;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 16px 40px rgba(0,0,0,.2);
+  }
+  :root[data-theme="dark"] .chip{background:var(--chip);border-color:var(--line)}
+  :root[data-theme="light"]{color-scheme:light}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <span class="brand"><span class="brand-mark">∞</span> DataOps</span>
+    <span class="crumb"><span>发行与安装</span><span class="dot"></span><b>全量蓝图</b><span class="dot"></span><span>设计稿 · 待确认</span></span>
+    <nav class="nav">
+      <a href="#goals">目标</a><a href="#topology">拓扑</a><a href="#packages">安装单元</a><a href="#journey">旅程</a><a href="#entries">双入口</a><a href="#compat">兼容</a><a href="#lifecycle">生命周期</a><a href="#trust">信任</a><a href="#invariants">边界</a><a href="#roadmap">路线</a>
+    </nav>
+    <span class="spacer"></span>
+    <span class="tag brand"><i></i>2026-10-31</span>
+    <button class="theme" id="theme" type="button">切换明暗</button>
+  </header>
+
+  <section class="hero">
+    <div class="hero-grid">
+      <div>
+        <h1>从本地安装，<br><em>到可发放的产品。</em></h1>
+        <p>把“在开发机上装一个 DataOps profile”升级为“任何兼容的 DSH / DSH Desktop 用户都能安全安装、升级、回滚的发布单元”。一个自包含 bundle、一个独立 profile、两条发布渠道；Desktop 只重启切换，不改一行。</p>
+        <div class="hero-meta">
+          <span class="tag brand"><i></i>1 个 bundle</span>
+          <span class="tag"><i></i>2 条渠道</span>
+          <span class="tag"><i></i>3 道门禁</span>
+          <span class="tag shared"><i></i>0 处 Desktop 改动</span>
+          <span class="tag owned"><i></i>1 个独立 profile</span>
+          <span class="tag external"><i></i>rc.2 / rc.3 双运行时</span>
+        </div>
+      </div>
+      <div class="prompt">
+        <div class="k"><span>一句话结论</span><span>v1 · 独立 profile</span></div>
+        <p>工具集、品牌、客户端、预设收进一个 bundle；安装交给官方 <b>dsh plugin add</b> 和 pnpm；用户配置留在 profile overlay，永远不被覆盖。</p>
+        <div class="hint">不装进 user desktop profile · 不 fork upstream · 不做品牌桌面 App · dataops-* 命令为 M2 目标形态</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="goals">
+    <div class="section-head">
+      <div><div class="section-kicker">01 · Goals</div><h2>要做什么，明确不做什么</h2></div>
+      <div class="desc">v1 的完成标准是“陌生机器上一条命令装完、可升级、可卸载”；不是做一个新桌面产品。</div>
+    </div>
+    <div class="section-body">
+      <div class="grid-2">
+        <div class="card shared">
+          <div class="k">Goals · v1 必须成立</div>
+          <h3>可发放的安装单元 <span class="tag brand"><i></i>核心</span></h3>
+          <ul>
+            <li><b>一个包</b>：<code>@dataops/dsh-dataops-bundle@0.1.0</code> 组合 4 个精确版本的 DataOps 包。</li>
+            <li><b>一条官方路径</b>：从 shipped web 模板初始化 profile，再用 <code>dsh plugin --profile dataops add</code> 安装。</li>
+            <li><b>双入口</b>：CLI / Web 与 DSH Desktop 共用同一个 <code>DSH_HOME</code>（本机实测 <code>~/.dsh</code>）。</li>
+            <li><b>双运行时</b>：<code>0.2.1-rc.2</code>（Desktop 2.0.18 自带）与 <code>0.2.1-rc.3</code>（仓库 pin）都能装。</li>
+            <li><b>可撤销</b>：receipt + 升级 / 回滚 / 卸载；用户配置与 workitems 保留。</li>
+          </ul>
+          <div class="tiny">成功口径：干净机器 → 安装 → dump-config / 启动 / Desktop 三模式通过 → 卸载后用户数据仍在。</div>
+        </div>
+        <div class="card warn">
+          <div class="k">Non-goals · v1 不做</div>
+          <h3>边界之外，先不伸手 <span class="tag external"><i></i>明确排除</span></h3>
+          <ul>
+            <li><b>不改 upstream</b>：不 fork、不改 <code>@deepseek-ai/*</code>，能力只通过 patch / 插件叠加。</li>
+            <li><b>不做桌面 App</b>：不自带 Electron，不改 DSH Desktop；品牌只约束产品名与 Logo。</li>
+            <li><b>不做 DSH 自动更新</b>：runtime 升级仍由 DSH / Desktop 负责，安装器不代管。</li>
+            <li><b>不接真实 provider</b>：v1 保持 mock 默认，只留 <code>tokenRef</code> / <code>baseUrlEnv</code> 配置缝。</li>
+            <li><b>不做公共 market</b>：内部 npm registry + 离线 tarball，公开市场后置。</li>
+          </ul>
+          <div class="tiny">任何一条越界，都要单独立项和 ADR，不夹带进发布模型。</div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><b>1</b><span>可安装 bundle · 4 个依赖包</span></div>
+        <div class="metric"><b>2</b><span>发布渠道 · 内部 registry / 离线 tarball</span></div>
+        <div class="metric"><b>3</b><span>门禁 · 版本兼容 / 发布完整性 / 安装验收</span></div>
+        <div class="metric"><b>0</b><span>Desktop 代码改动 · 只重启与切换 profile</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="topology">
+    <div class="section-head">
+      <div><div class="section-kicker">02 · Release &amp; Install Topology</div><h2>从源码到桌面，七段一条线</h2></div>
+      <div class="desc">蓝色是发布段，橙色是安装段，青色是运行段；每段只有一个主责任方，横向滚动查看完整链路。</div>
+    </div>
+    <div class="section-body">
+      <div class="rail-wrap">
+        <div class="flow">
+          <div class="step" style="--phase:var(--brand)">
+            <div class="lane">Ship 01 <span class="no">source</span></div>
+            <h3>源码与配置</h3>
+            <div class="own">本仓库 · DataOps 团队</div>
+            <p>4 个包 + preset patch + 技能目录；真实 tools / brand / client 行当前落在 profile patch。</p>
+            <div class="code">packages/*<br>profiles/dataops<br>.agents/skills</div>
+            <div class="gate">产出：可构建的源，不含 runtime / 凭据。</div>
+          </div>
+          <div class="step" style="--phase:var(--brand)">
+            <div class="lane">Ship 02 <span class="no">build</span></div>
+            <h3>构建与校验</h3>
+            <div class="own">CI · 发布工程师</div>
+            <p>构建 client / brand；跑契约、preset、workitem、布局检查；锁定精确版本。</p>
+            <div class="code">node packages/*/scripts/build.mjs<br>node scripts/check-*.mjs</div>
+            <div class="gate">门禁 A / B：版本与产物完整性。</div>
+          </div>
+          <div class="step" style="--phase:var(--brand)">
+            <div class="lane">Ship 03 <span class="no">publish</span></div>
+            <h3>两条发布渠道</h3>
+            <div class="own">内部 registry / 制品库</div>
+            <p>主渠道发内部 npm；离线渠道出 tarball + sha256，供无外网机器安装。</p>
+            <div class="code">registry: @dataops/*<br>tarball: dataops-bundle-0.1.0.tgz<br>checksum: .sha256</div>
+            <div class="gate">门禁 B：校验和 / ACL / 可选签名。</div>
+          </div>
+          <div class="step" style="--phase:var(--owned)">
+            <div class="lane">Install 04 <span class="no">installer</span></div>
+            <h3>官方安装器</h3>
+            <div class="own">用户 · 一条命令</div>
+            <p>先 seed 一个带 web-app 的 profile，再让官方 CLI 解析 bundle 与依赖；不手写 manifest。</p>
+            <div class="code">dsh plugin --profile dataops \<br>&nbsp;&nbsp;add @dataops/dsh-dataops-bundle@0.1.0</div>
+            <div class="gate">安装前确认：将执行代码与写入位置。</div>
+          </div>
+          <div class="step" style="--phase:var(--owned)">
+            <div class="lane">Install 05 <span class="no">profile</span></div>
+            <h3>独立 profile</h3>
+            <div class="own">pnpm 管理 · 用户可审</div>
+            <p><code>$DSH_HOME/profiles/dataops</code>；层序 base → web-app → bundle → profile patch → home patch（再往后可被 CLI <code>--patch</code> 临时覆盖）。</p>
+            <div class="code">profiles/dataops/<br>package.json · pnpm-lock.yaml<br>cordis.patch.yml</div>
+            <div class="gate">门禁 C：dump-config 与安装后验收。</div>
+          </div>
+          <div class="step" style="--phase:var(--shared)">
+            <div class="lane">Run 06 <span class="no">cli / web</span></div>
+            <h3>CLI / Web 入口</h3>
+            <div class="own">DSH runtime</div>
+            <p>直接 <code>dsh --profile dataops</code>；独立会话与工作区，不注入 desktop shell。</p>
+            <div class="code">DSH_HOME=~/.dsh \<br>&nbsp;&nbsp;dsh --profile dataops</div>
+            <div class="gate">启动时复检 engines 范围。</div>
+          </div>
+          <div class="step" style="--phase:var(--shared)">
+            <div class="lane">Run 07 <span class="no">desktop</span></div>
+            <h3>DSH Desktop</h3>
+            <div class="own">DSH Desktop 2.0.18</div>
+            <p>同一个 DSH_HOME；重启 App 后列出并切换到 dataops profile；Desktop 自动注入 shell。</p>
+            <div class="code">重启 → 选择 profile<br>dataops</div>
+            <div class="gate">三模式：compatibility / extended / advanced。</div>
+          </div>
+        </div>
+      </div>
+      <div class="lane-legend">
+        <b><i></i>Ship · 本仓与发布</b>
+        <b class="l2"><i></i>Install · 用户机器</b>
+        <b class="l3"><i></i>Run · 两个入口</b>
+        <span>发布物永不含 runtime、凭据、session、workitems。</span>
+      </div>
+      <div class="grid-2" style="margin-top:11px">
+        <div class="card soft"><div class="k">Channel A · 主渠道</div><h3>内部 npm registry</h3><p>按 <code>@dataops</code> scope 发布；安装器按精确 semver 解析，pnpm 生成 lock。适合联网的内网开发机与 CI。</p><div class="chips"><span class="chip">exact version</span><span class="chip">registry ACL</span><span class="chip">pnpm lock</span></div></div>
+        <div class="card soft"><div class="k">Channel B · 离线</div><h3>tarball + sha256</h3><p>离线包携带 bundle 及其依赖的打包产物与校验文件；目标机先校验再安装。真实内网地址与签名流程 <span class="tbd">待确认</span>。</p><div class="chips"><span class="chip">.tgz</span><span class="chip">sha256</span><span class="chip">no public network</span></div></div>
+      </div>
+      <div class="callout" style="margin-top:11px"><b>稳定的只有接口：</b>用户看到的始终是 profile 名 <code>dataops</code>、bundle 包名与两条安装路径；包内部如何组合（patch 行、依赖树）属于实现，可在版本内演进。</div>
+    </div>
+  </section>
+
+  <section class="section" id="packages">
+    <div class="section-head">
+      <div><div class="section-kicker">03 · Install Unit</div><h2>一个 bundle，托住四块能力</h2></div>
+      <div class="desc">官方 base / web-app 由 DSH 提供；DataOps 只新增一个 bundle 和四块能力，不复制 runtime。</div>
+    </div>
+    <div class="section-body">
+      <div class="topo">
+        <div class="layers">
+          <div class="layer">
+            <div class="layer-label">L0<b>官方 base</b></div>
+            <div class="layer-main"><div class="box official"><h4><code>@deepseek-ai/dsh-base</code> <span class="tag shared"><i></i>官方</span></h4><p>DSH 的基础 bundle；由 profile 的 <code>dsh.profile.bundles</code> 引入，DataOps 不修改。</p><div class="chips"><span class="chip">session</span><span class="chip">agent</span><span class="chip">tools</span><span class="chip">approval</span></div></div></div>
+          </div>
+          <div class="arrowrow"><b>base → web</b> 官方层序</div>
+          <div class="layer">
+            <div class="layer-label">L1<b>官方 web-app</b></div>
+            <div class="layer-main"><div class="box official"><h4><code>@deepseek-ai/dsh-web-app</code> <span class="tag shared"><i></i>Desktop 必需</span></h4><p>Web 界面 bundle。新 profile 若只有 base，DSH Desktop 会因为缺 web-app 直接报错，所以安装前必须 seed。</p><div class="chips"><span class="chip">web ui</span><span class="chip">desktop shell host</span></div></div></div>
+          </div>
+          <div class="arrowrow"><b>web → bundle</b> 能力叠加</div>
+          <div class="layer">
+            <div class="layer-label">L2<b>DataOps bundle</b></div>
+            <div class="layer-main"><div class="box dataops"><h4><code>@dataops/dsh-dataops-bundle@0.1.0</code> <span class="tag brand"><i></i>新增 · 唯一安装单元</span></h4><p>本身是配置层：<code>dsh.bundle.patch</code> 组合 tools / brand / client 与 preset 行，禁用官方品牌座位，设默认 preset；patch 由 profile 与 preset 两份源片段生成。依赖写死精确版本，声明 <code>engines.dsh</code>。</p><div class="chips"><span class="chip">bundle.patch</span><span class="chip">4 exact deps</span><span class="chip">engines</span><span class="chip">v0.1.0</span></div></div></div>
+          </div>
+          <div class="arrowrow"><b>bundle → 用户层</b> 不覆盖</div>
+          <div class="layer">
+            <div class="layer-label">L3<b>profile overlay</b></div>
+            <div class="layer-main"><div class="box user"><h4><code>$DSH_HOME/profiles/dataops/cordis.patch.yml</code> <span class="tag"><i></i>用户配置</span></h4><p>mock 默认 + 用户覆盖；首次安装只写带注释的空 overlay，已有 patch 只备份、不改正文，需要改默认值时提示 diff。</p><div class="chips"><span class="chip">mock default</span><span class="chip">provider override</span><span class="chip">backup / diff</span></div></div></div>
+          </div>
+          <div class="arrowrow"><b>profile → home</b> 最后叠加</div>
+          <div class="layer">
+            <div class="layer-label">L4<b>home patch</b></div>
+            <div class="layer-main"><div class="box user"><h4><code>$DSH_HOME/cordis.patch.yml</code> <span class="tag"><i></i>宿主 / 用户</span></h4><p>落在所有 profile 之后的 home 级补丁；DataOps 安装器不写这一层，只读不碰。之后还可被 CLI <code>--patch &lt;path&gt;</code> 临时覆盖。</p><div class="chips"><span class="chip">read-only for installer</span><span class="chip">host-owned</span></div></div></div>
+          </div>
+        </div>
+        <div class="side">
+          <div class="card brand"><b>bundle 依赖树 · 精确版本</b>
+            <div class="dep-tree"><b>@dataops/dsh-dataops-bundle</b>@0.1.0
+├─ @dataops/dsh-dataops-tools
+├─ @dataops/dsh-dataops-brand
+├─ @dataops/dsh-dataops-client
+└─ @dataops/dsh-dataops-preset
+<span class="dim">engines.dsh:
+  &gt;=0.2.1-rc.2 &lt;0.3.0</span></div>
+          </div>
+          <div class="card soft"><b>版本与元数据</b><p>4 个包当前 <code>0.0.1</code> / <code>0.0.0</code>、均为 private、无 license。发布时四包与 bundle 统一 <code>0.1.0</code>，补 engines / license / repository / publishConfig，并移除 private。</p></div>
+          <div class="card soft"><b>职责归属</b><p><b>DataOps</b>：bundle、tools、brand、client、preset。<b>官方</b>：base、web-app、runtime。<b>用户</b>：profile overlay、home patch、workspace。</p></div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <thead><tr><th>包 / 层</th><th>角色</th><th>安装位置</th><th>现状 → 目标</th><th>版本约束</th></tr></thead>
+          <tbody>
+            <tr><td><b>bundle</b></td><td>配置组合 + 安装入口</td><td>profile 依赖</td><td>新增 <code>packages/dataops-bundle</code>，首版 <code>0.1.0</code></td><td>依赖 4 包精确版本</td></tr>
+            <tr><td><b>dataops-tools</b></td><td>Host 工具与 provider 接入</td><td>profile 依赖</td><td>保留；补 license / engines，真实 provider 仍后置</td><td>精确版本</td></tr>
+            <tr><td><b>dataops-brand</b></td><td>Client 品牌占位（∞ / DataOps）</td><td>profile 依赖</td><td>保留；只换名字 / Logo，不动主题与官方包</td><td>精确版本</td></tr>
+            <tr><td><b>dataops-client</b></td><td>Client 卡片与工作台</td><td>profile 依赖</td><td>保留；工具契约不变</td><td>精确版本</td></tr>
+            <tr><td><b>dataops-preset</b></td><td>preset 定义 / patch 源片段</td><td>bundle 依赖，不单独激活</td><td>保留；补 engines / license，版本统一 <code>0.1.0</code></td><td>精确版本</td></tr>
+            <tr><td><b>profile overlay</b></td><td>用户配置与覆盖</td><td>profile 根目录</td><td>安装器创建后不覆盖</td><td>由用户掌控</td></tr>
+            <tr><td><b>skills</b></td><td>独立 artifact</td><td><code>$DSH_HOME/skills</code>；可选 <code>--workspace</code></td><td>迁出全局 <code>~/.agents/skills</code>；只带筛选后的 DataOps 工作流技能</td><td>按 artifact 版本</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout keep" style="margin-top:11px"><b>bundle patch 的职责只有三件：</b>组合 tools / brand / client 与 <code>preset-dataops-dev</code> 行；禁用官方品牌占位，让 ∞ 品牌接管；声明默认 preset <code>dataops-dev</code>。patch 由 <code>profiles/dataops/cordis.patch.yml</code> 与 preset 源片段构建生成，release gate 检查一致；用户差异留在 profile overlay，不进入 bundle。</div>
+    </div>
+  </section>
+
+  <section class="section" id="journey">
+    <div class="section-head">
+      <div><div class="section-kicker">04 · User Journey</div><h2>安装是一条可验的流水线</h2></div>
+      <div class="desc">六步，每步有明确通过条件；失败分支在下方，不靠“再试一次”。</div>
+    </div>
+    <div class="section-body">
+      <div class="rail-wrap">
+        <div class="journey">
+          <div class="jstep"><div class="no">Step 01 · preflight</div><h3>环境预检</h3><div class="own">用户 / 安装器</div><p>读 <code>dsh --version</code>、pnpm、<code>DSH_HOME</code>；确认安装会执行代码并写入 profile。</p><div class="code">dsh --version<br>pnpm --version</div><div class="ok">通过：版本在 engines 范围</div></div>
+          <div class="jstep"><div class="no">Step 02 · seed</div><h3>初始化 web profile</h3><div class="own">安装器</div><p>从 shipped web 模板创建 <code>dataops</code> profile，保证 <code>@deepseek-ai/dsh-web-app</code> 存在。</p><div class="code">dsh --profile dataops --from-default-profile web --dump-config</div><div class="ok">通过：bundles 含 base + web-app</div></div>
+          <div class="jstep"><div class="no">Step 03 · install</div><h3>官方安装</h3><div class="own">dsh CLI + pnpm</div><p>交给官方 plugin 命令解析 bundle 与精确依赖，pnpm 生成 lock，不手写 manifest、不做绝对 symlink。</p><div class="code">dsh plugin --profile dataops add \<br>&nbsp;&nbsp;@dataops/dsh-dataops-bundle@0.1.0</div><div class="ok">通过：依赖树完整、lock 落盘</div></div>
+          <div class="jstep"><div class="no">Step 04 · verify</div><h3>配置与启动验证</h3><div class="own">安装器 / CI</div><p><code>--dump-config</code> 检查 4 个包行、品牌禁用、默认 preset；再跑 headless smoke。</p><div class="code">dsh --profile dataops \<br>&nbsp;&nbsp;--dump-config</div><div class="ok">通过：行齐、preset 默认、0 报错</div></div>
+          <div class="jstep"><div class="no">Step 05 · skills</div><h3>技能（默认安装）</h3><div class="own">独立 artifact</div><p>默认装到 <code>$DSH_HOME/skills</code>；可选 <code>--workspace</code> 到项目 <code>.agents/skills</code>。先做重名 preflight，冲突默认停止；只带筛选后的 DataOps 工作流技能，不装 upstream 的 <code>dsh-*</code> 开发技能。</p><div class="code">dataops-install --skills-only (M2)<br>→ $DSH_HOME/skills</div><div class="ok">通过：无重名、可回滚</div></div>
+          <div class="jstep"><div class="no">Step 06 · launch</div><h3>启动 / 切换</h3><div class="own">用户</div><p>CLI 直接起；Desktop 重启 App 后选 <code>dataops</code> profile。receipt 由安装器写入，不靠首次启动补记。</p><div class="code">dsh --profile dataops<br>Desktop: 重启 → 切换</div><div class="ok">通过：会话可建、品牌正确</div></div>
+        </div>
+      </div>
+      <div class="branch">
+        <div class="fail warn"><b>engines 不匹配</b><span>安装或启动时直接拒绝；提示当前版本与支持范围。用 compatibility.json 豁免不在方案内。</span></div>
+        <div class="fail warn"><b>缺 web-app</b><span>新 profile 只有 base 时 Desktop 报错；seed 步骤先校验 bundles 含 web-app，缺则停止。</span></div>
+        <div class="fail warn"><b>用户 patch 被改</b><span>安装器只备份现有 <code>cordis.patch.yml</code>，不改正文；需要改默认值时只提示 diff，不自动合并。</span></div>
+        <div class="fail warn"><b>registry 不可达</b><span>切离线 tarball + sha256；校验失败或版本不符就停止，不进半安装状态。</span></div>
+        <div class="fail warn"><b>技能重名</b><span>preflight 列出冲突技能；中止或由用户选择跳过，不覆盖已有技能目录。</span></div>
+        <div class="fail good"><b>旧 dataops profile 共存</b><span>兼容期保留旧 <code>dataops</code> profile 与安装脚本；不把旧 symlink profile 当作发布产物。</span></div>
+      </div>
+      <div class="callout" style="margin-top:11px"><b>目标形态：</b><code>dataops-install</code> / <code>dataops-doctor</code> / <code>dataops-uninstall</code> 是 M2 才实现的安装器入口；当前仓库仍用 dev 脚本，本页不把它们写成已可用。官方底层命令 <code>dsh plugin add</code> 现在可用。<br><b>失败可诊断：</b>错误必须带“对象 + 当前值 + 期望值 + 下一步”，例如 “profile dataops 缺 web-app，请重新按 web 模板初始化”。</div>
+    </div>
+  </section>
+
+  <section class="section" id="entries">
+    <div class="section-head">
+      <div><div class="section-kicker">05 · Two Entries</div><h2>CLI / Web 与 Desktop，同一套 profile</h2></div>
+      <div class="desc">同一个 DSH_HOME，同一个 profile；区别只在宿主是否注入 desktop shell。</div>
+    </div>
+    <div class="section-body">
+      <div class="entry-grid">
+        <div class="entry cli">
+          <div class="k">Entry A · 原生</div>
+          <h3>CLI / Web：<code>dsh --profile dataops</code></h3>
+          <p>headless 验证与日常开发的主入口；不依赖桌面壳，适合 CI 与远程机器。</p>
+          <ul>
+            <li>直接加载 dataops profile 的独立组合；session / workspace 仍由 DSH 统一管理。</li>
+            <li><code>--dump-config</code> 是安装后的第一道可审证据。</li>
+            <li>不继承 desktop profile 的任何插件；能力只来自 base + web-app + bundle。</li>
+            <li>Web GUI 端口由 dsh 分配，安装器不另起服务。</li>
+          </ul>
+        </div>
+        <div class="entry desktop">
+          <div class="k">Entry B · Desktop</div>
+          <h3>DSH Desktop：重启并切换 profile</h3>
+          <p>Desktop 2.0.18 自带 rc.2 runtime；读同一个 <code>DSH_HOME</code>，列出自定义 web profile。</p>
+          <ul>
+            <li>启动时自动注入 desktop shell；不需要改 Desktop 代码。</li>
+            <li>先重启 App，再在 profile 列表选择 <code>dataops</code>。</li>
+            <li>不继承 desktop profile 的 market / bridge 等插件；因为组合是显式的。</li>
+            <li>已知限制：宿主页面 / 窗口标题可能仍是 DeepSeek Harness 或 DSH Desktop，插件运行时改不了；品牌只覆盖侧栏与空会话。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modes">
+        <div class="mode"><div class="k">Desktop Mode 01</div><h3>compatibility · 兼容</h3><p>最小面：App 能启动、profile 被识别、4 个包加载、品牌与 preset 正确；默认推荐此模式。</p><span class="st tag shared"><i></i>必测 · 默认推荐</span></div>
+        <div class="mode"><div class="k">Desktop Mode 02</div><h3>extended · 扩展</h3><p>在兼容面之外验证自定义 web profile 的列出 / 切换、会话创建与工具调用。</p><span class="st tag shared"><i></i>必测</span></div>
+        <div class="mode"><div class="k">Desktop Mode 03</div><h3>advanced · 高级</h3><p>验证 overlay 配置、技能 root、离线安装与回滚；具体模式定义以 Desktop 文档为准 <span class="tbd">待确认</span>。</p><span class="st tag owned"><i></i>必测</span></div>
+      </div>
+      <div class="callout warn" style="margin-top:11px"><b>不共享 desktop profile 的生态位：</b>market、bridge 与 desktop 专属插件不进入 dataops profile。用户若需要，应显式在 overlay 中追加，而不是由安装器默认继承。</div>
+    </div>
+  </section>
+
+  <section class="section" id="compat">
+    <div class="section-head">
+      <div><div class="section-kicker">06 · Compatibility</div><h2>rc.2 / rc.3 双运行时，硬门禁</h2></div>
+      <div class="desc">engines 是唯一口径；不靠 compatibility.json 或“应该能跑”做豁免。</div>
+    </div>
+    <div class="section-body">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>对象</th><th>范围 / 版本</th><th>结论</th><th>验证方式</th></tr></thead>
+          <tbody>
+            <tr><td><b>DSH runtime</b></td><td><code>0.2.1-rc.2</code>（Desktop 2.0.18 自带）</td><td><span class="tag shared"><i></i>支持</span></td><td>每次发布：dump-config + 启动 smoke</td></tr>
+            <tr><td><b>DSH runtime</b></td><td><code>0.2.1-rc.3</code>（本仓 <code>upstream.json</code> pin）</td><td><span class="tag shared"><i></i>支持</span></td><td>CI：契约 / preset / workitem / 布局 + headless smoke</td></tr>
+            <tr><td><b>DSH runtime</b></td><td><code>&lt;0.2.1-rc.2</code> 或 <code>&gt;=0.3.0</code></td><td><span class="tag warn"><i></i>拒绝</span></td><td>engines 在安装 / 启动时拒绝加载</td></tr>
+            <tr><td><b>DSH Desktop</b></td><td><code>2.0.18</code></td><td><span class="tag shared"><i></i>支持</span></td><td>compatibility / extended / advanced 三模式</td></tr>
+            <tr><td><b>DSH Desktop</b></td><td>其他 <code>2.0.x</code></td><td><span class="tag owned"><i></i>待确认</span></td><td>未实测不承诺；按 Desktop 实际版本补测</td></tr>
+            <tr><td><b>平台</b></td><td>macOS arm64</td><td><span class="tag shared"><i></i>目标</span></td><td>M4：clean DSH_HOME install / uninstall</td></tr>
+            <tr><td><b>平台</b></td><td>Windows x64</td><td><span class="tag shared"><i></i>目标</span></td><td>M4：pnpm profile + skills + 无 symlink</td></tr>
+            <tr><td><b>平台</b></td><td>Linux</td><td><span class="tag owned"><i></i>补充</span></td><td>CI / 容器；无真机时标注“未验证”</td></tr>
+            <tr><td><b>profile 类型</b></td><td>web profile（必须含 <code>dsh-web-app</code>）</td><td><span class="tag shared"><i></i>唯一形态</span></td><td>seed 后检查 bundles；base-only 直接判失败</td></tr>
+            <tr><td><b>依赖版本</b></td><td>4 个 DataOps 包精确版本；官方包精确版本</td><td><span class="tag shared"><i></i>强制</span></td><td>不许 <code>^</code> / <code>~</code> / <code>workspace:*</code></td></tr>
+            <tr><td><b>package manager</b></td><td>官方安装器使用的 pnpm</td><td><span class="tag shared"><i></i>托管</span></td><td>lockfile 入库 / 安装后存在</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-3" style="margin-top:11px">
+        <div class="card shared"><div class="k">Gate A · 版本兼容</div><h3>能不能装</h3><p>安装前预检 runtime 版本；启动时 engines 再校验一次。失败即停，不进入半安装。</p><div class="tiny">证据：<code>--dump-config</code> 在两版 runtime 各跑一次</div></div>
+        <div class="card brand"><div class="k">Gate B · 发布完整性</div><h3>产物可不可信</h3><p>构建可复现、依赖锁定；发布附 sha256，registry 有 ACL；签名作为可选增强。</p><div class="tiny">证据：校验和记录 + registry 发布日志</div></div>
+        <div class="card owned"><div class="k">Gate C · 安装验收</div><h3>装完对不对</h3><p>dump-config 检查行与默认值；Desktop 三模式；升级 / 回滚 / 卸载演练各一次。</p><div class="tiny">证据：receipt + 三模式验收记录</div></div>
+      </div>
+      <div class="callout warn" style="margin-top:11px"><b>不用兼容性豁免：</b><code>compatibility.json</code> 之类“绕过 engines”的开关不进入本方案。版本不兼容就升级 runtime 或发新的 bundle 版本，两者必须显式对应。</div>
+    </div>
+  </section>
+
+  <section class="section" id="lifecycle">
+    <div class="section-head">
+      <div><div class="section-kicker">07 · Lifecycle</div><h2>装、升、回、卸，都有收据</h2></div>
+      <div class="desc">安装 receipt 是本地唯一事实源；升级和回滚都只是“add 另一个版本”。</div>
+    </div>
+    <div class="section-body">
+      <div class="life">
+        <div class="lstep"><div class="no">01 · install</div><h3>安装</h3><p><code>dataops-install</code> 封装 seed → add → verify 并写 receipt；底层仍是官方命令。</p><div class="cmd">dataops-install  (M2 目标)</div></div>
+        <div class="lstep"><div class="no">02 · upgrade</div><h3>升级</h3><p>add 新版本；重跑 verify；旧版本信息留在 receipt 历史。</p><div class="cmd">... add bundle@0.1.1</div></div>
+        <div class="lstep"><div class="no">03 · rollback</div><h3>回滚</h3><p>add 旧版本；离线时用保留的 tarball；不需要手改 lock。</p><div class="cmd">... add bundle@0.1.0</div></div>
+        <div class="lstep"><div class="no">04 · uninstall</div><h3>卸载</h3><p>脚本删除 profile 与 receipt；按清单清理技能；workitems 保留。</p><div class="cmd">dataops-uninstall</div></div>
+      </div>
+      <div class="grid-2" style="margin-top:11px">
+        <div class="card soft">
+          <div class="k">Receipt · schema 1</div>
+          <h3><code>$DSH_HOME/dataops/install.json</code> <span class="tag shared"><i></i>schema 1</span></h3>
+          <div class="mono">{
+  "schema": 1,
+  "bundle": "@dataops/dsh-dataops-bundle",
+  "version": "0.1.0",
+  "dshVersion": "0.2.1-rc.3",
+  "profile": "dataops",
+  "installedAt": "2026-10-31T00:00:00Z",
+  "artifacts": ["profile", "bundle", "skills"],
+  "skillRoot": "$DSH_HOME/skills",
+  "sha256": "&lt;bundle digest, optional&gt;"
+}</div>
+          <p style="margin-top:7px">receipt 只记录事实，不替代 lockfile；版本真相仍在 profile 的依赖与 lock。</p>
+        </div>
+        <div class="card shared">
+          <div class="k">Retention · 保留与清理</div>
+          <h3>卸载不删用户资产</h3>
+          <ul>
+            <li><b>保留</b>：workitems、workspace 文件、session、用户已有技能、用户 overlay 备份。</li>
+            <li><b>清理</b>：dataops profile 目录、bundle 依赖、receipt、由本 artifact 安装的技能条目。</li>
+            <li><b>不碰</b>：<code>desktop</code> profile、home patch、DSH runtime、其他 profile。</li>
+            <li><b>重启</b>：Desktop 卸载 / 回滚后仍需重启再切换，避免旧进程持锁。</li>
+          </ul>
+          <div class="tiny">dataops-uninstall 必须打印“保留了什么、删除了什么”；dataops-doctor 输出版本、profile、dump-config、技能与日志路径（均为 M2 目标）。</div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:11px"><b>升级与回滚同构：</b>两者都是官方 <code>add</code> 指定版本，安装后都跑同一套 verify；差别只在目标版本与 receipt 的 previous 记录。这样不需要第二套升级逻辑。</div>
+    </div>
+  </section>
+
+  <section class="section" id="trust">
+    <div class="section-head">
+      <div><div class="section-kicker">08 · Trust &amp; Compliance</div><h2>从构建到运行，证据不断链</h2></div>
+      <div class="desc">安装即执行代码；每一跳都要有可核对的来源、校验或权限。</div>
+    </div>
+    <div class="section-body">
+      <div class="rail-wrap">
+        <div class="trust">
+          <div class="tstep"><div class="no">01 · build</div><h3>可复现构建</h3><p>源码 pin + lockfile；不 fork upstream；产物不含凭据与本地路径。</p></div>
+          <div class="tstep"><div class="no">02 · checksum</div><h3>校验与签名</h3><p>tarball 附 sha256；签名作为可选增强，密钥归属 <span class="tbd">待确认</span>。</p></div>
+          <div class="tstep"><div class="no">03 · registry ACL</div><h3>谁能发布</h3><p>内部 registry 按 <code>@dataops</code> scope 限权；读权限给内网安装者。</p></div>
+          <div class="tstep"><div class="no">04 · consent</div><h3>安装即代码执行</h3><p>安装前明示将执行的代码、写入目录、技能 root；默认不静默写全局。</p></div>
+          <div class="tstep"><div class="no">05 · runtime</div><h3>启动复检</h3><p>engines 再校验；provider 凭据只走 credentials / env，不落 bundle。</p></div>
+        </div>
+      </div>
+      <div class="grid-4" style="margin-top:11px">
+        <div class="card"><div class="k">Legal 01</div><h3>LICENSE</h3><p>仓库暂无根 LICENSE，4 个包也无 license 字段；发布前必须选定并写入包与仓库。具体许可证 <span class="tbd">待确认</span>。</p></div>
+        <div class="card"><div class="k">Legal 02</div><h3>THIRD_PARTY_NOTICES</h3><p>至少覆盖 React、ReactFlow、Montserrat（OFL）与产品图标来源；随发布物分发。</p></div>
+        <div class="card"><div class="k">Legal 03</div><h3>独立声明</h3><p>不暗示与 DeepSeek 官方的隶属或背书；品牌只用于 DataOps 自身产品面。</p></div>
+        <div class="card"><div class="k">Known</div><h3>宿主标题限制</h3><p>宿主页面 / 窗口标题可能仍是 DeepSeek Harness 或 DSH Desktop，插件运行时改不了；v1 接受该限制，在发行说明中写明。</p></div>
+      </div>
+      <div class="callout warn" style="margin-top:11px"><b>凭据边界：</b>bundle 只提供 mock 默认与配置缝（<code>tokenRef</code> / <code>baseUrlEnv</code>）；真实 token 永远不进包、不进 receipt、不进日志。</div>
+    </div>
+  </section>
+
+  <section class="section" id="invariants">
+    <div class="section-head">
+      <div><div class="section-kicker">09 · Invariants</div><h2>八条不做，避免过度改造</h2></div>
+      <div class="desc">发行模型只改“怎么装”，不改“装的是什么能力”。</div>
+    </div>
+    <div class="section-body">
+      <div class="rules">
+        <div class="rule"><b>1 · 不 fork upstream</b><span>不改 <code>deepseek-harness/</code> 与 <code>@deepseek-ai/*</code>；补丁需 ADR 与移除条件。</span></div>
+        <div class="rule"><b>2 · 不写 desktop profile</b><span>不改 DSH Desktop 代码；现有 desktop profile 零写入。</span></div>
+        <div class="rule"><b>3 · 不打包 runtime</b><span>不携带 DSH runtime、node_modules、session、workitems、真实凭据。</span></div>
+        <div class="rule"><b>4 · 品牌只换名字 / Logo</b><span>不重写 Web UI、不改官方主题与 <code>@deepseek-ai/*</code> 包。</span></div>
+        <div class="rule"><b>5 · 工具契约不变</b><span>工具名、payload、卡片契约与 workitem 格式保持兼容。</span></div>
+        <div class="rule"><b>6 · engines 强校验</b><span>版本不匹配即拒绝；不用 compatibility.json 豁免。</span></div>
+        <div class="rule"><b>7 · 用户 patch 不被覆盖</b><span>安装器只补 bundle 层；已有 overlay 只备份、不改正文。</span></div>
+        <div class="rule"><b>8 · v1 只支持独立 profile</b><span>现有 desktop profile 安装列为未来 / 高级选项，默认不做。</span></div>
+      </div>
+      <div class="callout keep" style="margin-top:11px"><b>为什么独立 profile：</b>品牌替换、默认 preset、工具集全会侵入用户现有工作环境。v1 用独立 profile 把风险隔离在 <code>dataops</code> 内，用户随时可切回。</div>
+    </div>
+  </section>
+
+  <section class="section" id="roadmap">
+    <div class="section-head">
+      <div><div class="section-kicker">10 · Migration &amp; Decisions</div><h2>P0 定稿，P1 可发，P2 扩面</h2></div>
+      <div class="desc">先冻结现状与边界，再改安装器与发布流水线；Desktop 验证与旧路径退役放最后。</div>
+    </div>
+    <div class="section-body">
+      <div class="road">
+        <div class="phase p0"><div class="k">P0 · 现在</div><h3>设计与冻结</h3><ul><li>设计文档 + ADR 0013 + 全量 / 增量蓝图。</li><li>记录现状：4 包版本、symlink 安装、全局技能。</li><li>不改 runtime、不改 Desktop、不发布。</li></ul><div class="exit">出口：架构确认，边界与待确认项收敛。</div></div>
+        <div class="phase p1"><div class="k">P1 · 可发</div><h3>bundle 与官方安装器</h3><ul><li><code>packages/dataops-bundle</code> 0.1.0：patch / 精确依赖 / engines / license / notices。</li><li>seed + <code>dsh plugin add</code> 安装器；receipt 与 verify。</li><li>内部 registry + 离线 tarball / sha256；rc.2 / rc.3 CI。</li></ul><div class="exit">出口：干净机器一条命令安装并 dump-config 通过。</div></div>
+        <div class="phase p2"><div class="k">P2 · 扩面</div><h3>Desktop、兼容期与退役</h3><ul><li>Desktop 三模式 + 升级 / 回滚 / 卸载演练。</li><li>发行说明、安装 / 升级文档；兼容期保留旧脚本。</li><li>评估 existing-profile 高级选项、公共 market 与品牌桌面 App。</li></ul><div class="exit">出口：发布渠道稳定，旧 dataops profile 路径按计划退役。</div></div>
+      </div>
+      <div class="table-wrap" style="margin-top:12px">
+        <table class="open-table">
+          <thead><tr><th>ID</th><th>待拍板项</th><th>当前建议 / 事实</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td><b>D1</b></td><td>内部 registry 地址、scope owner 与 ACL</td><td>主渠道走内部 npm；具体 URL 与审批人未定</td><td><span class="tbd">待确认</span></td></tr>
+            <tr><td><b>D2</b></td><td>许可证选择与 notices 责任</td><td>内部许可 vs 其他；仓库与 4 包当前无 license</td><td><span class="tbd">待确认</span></td></tr>
+            <tr><td><b>D3</b></td><td>技能默认行为</td><td>默认 <code>$DSH_HOME/skills</code>；<code>--workspace</code> 到项目 <code>.agents/skills</code> 可选；不做全局 <code>~/.agents/skills</code></td><td><span class="tbd">待拍板</span></td></tr>
+            <tr><td><b>D4</b></td><td>existing desktop profile 支持</td><td>v1 不支持；列为未来 / 高级选项</td><td><span class="tbd soft">后置</span></td></tr>
+            <tr><td><b>D5</b></td><td>bundle 包命名</td><td><code>@dataops/dsh-dataops-bundle</code> 为工作名</td><td><span class="tbd">待确认</span></td></tr>
+            <tr><td><b>D6</b></td><td>签名基础设施与密钥归属</td><td>v1 校验和必选、签名可选；密钥 owner 未定</td><td><span class="tbd soft">可选</span></td></tr>
+            <tr><td><b>D7</b></td><td>Desktop 2.0.x 支持范围</td><td>仅 2.0.18 实测；其他 2.0.x 未验证</td><td><span class="tbd">待确认</span></td></tr>
+            <tr><td><b>D8</b></td><td>旧 dataops profile / 脚本退役时点</td><td>P2 兼容期后退役，需迁移说明</td><td><span class="tbd">待确认</span></td></tr>
+            <tr><td><b>D9</b></td><td>安装器形态</td><td>独立 npm bin / 仓库脚本 / Desktop 侧调用，M2 前不实现</td><td><span class="tbd">待确认</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout" style="margin-top:11px"><b>先决条件：</b>设计文档与 ADR 0013 是本页的上级事实源；两者若调整，蓝图同步更新。发布实现必须在架构确认之后，不把 runtime 改动混进设计提交。</div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span><b>边界：</b>本页只定发行 / 安装模型与门禁，不含实现；Stage 0–5 语义、工具契约与 workitem 格式不变。</span>
+    <span>source · <a href="../docs/design/release-install.md"><b>docs/design/release-install.md</b></a> · <a href="../docs/decisions/0013-release-install-unit.md">ADR 0013</a> · <a href="release-install-blueprint-delta.html">增量蓝图</a> · 视觉基线 <a href="blueprint-v2.html">blueprint-v2</a> · 2026-10-31 · <span class="state">设计稿 · 待架构确认</span></span>
+  </footer>
+</div>
+<script>
+  (function(){
+    var root = document.documentElement;
+    var button = document.getElementById('theme');
+    var KEY = 'dataops-release-install-theme';
+    var saved = null;
+    try { saved = localStorage.getItem(KEY); } catch (e) {}
+    if (saved === 'light' || saved === 'dark') root.setAttribute('data-theme', saved);
+    function isDark(){
+      var explicit = root.getAttribute('data-theme');
+      if (explicit === 'dark') return true;
+      if (explicit === 'light') return false;
+      return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    function label(){ button.textContent = isDark() ? '切换为浅色' : '切换为深色'; }
+    label();
+    button.addEventListener('click', function(){
+      var next = isDark() ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem(KEY, next); } catch (e) {}
+      label();
+    });
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      var onChange = function(){ if (!root.getAttribute('data-theme')) label(); };
+      if (mq.addEventListener) mq.addEventListener('change', onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+    }
+  })();
+</script>
+</body>
+</html>

@@ -56,6 +56,10 @@
 - [lineage-card.md](lineage-card.md)
 - [rebranding.md](rebranding.md)
 
+### 发布与安装
+
+- [release-install.md](release-install.md)（发布单元、bundle/profile、registry/离线、升级/卸载）
+
 ### 生命周期其他目录
 
 - 决策：[docs/decisions](../decisions/)

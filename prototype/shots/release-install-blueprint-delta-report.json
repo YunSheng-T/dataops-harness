@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "tool": "scripts/check-blueprint.mjs",
+  "slug": "release-install-blueprint-delta",
+  "file": "prototype/release-install-blueprint-delta.html",
+  "fileUrl": "file:///Users/zhangshu/code/dataops-harness/prototype/release-install-blueprint-delta.html",
+  "startedAt": "2026-10-31T03:18:45.286Z",
+  "finishedAt": "2026-10-31T03:18:48.698Z",
+  "durationMs": 3411,
+  "runtime": {
+    "node": "v22.22.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "chrome": {
+    "path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "exists": true,
+    "version": "Chrome/156.0.8078.48",
+    "protocolVersion": "1.3",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "port": 57908,
+    "headless": true,
+    "product": "Chrome/156.0.8078.48"
+  },
+  "mode": "cdp-file",
+  "criteria": {
+    "widthCheck": {
+      "viewports": [
+        1024,
+        1440,
+        1600,
+        1920
+      ],
+      "expression": "document.documentElement.scrollWidth <= window.innerWidth"
+    },
+    "consoleErrors": 0,
+    "theme": "click #theme light<->dark, fallback to data-theme recorded as degraded path",
+    "screenshots": [
+      "<slug>.png",
+      "<slug>-full.png",
+      "<slug>-dark.png",
+      "<slug>-full-dark.png"
+    ],
+    "fullPageTallerThanViewport": true
+  },
+  "page": {
+    "title": "DataOps · 发行与安装增量蓝图",
+    "readyState": "complete",
+    "bodyTextLength": 6763,
+    "bodyChildren": 2,
+    "hasThemeButton": true,
+    "scrollWidth": 1440,
+    "innerWidth": 1440,
+    "url": "file:///Users/zhangshu/code/dataops-harness/prototype/release-install-blueprint-delta.html",
+    "externalResources": []
+  },
+  "viewports": [
+    {
+      "requested": {
+        "width": 1024,
+        "height": 900
+      },
+      "innerWidth": 1024,
+      "innerHeight": 900,
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "scrollHeight": 4076,
+      "bodyScrollWidth": 1024,
+      "devicePixelRatio": 1,
+      "widthOk": true,
+      "emulationOk": true,
+      "pass": true,
+      "overflowingElements": []
+    },
+    {
+      "requested": {
+        "width": 1440,
+        "height": 900
+      },
+      "innerWidth": 1440,
+      "innerHeight": 900,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "scrollHeight": 3226,
+      "bodyScrollWidth": 1440,
+      "devicePixelRatio": 1,
+      "widthOk": true,
+      "emulationOk": true,
+      "pass": true,
+      "overflowingElements": []
+    },
+    {
+      "requested": {
+        "width": 1600,
+        "height": 1000
+      },
+      "innerWidth": 1600,
+      "innerHeight": 1000,
+      "scrollWidth": 1600,
+      "clientWidth": 1600,
+      "scrollHeight": 3211,
+      "bodyScrollWidth": 1600,
+      "devicePixelRatio": 1,
+      "widthOk": true,
+      "emulationOk": true,
+      "pass": true,
+      "overflowingElements": []
+    },
+    {
+      "requested": {
+        "width": 1920,
+        "height": 1080
+      },
+      "innerWidth": 1920,
+      "innerHeight": 1080,
+      "scrollWidth": 1920,
+      "clientWidth": 1920,
+      "scrollHeight": 3211,
+      "bodyScrollWidth": 1920,
+      "devicePixelRatio": 1,
+      "widthOk": true,
+      "emulationOk": true,
+      "pass": true,
+      "overflowingElements": []
+    }
+  ],
+  "theme": {
+    "initial": {
+      "theme": null,
+      "hasThemeAttribute": false,
+      "bodyBackground": "rgb(246, 247, 249)",
+      "rootBackground": "rgb(246, 247, 249)",
+      "bodyColor": "rgb(17, 19, 24)",
+      "hasThemeButton": true,
+      "prefersDark": false
+    },
+    "normalization": {
+      "mechanism": "initial-light-attribute",
+      "from": {
+        "theme": null,
+        "hasThemeAttribute": false,
+        "bodyBackground": "rgb(246, 247, 249)",
+        "rootBackground": "rgb(246, 247, 249)",
+        "bodyColor": "rgb(17, 19, 24)",
+        "hasThemeButton": true,
+        "prefersDark": false
+      },
+      "to": {
+        "theme": "light",
+        "hasThemeAttribute": true,
+        "bodyBackground": "rgb(246, 247, 249)",
+        "rootBackground": "rgb(246, 247, 249)",
+        "bodyColor": "rgb(17, 19, 24)",
+        "hasThemeButton": true,
+        "prefersDark": false
+      }
+    },
+    "light": {
+      "theme": "light",
+      "hasThemeAttribute": true,
+      "bodyBackground": "rgb(246, 247, 249)",
+      "rootBackground": "rgb(246, 247, 249)",
+      "bodyColor": "rgb(17, 19, 24)",
+      "hasThemeButton": true,
+      "prefersDark": false
+    },
+    "dark": {
+      "theme": "dark",
+      "hasThemeAttribute": true,
+      "bodyBackground": "rgb(15, 18, 24)",
+      "rootBackground": "rgb(15, 18, 24)",
+      "bodyColor": "rgb(238, 242, 248)",
+      "hasThemeButton": true,
+      "prefersDark": false
+    },
+    "toggle": {
+      "mechanism": "click",
+      "clickAttempted": true,
+      "clickResult": {
+        "theme": "dark",
+        "hasThemeAttribute": true,
+        "bodyBackground": "rgb(15, 18, 24)",
+        "rootBackground": "rgb(15, 18, 24)",
+        "bodyColor": "rgb(238, 242, 248)",
+        "hasThemeButton": true,
+        "prefersDark": false
+      },
+      "from": {
+        "theme": "light",
+        "hasThemeAttribute": true,
+        "bodyBackground": "rgb(246, 247, 249)",
+        "rootBackground": "rgb(246, 247, 249)",
+        "bodyColor": "rgb(17, 19, 24)",
+        "hasThemeButton": true,
+        "prefersDark": false
+      },
+      "to": {
+        "theme": "dark",
+        "hasThemeAttribute": true,
+        "bodyBackground": "rgb(15, 18, 24)",
+        "rootBackground": "rgb(15, 18, 24)",
+        "bodyColor": "rgb(238, 242, 248)",
+        "hasThemeButton": true,
+        "prefersDark": false
+      },
+      "backgroundChanged": true,
+      "verified": true
+    },
+    "roundTrip": {
+      "attempted": true,
+      "mechanism": "click",
+      "verified": true,
+      "state": {
+        "theme": "light",
+        "hasThemeAttribute": true,
+        "bodyBackground": "rgb(246, 247, 249)",
+        "rootBackground": "rgb(246, 247, 249)",
+        "bodyColor": "rgb(17, 19, 24)",
+        "hasThemeButton": true,
+        "prefersDark": false
+      }
+    }
+  },
+  "consoleErrors": [],
+  "screenshots": [
+    {
+      "kind": "viewport",
+      "theme": "light",
+      "observedTheme": "light",
+      "viewport": "1440x900",
+      "file": "prototype/shots/release-install-blueprint-delta.png",
+      "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/release-install-blueprint-delta.png",
+      "bytes": 254724,
+      "width": 1440,
+      "height": 900,
+      "expected": {
+        "width": 1440,
+        "height": 900
+      },
+      "dimensionsMatch": true,
+      "tallerThanViewport": null,
+      "ok": true
+    },
+    {
+      "kind": "full",
+      "theme": "light",
+      "observedTheme": "light",
+      "viewport": "1440x900",
+      "file": "prototype/shots/release-install-blueprint-delta-full.png",
+      "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/release-install-blueprint-delta-full.png",
+      "bytes": 832495,
+      "width": 1440,
+      "height": 3226,
+      "expected": {
+        "width": 1440,
+        "height": 3226
+      },
+      "dimensionsMatch": true,
+      "tallerThanViewport": true,
+      "ok": true
+    },
+    {
+      "kind": "viewport",
+      "theme": "dark",
+      "observedTheme": "dark",
+      "viewport": "1440x900",
+      "file": "prototype/shots/release-install-blueprint-delta-dark.png",
+      "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/release-install-blueprint-delta-dark.png",
+      "bytes": 259382,
+      "width": 1440,
+      "height": 900,
+      "expected": {
+        "width": 1440,
+        "height": 900
+      },
+      "dimensionsMatch": true,
+      "tallerThanViewport": null,
+      "ok": true
+    },
+    {
+      "kind": "full",
+      "theme": "dark",
+      "observedTheme": "dark",
+      "viewport": "1440x900",
+      "file": "prototype/shots/release-install-blueprint-delta-full-dark.png",
+      "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/release-install-blueprint-delta-full-dark.png",
+      "bytes": 854227,
+      "width": 1440,
+      "height": 3226,
+      "expected": {
+        "width": 1440,
+        "height": 3226
+      },
+      "dimensionsMatch": true,
+      "tallerThanViewport": true,
+      "ok": true
+    }
+  ],
+  "pass": true,
+  "failures": [],
+  "warnings": []
+}
