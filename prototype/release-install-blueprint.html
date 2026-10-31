@@ -206,6 +206,7 @@
   .open-table td:first-child{white-space:nowrap}
   .tbd{display:inline-block;font-size:8px;line-height:17px;padding:0 5px;border-radius:3px;border:1px solid var(--owned-line);color:var(--owned);background:var(--owned-bg);font-weight:700;white-space:nowrap}
   .tbd.soft{color:var(--external);background:var(--external-bg);border-color:var(--line2)}
+  .tbd.done{color:var(--shared);background:var(--shared-bg);border-color:var(--shared-line)}
   .foot{margin-top:22px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--faint);font-size:10px;line-height:1.7}
   .foot b{color:var(--muted)}
   .foot .state{color:var(--owned);font-weight:600}
@@ -273,7 +274,7 @@
 <div class="shell">
   <header class="topbar">
     <span class="brand"><span class="brand-mark">∞</span> DataOps</span>
-    <span class="crumb"><span>发行与安装</span><span class="dot"></span><b>全量蓝图</b><span class="dot"></span><span>设计稿 · 待确认</span></span>
+    <span class="crumb"><span>发行与安装</span><span class="dot"></span><b>全量蓝图</b><span class="dot"></span><span>设计稿 · 关键决策已定</span></span>
     <nav class="nav">
       <a href="#goals">目标</a><a href="#topology">拓扑</a><a href="#packages">安装单元</a><a href="#journey">旅程</a><a href="#entries">双入口</a><a href="#compat">兼容</a><a href="#lifecycle">生命周期</a><a href="#trust">信任</a><a href="#invariants">边界</a><a href="#roadmap">路线</a>
     </nav>
@@ -419,7 +420,7 @@
       </div>
       <div class="grid-2" style="margin-top:11px">
         <div class="card soft"><div class="k">Channel A · 主渠道</div><h3>内部 npm registry</h3><p>按 <code>@dataops</code> scope 发布；安装器按精确 semver 解析，pnpm 生成 lock。适合联网的内网开发机与 CI。</p><div class="chips"><span class="chip">exact version</span><span class="chip">registry ACL</span><span class="chip">pnpm lock</span></div></div>
-        <div class="card soft"><div class="k">Channel B · 离线</div><h3>tarball + sha256</h3><p>离线包携带 bundle 及其依赖的打包产物与校验文件；目标机先校验再安装。真实内网地址与签名流程 <span class="tbd">待确认</span>。</p><div class="chips"><span class="chip">.tgz</span><span class="chip">sha256</span><span class="chip">no public network</span></div></div>
+        <div class="card soft"><div class="k">Channel B · 离线</div><h3>tarball + sha256</h3><p>离线包携带 bundle 及其依赖的打包产物与校验文件；目标机先校验再安装。registry 地址待补；签名/attestation 后置。</p><div class="chips"><span class="chip">.tgz</span><span class="chip">sha256</span><span class="chip">no public network</span></div></div>
       </div>
       <div class="callout" style="margin-top:11px"><b>稳定的只有接口：</b>用户看到的始终是 profile 名 <code>dataops</code>、bundle 包名与两条安装路径；包内部如何组合（patch 行、依赖树）属于实现，可在版本内演进。</div>
     </div>
@@ -469,7 +470,7 @@
   &gt;=0.2.1-rc.2 &lt;0.3.0</span></div>
           </div>
           <div class="card soft"><b>版本与元数据</b><p>4 个包当前 <code>0.0.1</code> / <code>0.0.0</code>、均为 private、无 license。发布时四包与 bundle 统一 <code>0.1.0</code>，补 engines / license / repository / publishConfig，并移除 private。</p></div>
-          <div class="card soft"><b>职责归属</b><p><b>DataOps</b>：bundle、tools、brand、client、preset。<b>官方</b>：base、web-app、runtime。<b>用户</b>：profile overlay、home patch、workspace。</p></div>
+          <div class="card soft"><b>职责归属</b><p><b>DataOps</b>：bundle、tools、brand、client、preset、install CLI。<b>官方</b>：base、web-app、runtime。<b>用户</b>：profile overlay、home patch、workspace。</p></div>
         </div>
       </div>
       <div class="table-wrap" style="margin-top:12px">
@@ -481,6 +482,7 @@
             <tr><td><b>dataops-brand</b></td><td>Client 品牌占位（∞ / DataOps）</td><td>profile 依赖</td><td>保留；只换名字 / Logo，不动主题与官方包</td><td>精确版本</td></tr>
             <tr><td><b>dataops-client</b></td><td>Client 卡片与工作台</td><td>profile 依赖</td><td>保留；工具契约不变</td><td>精确版本</td></tr>
             <tr><td><b>dataops-preset</b></td><td>preset 定义 / patch 源片段</td><td>bundle 依赖，不单独激活</td><td>保留；补 engines / license，版本统一 <code>0.1.0</code></td><td>精确版本</td></tr>
+            <tr><td><b>dataops-install</b></td><td>安装 / 诊断 / 卸载 CLI</td><td>registry bin / 离线脚本</td><td>新增 <code>@dataops/dataops-install</code>，与离线包同一脚本</td><td>检查 runtime，不依赖 DSH 包</td></tr>
             <tr><td><b>profile overlay</b></td><td>用户配置与覆盖</td><td>profile 根目录</td><td>安装器创建后不覆盖</td><td>由用户掌控</td></tr>
             <tr><td><b>skills</b></td><td>独立 artifact</td><td><code>$DSH_HOME/skills</code>；可选 <code>--workspace</code></td><td>迁出全局 <code>~/.agents/skills</code>；只带筛选后的 DataOps 工作流技能</td><td>按 artifact 版本</td></tr>
           </tbody>
@@ -512,7 +514,7 @@
         <div class="fail warn"><b>用户 patch 被改</b><span>安装器只备份现有 <code>cordis.patch.yml</code>，不改正文；需要改默认值时只提示 diff，不自动合并。</span></div>
         <div class="fail warn"><b>registry 不可达</b><span>切离线 tarball + sha256；校验失败或版本不符就停止，不进半安装状态。</span></div>
         <div class="fail warn"><b>技能重名</b><span>preflight 列出冲突技能；中止或由用户选择跳过，不覆盖已有技能目录。</span></div>
-        <div class="fail good"><b>旧 dataops profile 共存</b><span>兼容期保留旧 <code>dataops</code> profile 与安装脚本；不把旧 symlink profile 当作发布产物。</span></div>
+        <div class="fail good"><b>旧 dataops profile 共存</b><span>M4 验收前旧 <code>dataops</code> profile 与脚本保留；验收后立即退役。不把旧 symlink profile 当作发布产物。</span></div>
       </div>
       <div class="callout" style="margin-top:11px"><b>目标形态：</b><code>dataops-install</code> / <code>dataops-doctor</code> / <code>dataops-uninstall</code> 是 M2 才实现的安装器入口；当前仓库仍用 dev 脚本，本页不把它们写成已可用。官方底层命令 <code>dsh plugin add</code> 现在可用。<br><b>失败可诊断：</b>错误必须带“对象 + 当前值 + 期望值 + 下一步”，例如 “profile dataops 缺 web-app，请重新按 web 模板初始化”。</div>
     </div>
@@ -551,7 +553,7 @@
       <div class="modes">
         <div class="mode"><div class="k">Desktop Mode 01</div><h3>compatibility · 兼容</h3><p>最小面：App 能启动、profile 被识别、4 个包加载、品牌与 preset 正确；默认推荐此模式。</p><span class="st tag shared"><i></i>必测 · 默认推荐</span></div>
         <div class="mode"><div class="k">Desktop Mode 02</div><h3>extended · 扩展</h3><p>在兼容面之外验证自定义 web profile 的列出 / 切换、会话创建与工具调用。</p><span class="st tag shared"><i></i>必测</span></div>
-        <div class="mode"><div class="k">Desktop Mode 03</div><h3>advanced · 高级</h3><p>验证 overlay 配置、技能 root、离线安装与回滚；具体模式定义以 Desktop 文档为准 <span class="tbd">待确认</span>。</p><span class="st tag owned"><i></i>必测</span></div>
+        <div class="mode"><div class="k">Desktop Mode 03</div><h3>advanced · 高级</h3><p>验证 overlay 配置、技能 root、离线安装与回滚；具体模式定义以 Desktop 文档为准。</p><span class="st tag owned"><i></i>必测</span></div>
       </div>
       <div class="callout warn" style="margin-top:11px"><b>不共享 desktop profile 的生态位：</b>market、bridge 与 desktop 专属插件不进入 dataops profile。用户若需要，应显式在 overlay 中追加，而不是由安装器默认继承。</div>
     </div>
@@ -571,7 +573,7 @@
             <tr><td><b>DSH runtime</b></td><td><code>0.2.1-rc.3</code>（本仓 <code>upstream.json</code> pin）</td><td><span class="tag shared"><i></i>支持</span></td><td>CI：契约 / preset / workitem / 布局 + headless smoke</td></tr>
             <tr><td><b>DSH runtime</b></td><td><code>&lt;0.2.1-rc.2</code> 或 <code>&gt;=0.3.0</code></td><td><span class="tag warn"><i></i>拒绝</span></td><td>engines 在安装 / 启动时拒绝加载</td></tr>
             <tr><td><b>DSH Desktop</b></td><td><code>2.0.18</code></td><td><span class="tag shared"><i></i>支持</span></td><td>compatibility / extended / advanced 三模式</td></tr>
-            <tr><td><b>DSH Desktop</b></td><td>其他 <code>2.0.x</code></td><td><span class="tag owned"><i></i>待确认</span></td><td>未实测不承诺；按 Desktop 实际版本补测</td></tr>
+            <tr><td><b>DSH Desktop</b></td><td>其他 <code>2.0.x</code></td><td><span class="tag shared"><i></i>按 runtime 判定</span></td><td>内置 runtime 在 engines 范围即支持；未实测版本标注“未验证”</td></tr>
             <tr><td><b>平台</b></td><td>macOS arm64</td><td><span class="tag shared"><i></i>目标</span></td><td>M4：clean DSH_HOME install / uninstall</td></tr>
             <tr><td><b>平台</b></td><td>Windows x64</td><td><span class="tag shared"><i></i>目标</span></td><td>M4：pnpm profile + skills + 无 symlink</td></tr>
             <tr><td><b>平台</b></td><td>Linux</td><td><span class="tag owned"><i></i>补充</span></td><td>CI / 容器；无真机时标注“未验证”</td></tr>
@@ -583,7 +585,7 @@
       </div>
       <div class="grid-3" style="margin-top:11px">
         <div class="card shared"><div class="k">Gate A · 版本兼容</div><h3>能不能装</h3><p>安装前预检 runtime 版本；启动时 engines 再校验一次。失败即停，不进入半安装。</p><div class="tiny">证据：<code>--dump-config</code> 在两版 runtime 各跑一次</div></div>
-        <div class="card brand"><div class="k">Gate B · 发布完整性</div><h3>产物可不可信</h3><p>构建可复现、依赖锁定；发布附 sha256，registry 有 ACL；签名作为可选增强。</p><div class="tiny">证据：校验和记录 + registry 发布日志</div></div>
+        <div class="card brand"><div class="k">Gate B · 发布完整性</div><h3>产物可不可信</h3><p>构建可复现、依赖锁定；发布附 sha256，registry 有 ACL；签名/attestation 后置。本机验收走离线 tarball，registry/ACL 在 M3 内网补测。</p><div class="tiny">证据：本机 tarball 校验记录 + 内网 registry 发布日志</div></div>
         <div class="card owned"><div class="k">Gate C · 安装验收</div><h3>装完对不对</h3><p>dump-config 检查行与默认值；Desktop 三模式；升级 / 回滚 / 卸载演练各一次。</p><div class="tiny">证据：receipt + 三模式验收记录</div></div>
       </div>
       <div class="callout warn" style="margin-top:11px"><b>不用兼容性豁免：</b><code>compatibility.json</code> 之类“绕过 engines”的开关不进入本方案。版本不兼容就升级 runtime 或发新的 bundle 版本，两者必须显式对应。</div>
@@ -644,14 +646,14 @@
       <div class="rail-wrap">
         <div class="trust">
           <div class="tstep"><div class="no">01 · build</div><h3>可复现构建</h3><p>源码 pin + lockfile；不 fork upstream；产物不含凭据与本地路径。</p></div>
-          <div class="tstep"><div class="no">02 · checksum</div><h3>校验与签名</h3><p>tarball 附 sha256；签名作为可选增强，密钥归属 <span class="tbd">待确认</span>。</p></div>
+          <div class="tstep"><div class="no">02 · checksum</div><h3>校验与签名</h3><p>tarball 附 sha256；签名/attestation 后置，等产品成熟和安全团队具备密钥/CI 流程后再补。</p></div>
           <div class="tstep"><div class="no">03 · registry ACL</div><h3>谁能发布</h3><p>内部 registry 按 <code>@dataops</code> scope 限权；读权限给内网安装者。</p></div>
           <div class="tstep"><div class="no">04 · consent</div><h3>安装即代码执行</h3><p>安装前明示将执行的代码、写入目录、技能 root；默认不静默写全局。</p></div>
           <div class="tstep"><div class="no">05 · runtime</div><h3>启动复检</h3><p>engines 再校验；provider 凭据只走 credentials / env，不落 bundle。</p></div>
         </div>
       </div>
       <div class="grid-4" style="margin-top:11px">
-        <div class="card"><div class="k">Legal 01</div><h3>LICENSE</h3><p>仓库暂无根 LICENSE，4 个包也无 license 字段；发布前必须选定并写入包与仓库。具体许可证 <span class="tbd">待确认</span>。</p></div>
+        <div class="card"><div class="k">Legal 01</div><h3>LICENSE</h3><p>已定公司内部专有许可；发布前补 LICENSE 与 4 包 license 字段，法务文本待补。</p></div>
         <div class="card"><div class="k">Legal 02</div><h3>THIRD_PARTY_NOTICES</h3><p>至少覆盖 React、ReactFlow、Montserrat（OFL）与产品图标来源；随发布物分发。</p></div>
         <div class="card"><div class="k">Legal 03</div><h3>独立声明</h3><p>不暗示与 DeepSeek 官方的隶属或背书；品牌只用于 DataOps 自身产品面。</p></div>
         <div class="card"><div class="k">Known</div><h3>宿主标题限制</h3><p>宿主页面 / 窗口标题可能仍是 DeepSeek Harness 或 DSH Desktop，插件运行时改不了；v1 接受该限制，在发行说明中写明。</p></div>
@@ -683,37 +685,39 @@
   <section class="section" id="roadmap">
     <div class="section-head">
       <div><div class="section-kicker">10 · Migration &amp; Decisions</div><h2>P0 定稿，P1 可发，P2 扩面</h2></div>
-      <div class="desc">先冻结现状与边界，再改安装器与发布流水线；Desktop 验证与旧路径退役放最后。</div>
+      <div class="desc">关键决策已定；先做 bundle 与官方安装器，M4 验收后立即退役旧路径。</div>
     </div>
     <div class="section-body">
       <div class="road">
-        <div class="phase p0"><div class="k">P0 · 现在</div><h3>设计与冻结</h3><ul><li>设计文档 + ADR 0013 + 全量 / 增量蓝图。</li><li>记录现状：4 包版本、symlink 安装、全局技能。</li><li>不改 runtime、不改 Desktop、不发布。</li></ul><div class="exit">出口：架构确认，边界与待确认项收敛。</div></div>
+        <div class="phase p0"><div class="k">P0 · 现在</div><h3>设计与冻结</h3><ul><li>设计文档 + ADR 0013 + 全量 / 增量蓝图。</li><li>记录现状：4 包版本、symlink 安装、全局技能。</li><li>不改 runtime、不改 Desktop、不发布。</li></ul><div class="exit">出口：关键决策已确认，边界与待补信息收敛。</div></div>
         <div class="phase p1"><div class="k">P1 · 可发</div><h3>bundle 与官方安装器</h3><ul><li><code>packages/dataops-bundle</code> 0.1.0：patch / 精确依赖 / engines / license / notices。</li><li>seed + <code>dsh plugin add</code> 安装器；receipt 与 verify。</li><li>内部 registry + 离线 tarball / sha256；rc.2 / rc.3 CI。</li></ul><div class="exit">出口：干净机器一条命令安装并 dump-config 通过。</div></div>
-        <div class="phase p2"><div class="k">P2 · 扩面</div><h3>Desktop、兼容期与退役</h3><ul><li>Desktop 三模式 + 升级 / 回滚 / 卸载演练。</li><li>发行说明、安装 / 升级文档；兼容期保留旧脚本。</li><li>评估 existing-profile 高级选项、公共 market 与品牌桌面 App。</li></ul><div class="exit">出口：发布渠道稳定，旧 dataops profile 路径按计划退役。</div></div>
+        <div class="phase p2"><div class="k">P2 · 扩面</div><h3>Desktop、验收与退役</h3><ul><li>Desktop 三模式 + 升级 / 回滚 / 卸载演练。</li><li>发行说明、安装 / 升级文档；M4 验收后立即退役旧脚本。</li><li>评估 existing-profile 高级选项、公共 market 与品牌桌面 App。</li></ul><div class="exit">出口：发布渠道稳定，旧 dataops profile 路径已按计划退役。</div></div>
       </div>
       <div class="table-wrap" style="margin-top:12px">
         <table class="open-table">
-          <thead><tr><th>ID</th><th>待拍板项</th><th>当前建议 / 事实</th><th>状态</th></tr></thead>
+          <thead><tr><th>ID</th><th>事项</th><th>拍板结果（2026-10-31）</th><th>状态</th></tr></thead>
           <tbody>
-            <tr><td><b>D1</b></td><td>内部 registry 地址、scope owner 与 ACL</td><td>主渠道走内部 npm；具体 URL 与审批人未定</td><td><span class="tbd">待确认</span></td></tr>
-            <tr><td><b>D2</b></td><td>许可证选择与 notices 责任</td><td>内部许可 vs 其他；仓库与 4 包当前无 license</td><td><span class="tbd">待确认</span></td></tr>
-            <tr><td><b>D3</b></td><td>技能默认行为</td><td>默认 <code>$DSH_HOME/skills</code>；<code>--workspace</code> 到项目 <code>.agents/skills</code> 可选；不做全局 <code>~/.agents/skills</code></td><td><span class="tbd">待拍板</span></td></tr>
-            <tr><td><b>D4</b></td><td>existing desktop profile 支持</td><td>v1 不支持；列为未来 / 高级选项</td><td><span class="tbd soft">后置</span></td></tr>
-            <tr><td><b>D5</b></td><td>bundle 包命名</td><td><code>@dataops/dsh-dataops-bundle</code> 为工作名</td><td><span class="tbd">待确认</span></td></tr>
-            <tr><td><b>D6</b></td><td>签名基础设施与密钥归属</td><td>v1 校验和必选、签名可选；密钥 owner 未定</td><td><span class="tbd soft">可选</span></td></tr>
-            <tr><td><b>D7</b></td><td>Desktop 2.0.x 支持范围</td><td>仅 2.0.18 实测；其他 2.0.x 未验证</td><td><span class="tbd">待确认</span></td></tr>
-            <tr><td><b>D8</b></td><td>旧 dataops profile / 脚本退役时点</td><td>P2 兼容期后退役，需迁移说明</td><td><span class="tbd">待确认</span></td></tr>
-            <tr><td><b>D9</b></td><td>安装器形态</td><td>独立 npm bin / 仓库脚本 / Desktop 侧调用，M2 前不实现</td><td><span class="tbd">待确认</span></td></tr>
+            <tr><td><b>D1</b></td><td>发布渠道</td><td>内部 registry 为主 + 离线 tarball 兜底；本机测试只走 tarball，URL / scope / ACL 在 M3 内部补</td><td><span class="tbd">已定模型 · 内部补</span></td></tr>
+            <tr><td><b>D2</b></td><td>许可证与 notices</td><td>公司内部专有许可；法务文本 + THIRD_PARTY_NOTICES 待补</td><td><span class="tbd">已定 · 文本待补</span></td></tr>
+            <tr><td><b>D3</b></td><td>技能默认行为</td><td>默认 <code>$DSH_HOME/skills</code>，<code>--no-skills</code> 可关闭；不写 <code>~/.agents/skills</code>，不装 upstream <code>dsh-*</code></td><td><span class="tbd done">已定</span></td></tr>
+            <tr><td><b>D4</b></td><td>existing desktop profile</td><td>v1 只支持独立 <code>dataops</code> profile；现有 profile 后置</td><td><span class="tbd done">已定</span></td></tr>
+            <tr><td><b>D5</b></td><td>bundle 包命名 / 版本</td><td><code>@dataops/dsh-dataops-bundle</code>；首版 <code>0.1.0</code></td><td><span class="tbd done">已定</span></td></tr>
+            <tr><td><b>D6</b></td><td>签名 / attestation</td><td>后置；v1 保留 sha256 + registry ACL + 安装确认</td><td><span class="tbd soft">后置</span></td></tr>
+            <tr><td><b>D7</b></td><td>Desktop 支持范围</td><td>以 runtime <code>engines.dsh</code> 为准；发布测 2.0.18 + 当期最新</td><td><span class="tbd done">已定</span></td></tr>
+            <tr><td><b>D8</b></td><td>旧路径退役时点</td><td>M4 验收通过后立即退役；提前发一次性迁移通知</td><td><span class="tbd done">已定</span></td></tr>
+            <tr><td><b>D9</b></td><td>安装器形态</td><td>独立 <code>@dataops/dataops-install</code> bin + 离线包内置同一脚本</td><td><span class="tbd done">已定</span></td></tr>
+            <tr><td><b>D10</b></td><td>代码保密</td><td>不作为发布门槛；v1 发布可读 JS，不做混淆/服务端化</td><td><span class="tbd done">已定</span></td></tr>
+            <tr><td><b>D11</b></td><td><code>dataops-preset</code> 角色</td><td>patch 源片段 / 版本对齐依赖，不单独作为用户安装目标</td><td><span class="tbd done">已定</span></td></tr>
           </tbody>
         </table>
       </div>
-      <div class="callout" style="margin-top:11px"><b>先决条件：</b>设计文档与 ADR 0013 是本页的上级事实源；两者若调整，蓝图同步更新。发布实现必须在架构确认之后，不把 runtime 改动混进设计提交。</div>
+      <div class="callout" style="margin-top:11px"><b>拍板记录：</b>2026-10-31 已确认以上决策；仍需补 registry 细节、法务文本和签名后置 owner。实现从 M0/M1 开始，不把 runtime 改动混进设计提交。</div>
     </div>
   </section>
 
   <footer class="foot">
     <span><b>边界：</b>本页只定发行 / 安装模型与门禁，不含实现；Stage 0–5 语义、工具契约与 workitem 格式不变。</span>
-    <span>source · <a href="../docs/design/release-install.md"><b>docs/design/release-install.md</b></a> · <a href="../docs/decisions/0013-release-install-unit.md">ADR 0013</a> · <a href="release-install-blueprint-delta.html">增量蓝图</a> · 视觉基线 <a href="blueprint-v2.html">blueprint-v2</a> · 2026-10-31 · <span class="state">设计稿 · 待架构确认</span></span>
+    <span>source · <a href="../docs/design/release-install.md"><b>docs/design/release-install.md</b></a> · <a href="../docs/decisions/0013-release-install-unit.md">ADR 0013</a> · <a href="release-install-blueprint-delta.html">增量蓝图</a> · 视觉基线 <a href="blueprint-v2.html">blueprint-v2</a> · 2026-10-31 · <span class="state">设计稿 · 关键决策已定（2026-10-31）</span></span>
   </footer>
 </div>
 <script>

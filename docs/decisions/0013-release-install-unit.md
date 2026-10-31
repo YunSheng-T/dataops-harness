@@ -1,7 +1,7 @@
 # 0013 · 发布与安装单元：独立 profile + 自包含 bundle
 
 - 日期：2026-10-31
-- 状态：提议，待架构确认
+- 状态：已确认，待实施（registry 细节与签名后置）
 - 关联：[发布与安装设计](../design/release-install.md) · [全量蓝图](../../prototype/release-install-blueprint.html) · [增量蓝图](../../prototype/release-install-blueprint-delta.html)
 
 ## 背景
@@ -24,7 +24,12 @@
 6. **配置归属**：bundle 提供 mock 默认；用户/部署配置写入 profile 的 `cordis.patch.yml`；安装器不覆盖用户 patch。
 7. **技能作用域**：安装到 `$DSH_HOME/skills`（或显式 workspace），不再默认写 `~/.agents/skills`；重名 preflight；不默认安装 upstream 的 `dsh-*` 开发技能。
 8. **生命周期**：`$DSH_HOME/dataops/install.json` receipt；升级/回滚用 `dsh plugin add` 精确版本；卸载保留 workspace workitems。
-9. **发布渠道**：v1 内部 registry 为主，离线 tarball + sha256 为辅；公共 market/品牌桌面 App 非目标。
+9. **发布渠道**：v1 内部 registry 为主，离线 tarball + sha256 为辅；公共 market/品牌桌面 App 非目标。registry 地址/scope/ACL 待补，但不阻塞 M0–M2：本机/离线验收只走 tarball，registry 安装与 ACL 在 M3 内网环境补测。
+10. **安装器形态**：独立 bin `@dataops/dataops-install`（`dataops-install` / `doctor` / `uninstall`），离线包内置同一脚本。
+11. **许可证**：公司内部专有许可；`LICENSE` / `THIRD_PARTY_NOTICES` 随包发布，法务文本待补。
+12. **代码保密与签名**：代码保密不作为发布门槛；v1 保留 sha256 + registry ACL + 安装确认，签名/attestation 后置。
+13. **旧路径退役**：新路径 M4 验收通过后立即退役 symlink 安装；提前发一次性迁移通知，不保留长期双路径。
+14. **preset 角色**：`dataops-preset` 保留为 patch 源片段/版本对齐依赖，不单独作为用户安装目标。
 
 ## 后果
 
@@ -39,7 +44,7 @@
 
 - 需要新增 bundle 包、patch 生成器、安装器、receipt 与发布流水线。
 - 需要一次包清单/版本/许可/registry 治理。
-- 旧 symlink 安装方式要降级为 dev-only，并设计迁移路径。
+- 旧 symlink 安装方式在 M4 验收后立即退役；退役前需要一次性迁移通知和迁移命令。
 - 独立 profile 不继承用户 `desktop` profile 的 market/bridge，需要在用户文档中说明。
 
 ## 备选方案

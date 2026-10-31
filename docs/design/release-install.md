@@ -1,6 +1,6 @@
 # 发布与安装设计
 
-> 状态：设计稿 · 待架构确认  
+> 状态：设计稿 · 关键决策已拍板（registry 细节与签名后置）  
 > 日期：2026-10-31  
 > 关联：[ADR 0013](../decisions/0013-release-install-unit.md) · [全量蓝图](../../prototype/release-install-blueprint.html) · [增量蓝图](../../prototype/release-install-blueprint-delta.html)
 
@@ -34,6 +34,7 @@
 - 不实现公共插件市场上架；v1 只走内部 registry / 离线包。
 - 不把插件装进用户现有 `desktop` profile 作为默认路径；品牌替换、默认 preset 和工具集变化会侵入用户环境。
 - 不接真实 provider；bundle 默认 `mock`，真实域由部署配置和后续适配提供。
+- **不把代码保密作为发布门槛**：v1 发布的是可读 JS，不做混淆/服务端化；如果后续“用户不能看代码”成为硬要求，单独评估最小化或服务端化，不在本设计内承诺。
 - 不改变 Stage 0–5、工具契约、workitem 格式或品牌边界。
 
 ## 3. 现状与约束
@@ -107,7 +108,7 @@ dsh --profile dataops
 
 - `--from-default-profile web --dump-config` 只用于**新 profile**；已有 profile 不能执行，会覆盖。
 - `dsh plugin add` 由 pnpm 管理 profile，生成 lock/.modules；不再用 symlink。
-- 发布安装器封装上面的步骤，并做 preflight、receipt、skills、验证和错误提示；但底层仍是官方命令，不手写 profile。
+- 安装器形态：独立 npm bin `@dataops/dataops-install`（提供 `dataops-install` / `dataops-doctor` / `dataops-uninstall`），离线包内置同一脚本；安装器封装上面的步骤，并做 preflight、receipt、skills、验证和错误提示，但底层仍是官方命令，不手写 profile。
 - 开发期保留 `profiles/dataops` 与旧脚本作为 dev-only 路径，release 安装器不使用。
 
 ### D4 · DSH Desktop
@@ -116,6 +117,7 @@ dsh --profile dataops
 - Desktop 会为自定义 web profile 注入 desktop shell；不修改 `desktop` profile，不改 Desktop 应用。
 - 安装后必须重启；profile 切换是重启操作。Desktop 已安装的插件不会热更新。
 - 必须验证 compatibility / extended / advanced 三种呈现模式；默认推荐 compatibility，因为品牌与官方 sidebar 的行为最接近上游。
+- Desktop 版本支持以 runtime `engines.dsh` 为准：Desktop 2.0.x 只要内置 runtime 在范围内即支持；每次发布测 2.0.18 + 当期最新 Desktop，未测版本标注“未验证”。
 - 不继承用户 `desktop` profile 里的 market / bridge 等 bundle；这是独立 profile 的预期边界，需要在用户文档中写清。
 
 ### D5 · 版本与兼容
@@ -126,6 +128,7 @@ dsh --profile dataops
   - DSH CLI `0.2.1-rc.2`
   - DSH CLI `0.2.1-rc.3`
   - DSH Desktop 2.0.18（runtime rc.2）compatibility / extended / advanced
+  - 当期最新 DSH Desktop（runtime 必须在 engines 范围内）
 - 上游是 pre-stable；每次 DSH 升级都要重跑 Host boot、client module graph、Desktop 三模式 smoke。0.3.0 到来时先升级插件再放开范围。
 
 ### D6 · 配置
@@ -168,14 +171,15 @@ dsh --profile dataops
 
 ### D9 · 发布渠道
 
-- **主渠道：内部 npm registry**。发布 bundle + 四个依赖的精确版本；配置 registry ACL 和 scope 权限。
+- **主渠道：内部 npm registry**。发布 bundle + 四个依赖的精确版本；配置 registry ACL 和 scope 权限。registry 地址、`@dataops` scope owner、发布审批人待补，文档先用 `<internal-registry>` / `<scope-owner>` / `<publish-approver>` 占位。
 - **离线渠道：tarball 集**。`pnpm pack` 出 bundle + 四个依赖，生成 `manifest.json` 和 `sha256sum`；安装器一次性 add 全部 tarball。发布前验证 pnpm 能用本地 tarball 满足精确依赖；若不能，离线渠道改用内部 registry 镜像。
 - **后续渠道**：DSH Desktop 插件市场 / 公共 npm / 品牌桌面 App。v1 不做；market 上架涉及公开索引、安全审核和品牌合规。
 
 ### D10 · 信任与合规
 
-- 发布包必须有 `LICENSE`、`THIRD_PARTY_NOTICES`；覆盖 React、ReactFlow、Montserrat（OFL）、产品图标商标。
-- 安装即执行 Host 代码；内部 registry 要有 ACL，产物提供 sha256，条件允许时增加签名/attestation。
+- 许可证已拍板为**公司内部专有许可**；发布包必须补 `LICENSE`、`THIRD_PARTY_NOTICES`，覆盖 React、ReactFlow、Montserrat（OFL）、产品图标商标。具体法务文本待补。
+- 安装即执行 Host 代码；内部 registry 要有 ACL，产物提供 sha256，安装前要求确认。**签名/attestation 后置**：等产品成熟、安全团队具备密钥和 CI 流程后再做；v1 不阻塞发布。
+- **代码保密不作为发布门槛**：v1 发布可读 JS，不做混淆/服务端化；需要保密时另立设计。
 - 不暗示与 DeepSeek 官方存在隶属、合作、授权或背书关系；README/关于页保留独立声明。
 - 已知限制：宿主窗口/页面标题仍可能是 `DeepSeek Harness`，插件运行时改不了；不要把它包装成 DataOps 品牌桌面端。
 
@@ -218,6 +222,7 @@ $DSH_HOME/profiles/dataops
 | `@dataops/dsh-dataops-tools` | Host 工具 | 是 | 否 | 是 | cordis peer |
 | `@dataops/dsh-dataops-client` | Client 卡片 | 是 | 否 | 是 | cordis peer |
 | `@dataops/dsh-dataops-brand` | 品牌占用 | 是 | 否 | 是 | cordis peer |
+| `@dataops/dataops-install` | 安装 / 诊断 / 卸载 CLI | 是 | 否 | 检查 runtime | Node（无 DSH 依赖） |
 
 所有包：`private` 移除，补 `license`/`repository`/`publishConfig`；client/brand 的 `prepack` 构建 `lib/`；bundle 的 `prepack` 生成 patch 并校验依赖版本。
 
@@ -354,11 +359,13 @@ Linux 作为 CI/容器补充；没有真机时标注“未验证”，不当作�
 7. node scripts/build-dataops-bundle.mjs        （生成 patch）
 8. node packages/dataops-client/scripts/build.mjs
 9. node packages/dataops-brand/scripts/build.mjs
-10. pnpm pack (bundle + 4 deps) → dist/
+10. pnpm pack (bundle + 4 deps + install CLI) → dist/
 11. sha256sum / manifest.json
-12. clean-home install smoke（rc.2 / rc.3）
-13. Desktop 三模式 smoke（人工/脚本）
-14. docs / release notes / compatibility matrix
+12. Local gate（本机可跑）：pnpm pack + 本地 tarball 安装 + dump-config；不访问内部 registry
+13. clean-home install smoke（rc.2 / rc.3）
+14. Desktop 三模式 smoke（人工/脚本）
+15. Internal gate（M3，仅内网）：发布到内部 registry、ACL 生效、`dsh plugin add @dataops/...` 安装
+16. docs / release notes / compatibility matrix
 ```
 
 发布产物：
@@ -370,6 +377,7 @@ dist/dataops-0.1.0/
   dataops-dsh-dataops-brand-0.1.0.tgz
   dataops-dsh-dataops-tools-0.1.0.tgz
   dataops-dsh-dataops-preset-0.1.0.tgz
+  dataops-install-0.1.0.tgz
   manifest.json
   sha256sum
   THIRD_PARTY_NOTICES.md
@@ -379,7 +387,7 @@ dist/dataops-0.1.0/
 
 - 安装即执行 Host 代码；安装器必须显示目标、版本、来源，并要求确认。
 - registry 使用内部 ACL；scope `@dataops` 的写权限只给 release CI。
-- tarball 提供 sha256；条件允许时增加签名/attestation；安装器校验后再 add。
+- tarball 提供 sha256；安装器校验后再 add。**签名/attestation 后置**，等产品成熟和安全团队具备密钥/CI 流程后再做。
 - 凭据只通过 credentials/env；不进入 bundle、receipt、日志、fixture。
 - LICENSE + THIRD_PARTY_NOTICES：React/ReactFlow、Montserrat OFL、产品图标商标。
 - 品牌：独立项目声明；不暗示官方背书；宿主标题限制写入用户文档。
@@ -420,8 +428,9 @@ dist/dataops-0.1.0/
 
 ### M3 · 发布流水线与渠道
 
-- 内部 registry 发布 + 离线 tarball + sha256 + NOTICE。
-- release gate 接入 rc.2/rc.3 干净 home smoke。
+- 内部 registry 发布 bundle、4 个依赖与 `@dataops/dataops-install`；离线 tarball + sha256 + NOTICE。
+- registry URL / scope / ACL 在内部环境补；**本机不依赖 registry**，本机只验本地 tarball 安装。
+- release gate 接入 rc.2/rc.3 干净 home smoke；registry 安装验收在内网执行。
 
 ### M4 · Desktop 与离线验收
 
@@ -431,9 +440,10 @@ dist/dataops-0.1.0/
 ### M5 · 文档与支持
 
 - 用户安装/升级/卸载/回滚文档；兼容矩阵；诊断入口。
-- 旧 `install-dataops-profile.mjs` 标记 dev-only；release 文档不再提 symlink。
+- 新路径验收通过（M4）后**立即退役旧路径**：移除/归档 `install-dataops-profile.mjs` 与旧 profile 安装说明；release 文档不再提 symlink。
+- 退役前发一次性迁移通知；不再保留长期双路径。
 
-兼容期：M1–M2 期间两套并存，但 release 安装器只走新路径；M3 之后旧路径仅内部开发使用。
+兼容期：旧路径只在 M1–M4 开发期存在；M4 验收通过后立即退役，不设“再保留一个发布周期”的窗口。
 
 ## 14. 验收标准
 
@@ -442,19 +452,33 @@ dist/dataops-0.1.0/
 - [ ] rc.2、rc.3 双运行时 smoke 通过；版本不匹配明确拒绝。
 - [ ] profile 有 pnpm lock/.modules，无绝对 symlink；移动/删除安装目录不影响运行（除 dev link 模式）。
 - [ ] 升级、回滚、卸载可执行；用户 patch 不丢；workitems 不删。
-- [ ] 离线 tarball 校验和安装通过；不访问公网。
+- [ ] 离线 tarball 校验和安装通过；不访问公网，且不依赖内部 registry。
+- [ ] 内部 registry 的 publish / ACL / `dsh plugin add @dataops/...` 在 M3 内网环境补测（本机不作为阻塞项）。
 - [ ] LICENSE/THIRD_PARTY_NOTICES/checksum 齐全；安装确认可见。
 - [ ] 用户文档、兼容矩阵、支持诊断入口齐全。
 
-## 15. 待拍板
+## 15. 拍板结果（2026-10-31）
 
-1. 内部 registry 地址与 `@dataops` scope 归属；是否允许公共 npm。
-2. LICENSE 选择（内部专有 / MIT / 其他）与 NOTICE 范围。
-3. 技能默认行为：默认安装到 `$DSH_HOME/skills`，还是要求显式 `--skills`。
-4. 是否保留 `dataops-preset` 作为独立可安装 bundle，还是只作为 bundle 的 patch 源片段。
-5. 是否在 v1 支持装进现有 `desktop` profile；如果支持，品牌/preset 是否拆成可选 bundle。
-6. 安装器形态：独立 npm bin、仓库脚本，还是未来 Desktop 侧插件调用 `desktopPnpm.installPlugin`。
-7. 签名/attestation 是否纳入首个 release gate。
+| # | 事项 | 结论 |
+|---|---|---|
+| 1 | 发布渠道 | 内部 npm registry 为主 + 离线 tarball 兜底；公共 npm 不作为主渠道 |
+| 2 | 许可证 | 公司内部专有许可；`LICENSE` / `THIRD_PARTY_NOTICES` 随包发布，法务文本待补 |
+| 3 | 技能默认行为 | 默认安装到 `$DSH_HOME/skills`，可用 `--no-skills` 关闭；不写 `~/.agents/skills`，不装 upstream `dsh-*` |
+| 4 | 现有 desktop profile | v1 只支持独立 `dataops` profile；现有 profile 安装后置为高级选项 |
+| 5 | bundle 命名/版本 | `@dataops/dsh-dataops-bundle`，首版 `0.1.0`；四个依赖同版本 |
+| 6 | 安装器形态 | 独立 bin `@dataops/dataops-install`（`dataops-install` / `doctor` / `uninstall`）+ 离线包内置同一脚本 |
+| 7 | 签名/attestation | 后置；v1 保留 sha256 + registry ACL + 安装确认，等产品成熟再补签名 |
+| 8 | Desktop 支持范围 | 以 runtime `engines.dsh` 为准；发布时测 2.0.18 + 当期最新 Desktop |
+| 9 | 旧 dev 路径退役 | 新路径验收通过（M4）后立即退役；退役前发一次性迁移通知，不保留长期双路径 |
+| 10 | 代码保密 | 不作为发布门槛；v1 发布可读 JS，不做混淆/服务端化；未来若成为硬要求另立设计 |
+| 11 | `dataops-preset` 角色 | 保留为 patch 源片段/版本对齐依赖，不单独作为用户安装目标 |
+
+### 15.1 仍需补充的信息
+
+- 内部 registry URL、`@dataops` scope owner、发布 ACL/审批人；文档先用占位符。**不阻塞 M0–M2 本机/离线验收，M3 前由内部迭代补齐。**
+- 内部专有许可的法务文本与 NOTICE 责任人。
+- 签名/attestation 的后续 owner 与时间点（不阻塞 v1）。
+- 每次发布时的“当期最新 DSH Desktop”版本号与测试记录。
 
 ## 16. 风险
 
@@ -462,7 +486,9 @@ dist/dataops-0.1.0/
 - **Desktop 自动迁移**：旧 profile 迁移可能受网络/权限影响；安装器必须生成 pnpm 元数据，避免用户首次启动才失败。
 - **Windows 路径/权限**：symlink 方案不可用；官方 pnpm 路径是主要收益之一。
 - **技能重名**：通用名与用户技能冲突；preflight 和可选 root 是必要保护。
-- **发布渠道未定**：registry 不可用会迫使离线包成为主渠道，安装器与文档要同时支持。
+- **registry 细节未定**：地址/scope/ACL 未落，M3 前需要平台组确认；不可用时会迫使离线包成为主渠道。
+- **旧路径立即退役**：M4 验收后移除 symlink 安装会打断现有开发机；必须提前发迁移通知并提供一次性迁移命令。
+- **代码可读**：已明确不作为发布门槛；如果后续出现保密要求，需要另立设计，不能靠签名/ACL 解决。
 - **品牌/法律**：第三方图标、宿主标题、官方背书边界需要法务/品牌确认。
 
 ## 17. 参考

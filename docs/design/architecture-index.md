@@ -17,7 +17,7 @@
 | [ADR 0011](../decisions/0011-stage-4-5-implementation.md) | Stage 4/5 实现决策 |
 | [ADR 0012](../decisions/0012-real-provider-boundary.md) | 真实系统接入边界 |
 | [发布与安装](release-install.md) | 自包含 bundle、独立 profile、registry/离线、生命周期 |
-| [ADR 0013](../decisions/0013-release-install-unit.md) | 发布与安装单元（提议） |
+| [ADR 0013](../decisions/0013-release-install-unit.md) | 发布与安装单元（已确认，待实施） |
 | [内部代码仓组件](repo-components.md) | manifest/build.yaml 索引与 LTS 源解析 |
 | [卡 Payload 契约](card-payload-contract.md) | 卡片渲染安全与 schema 变体 |
 | [P9 SSO 身份](identity-sso.md) | 身份、角色映射、签收审计 |
@@ -34,7 +34,7 @@ Stage 6: 不实现、不展示
 真实域 adapter 骨架: providers/domain-adapters.js（未接线）
 Workitem: 本地 YAML（无 SSO/并发锁）
 签收: mock actionId + UI 回执（非生产身份）
-发布/安装: 设计稿（自包含 bundle / registry / receipt 未实现；dev symlink 安装仍可用）
+发布/安装: 设计稿，关键决策已定；bundle / registry / receipt 未实现；dev symlink 安装仍可用，M4 验收后退役
 ```
 
 ## 3. 历史/局部参考
