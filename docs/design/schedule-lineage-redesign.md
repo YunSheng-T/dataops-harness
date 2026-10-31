@@ -17,6 +17,17 @@
 
 focus 只改变当前卡片布局，不创建新的页面、tab 或 overlay。
 
+## 1.1 右栏血缘入口
+
+右栏 `血缘` tab 优先渲染**调度视图**：
+
+- 有 `lineage` 或 `design` 的 task/job 数据时，使用 `schedule` 视图
+- 读取 `taskId`、cron、SLA、retries、dependsOn
+- 只展示当前 task 的 job，不混入其他 task
+- 卡片内显示 task group、job 节点、inspector
+- 没有调度数据时才回退到设计血缘
+- 不再打开全宽工作台
+
 ## 2. 设计原则
 
 - 文件上下文不丢失

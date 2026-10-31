@@ -452,6 +452,22 @@ check('design impact draws a synthetic lineage graph', () => {
   assert(body.includes('设计血缘'), 'synthetic card')
 })
 
+check('lineage tab renders schedule view from task/job lineage', () => {
+  ContextStore.ingest('s-schedule', {
+    kind: 'lineage', schemaVersion: 2, table: 'dws.trade_channel_daily',
+    nodes: [
+      { id: 'task:channel_pay', type: 'schedule_task', label: '渠道支付日报', cycle: 'daily', cron: '0 3 * * *', sla: '05:00' },
+      { id: 'job:etl_target', type: 'etl_job', jobKind: 'batch_etl', label: '支付口径聚合', parent: 'task:channel_pay' }
+    ],
+    edges: [{ from: 'task:channel_pay', to: 'job:etl_target', type: 'triggers' }],
+    schedule: { taskId: 'task:channel_pay', cycle: 'daily', cron: '0 3 * * *', sla: '05:00', retries: 2, dependsOn: ['table:dwd.orders@dt-1'] }
+  })
+  const body = text(Tabs.tabs[1].body.Component({ sessionId: 's-schedule' }))
+  assert(body.includes('调度血缘') && body.includes('渠道支付日报'), 'schedule title')
+  assert(body.includes('支付口径聚合') && body.includes('0 3 * * *'), 'schedule job and cron')
+  assert(!body.includes('设计血缘'), 'right tab must not default to design lineage')
+})
+
 check('three right-sidebar tabs read the context store', () => {
   assert(Tabs.definitions.length === 3, 'expected three tab types')
   const kinds = Tabs.definitions.map(item => item.kind)

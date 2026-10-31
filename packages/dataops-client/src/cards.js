@@ -234,7 +234,13 @@ export function createDataopsCards(React) {
     '.do-sched-name{font-size:12px;font-weight:700;line-height:17px;margin:1px 0 3px;overflow-wrap:anywhere}',
     '.do-sched-kv{display:grid;grid-template-columns:42px minmax(0,1fr);gap:3px 6px;margin-top:8px;font-size:9px}',
     '.do-sched-kv span{color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-sched-extra{display:flex;flex-direction:column;gap:3px;margin-top:8px;padding-top:7px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.05))}',
+    '.do-sched-extra div{display:flex;gap:5px;font-size:9px;min-width:0}',
+    '.do-sched-extra span{color:var(--dsw-alias-label-tertiary,#8b93a2);flex:none}',
+    '.do-sched-extra b{font-weight:500;color:var(--dsw-alias-label-secondary,#61666b);overflow-wrap:anywhere}',
     '.do-sched-kv b{font-weight:500;color:var(--dsw-alias-label-secondary,#61666b);overflow-wrap:anywhere}',
+    '.do-sched-group-frame rect{fill:color-mix(in srgb,var(--dsw-alias-state-success-bg,#eaf7f1) 45%,transparent);stroke:var(--dsw-alias-state-success-line,#c5e8d9);stroke-dasharray:4 3;rx:9}',
+    '.do-sched-group-label{font-size:9px;font-weight:700;fill:var(--dsw-alias-state-success-primary,#17835c);letter-spacing:.02em}',
     '.do-doc-dag-node[data-selected="true"] rect{stroke:var(--dsw-alias-state-business-primary,#4176e6);stroke-width:1.5}',
     '.do-doc-dag-node[role="button"]{cursor:pointer}',
     '.do-doc-dag-node[role="button"]:focus rect{stroke:var(--dsw-alias-state-business-primary,#4176e6);stroke-width:1.5}',
@@ -1124,6 +1130,17 @@ export function createDataopsCards(React) {
       return h('path', { key: edge.from + '>' + edge.to, className: 'do-graph-v2-edge', 'marker-end': 'url(#' + marker + ')', d: 'M ' + x1 + ' ' + y1 + ' C ' + mid + ' ' + y1 + ' ' + mid + ' ' + y2 + ' ' + x2 + ' ' + y2 })
     }
     var width = Math.max(900, levelKeys.length * (NODE_W + COL_GAP) + LEFT * 2)
+    var jobPoints = nodes.filter(function (node) { return node.id !== '__start' && positions[node.id] }).map(function (node) { return positions[node.id] })
+    var groupFrame = null
+    if (jobPoints.length) {
+      var groupLeft = Math.min.apply(null, jobPoints.map(function (point) { return point.x })) - 8
+      var groupTop = Math.min.apply(null, jobPoints.map(function (point) { return point.y })) - 18
+      var groupRight = Math.max.apply(null, jobPoints.map(function (point) { return point.x + NODE_W })) + 8
+      var groupBottom = Math.max.apply(null, jobPoints.map(function (point) { return point.y + NODE_H })) + 8
+      groupFrame = h('g', { className: 'do-sched-group-frame' },
+        h('rect', { x: groupLeft, y: groupTop, width: groupRight - groupLeft, height: groupBottom - groupTop, rx: 9 }),
+        h('text', { x: groupLeft + 9, y: groupTop + 14, className: 'do-sched-group-label' }, taskName))
+    }
     return h('div', null,
       h('div', { className: 'do-doc-graph-head' },
         h('span', { className: 'do-doc-graph-title' }, '调度血缘'),
@@ -1133,6 +1150,7 @@ export function createDataopsCards(React) {
         h('svg', { viewBox: '0 0 ' + width + ' ' + height, className: 'do-graph-v2-svg', role: 'img', 'aria-label': '调度血缘图' },
           h('defs', null, h('marker', { id: marker, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, h('path', { d: 'M 0 0 L 10 5 L 0 10 z', className: 'do-graph-v2-arrow' }))),
           labels.slice(0, levelKeys.length).map(function (label, index) { return h('text', { key: label, x: LEFT + index * (NODE_W + COL_GAP), y: 17, className: 'do-graph-v2-col-label' }, label) }),
+          groupFrame,
           edges.map(edgeView),
           nodes.map(nodeView))),
       h('div', { className: 'do-graph-v2-legend' },
@@ -1150,7 +1168,12 @@ export function createDataopsCards(React) {
       h('div', { className: 'do-muted' }, '类型 ' + job.type + ' · 父依赖 ' + ((job.parents || []).join(' / ') || '入口')),
       h('div', { className: 'do-sched-kv' },
         h('span', null, '参数'), h('b', null, (schedule.taskParams || []).join('、') || '无'),
-        h('span', null, '占位符'), h('b', { className: 'mono' }, (schedule.placeholders || []).slice(0, 3).join('、') || '无')))
+        h('span', null, '占位符'), h('b', { className: 'mono' }, (schedule.placeholders || []).slice(0, 3).join('、') || '无')),
+      h('div', { className: 'do-sched-extra' },
+        schedule.cron ? h('div', null, h('span', null, 'cron'), h('b', null, schedule.cron)) : null,
+        schedule.sla ? h('div', null, h('span', null, 'SLA'), h('b', null, schedule.sla)) : null,
+        schedule.retries ? h('div', null, h('span', null, '重试'), h('b', null, String(schedule.retries))) : null,
+        (schedule.dependsOn || []).length ? h('div', null, h('span', null, '依赖'), h('b', { className: 'mono' }, schedule.dependsOn.join('、'))) : null))
   }
 
   function LineageV2Card(props) {

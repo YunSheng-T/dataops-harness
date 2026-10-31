@@ -236,7 +236,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     return null
   }
 
-  function lineageCardPayload(graph) {
+  function designCardPayload(graph) {
     if (!graph || !graph.target) return null
     var nodes = (graph.nodes || []).map(function (node) {
       var table = node.table || node.id || ''
@@ -251,15 +251,66 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     }
   }
 
+  function scheduleCardPayload(lineage) {
+    if (!lineage) return null
+    var all = lineage.nodes || []
+    var jobs = all.filter(function (node) { return node.type === 'etl_job' || node.type === 'job' || node.type === 'schedule_job' })
+    var tasks = all.filter(function (node) { return node.type === 'schedule_task' || node.type === 'task' })
+    var schedule = lineage.schedule || {}
+    if (!jobs.length && !tasks.length && !schedule.taskId && !schedule.cron) return null
+    var task = tasks.filter(function (node) { return schedule.taskId && node.id === schedule.taskId })[0] || tasks[0]
+    var byId = {}
+    all.forEach(function (node) { byId[node.id] = node })
+    var parentOf = {}
+    ;(lineage.edges || []).forEach(function (edge) {
+      if (byId[edge.to] && (byId[edge.to].type === 'etl_job' || byId[edge.to].type === 'job')) parentOf[edge.to] = edge.from
+    })
+    var selectedTaskId = schedule.taskId || (task && task.id)
+    var selectedJobs = selectedTaskId
+      ? jobs.filter(function (job) { return job.parent === selectedTaskId || parentOf[job.id] === selectedTaskId })
+      : jobs
+    if (!selectedJobs.length) selectedJobs = jobs
+    var typeCounts = {}
+    var mappedJobs = selectedJobs.map(function (job) {
+      var kind = job.jobKind || job.kind || 'job'
+      var parentId = job.parent || parentOf[job.id]
+      var parent = parentId && byId[parentId] ? (byId[parentId].label || parentId) : null
+      typeCounts[kind] = (typeCounts[kind] || 0) + 1
+      return { name: job.label || job.id, type: kind, parents: parent ? [parent] : [] }
+    })
+    var taskName = (task && (task.label || task.name)) || schedule.taskId || lineage.table || '调度任务'
+    return {
+      kind: 'lineage', schemaVersion: 2, table: taskName, view: 'schedule', mode: 'planned',
+      schedule: {
+        taskName: taskName,
+        taskType: '周期任务',
+        cron: schedule.cron || (task && task.cron) || null,
+        cycle: schedule.cycle || (task && task.cycle) || null,
+        sla: schedule.sla || (task && task.sla) || null,
+        retries: schedule.retries,
+        dependsOn: schedule.dependsOn || [],
+        timezone: schedule.timezone || null,
+        taskCount: task ? 1 : (tasks.length || 1),
+        jobCount: mappedJobs.length,
+        typeCounts: typeCounts,
+        jobs: mappedJobs,
+        taskParams: [],
+        placeholders: []
+      },
+      downstream: [], gaps: []
+    }
+  }
+
   function LineageBody(props) {
     var context = useContext(props.sessionId) || {}
     var lineage = context.lineage
     var design = context.design
+    var schedulePayload = scheduleCardPayload(lineage)
     var graph = (lineage || (design && design.target)) ? buildGraph(lineage, design) : null
-    var payload = lineageCardPayload(graph)
+    var payload = schedulePayload || designCardPayload(graph)
     if (Cards && typeof Cards.LineageV2Card === 'function' && payload) {
       return h('div', { className: 'do-lineage-inline' },
-        h('div', { className: 'do-label' }, '当前会话血缘'),
+        h('div', { className: 'do-label' }, payload.view === 'schedule' ? '当前会话 · 调度视图' : '当前会话血缘'),
         h(Cards.LineageV2Card, { block: { content: [{ type: 'text', text: JSON.stringify(payload) }] } }))
     }
     return h('div', { className: 'do-lineage-inline' },

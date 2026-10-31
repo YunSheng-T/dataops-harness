@@ -245,3 +245,5 @@ Agent tool：暴露 A/B/C 只读入口
 `task.yaml` 默认使用左右分栏：左侧 `LineageV2Card` 调度预览，右侧只读 CodeMirror 5.65 编辑器。窄容器自动单列；顶部可切换 分栏 / 预览 / 源码。
 
 血缘卡使用 `compact / focus` 两种密度；右栏血缘入口和文件预览卡都渲染同一张卡，不再打开独立全宽工作台。
+
+右栏血缘入口优先调度视图：从 lineage task/job 数据生成 schedule payload，展示 task group、job 和 cron/SLA/依赖；无调度数据时才回退设计血缘。
