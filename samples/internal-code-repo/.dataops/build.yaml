@@ -1,28 +1,38 @@
+# 构建事实源：package 至少是平台粒度；files 相对仓库根目录。
 version: "1.2"
 packages:
-  - packageName: lts_channel_alert
+  - packageName: lts_channel_daily
     toolChain: data_schedule
     serviceType: data_schedule_service
     pipelineType: his_data_schedule
     operationType: develop
     files:
+      - path: lts_code/channel_daily/*
       - path: lts_code/channel_alert/*
 
-  - packageName: sql_channel_report
+  - packageName: sql_channel_models
     toolChain: data_models
     serviceType: data_model_datapipeline_service
     pipelineType: datapipeline_offline_sql
     operationType: develop
     files:
-      - path: code/sql/channel_report/*/*
+      - path: code/sql/**/*.sql
 
-  - packageName: flashsync_channel_alert
+  - packageName: etl_channel_sync
     toolChain: extract_transform_load
     serviceType: flashsync
     pipelineType: adms_etl
     operationType: develop
     files:
       - path: code/etl/flashsync/*
+
+  - packageName: etl_channel_bds
+    toolChain: extract_transform_load
+    serviceType: big_data_service
+    pipelineType: BDS_HIVE
+    operationType: develop
+    files:
+      - path: code/etl/bds/**/*
 
   - packageName: api_channel_metrics
     toolChain: data_service_type

@@ -30,24 +30,37 @@ export function createDataopsDocumentPreview(React) {
   }
 
   function parseLts(text) {
+    var jobsStart = text.search(/^    jobs:\s*$/mu)
+    var taskText = jobsStart >= 0 ? text.slice(jobsStart) : text
+    var jobMatches = []
+    var jobRe = /^(\s*)-\s+name:\s*["']?([^"'\n]+)["']?\s*$/gmu
+    var match
+    while ((match = jobRe.exec(taskText))) jobMatches.push({ index: match.index, name: match[2].trim() })
+    var jobs = jobMatches.map(function (entry, index) {
+      var next = jobMatches[index + 1] ? jobMatches[index + 1].index : taskText.length
+      var block = taskText.slice(entry.index, next)
+      var type = (block.match(/^\s*jobType:\s*([A-Za-z0-9_]+)\s*$/mu) || [])[1] || 'unknown'
+      var parentText = (block.match(/^\s*parentJobName:\s*\[([^\]]*)\]/mu) || [])[1] || ''
+      var parents = parentText.split(',').map(function (value) { return value.trim().replace(/^["']|["']$/gu, '') }).filter(Boolean)
+      return { name: entry.name, type: type, parents: parents }
+    })
+    var taskMatch = text.match(/^    name:\s*["']?([^"'\n]+)["']?\s*$/mu)
+    var taskCount = countMatches(text, /^\s*-\s+itemName:/gmu)
     var taskNames = []
-    var jobNames = []
-    var crons = []
-    var taskRe = /^\s*-\s+name:\s*["']?([^"'\n]+)["']?\s*$/gmu
-    var m
-    while ((m = taskRe.exec(text))) jobNames.push(m[1].trim())
-    var cronRe = /^\s*cronExp:\s*["']?([^"'\n]+)["']?\s*$/gmu
-    while ((m = cronRe.exec(text))) crons.push(m[1].trim())
     var itemRe = /^\s*itemName:\s*["']?([^"'\n]+)["']?\s*$/gmu
-    while ((m = itemRe.exec(text))) taskNames.push(m[1].trim())
+    while ((match = itemRe.exec(text))) taskNames.push(match[1].trim())
+    var crons = []
+    var cronRe = /^\s*cronExp:\s*["']?([^"'\n]+)["']?\s*$/gmu
+    while ((match = cronRe.exec(text))) crons.push(match[1].trim())
     return {
       type: 'lts',
-      taskCount: countMatches(text, /^\s*-\s+itemName:/gmu),
-      jobCount: jobNames.length,
+      taskCount: taskCount,
+      jobCount: jobs.length,
+      taskName: taskMatch ? taskMatch[1].trim() : null,
       taskNames: taskNames.slice(0, 5),
-      jobNames: jobNames.slice(0, 8),
+      jobs: jobs.slice(0, 20),
       crons: crons.slice(0, 3),
-      placeholders: Array.from(new Set((text.match(/\$\$([A-Za-z_][A-Za-z0-9_]*)\$\$/gu) || []).map(value => value.slice(2, -2)))).slice(0, 8)
+      placeholders: Array.from(new Set((text.match(/\$\$([A-Za-z_][A-Za-z0-9_]*)\$\$/gu) || []).map(value => value.slice(2, -2)))).slice(0, 12)
     }
   }
 
@@ -116,8 +129,14 @@ export function createDataopsDocumentPreview(React) {
         h('div', null, h('b', null, summary.taskCount), h('span', null, '任务')),
         h('div', null, h('b', null, summary.jobCount), h('span', null, '作业')),
         h('div', null, h('b', null, summary.placeholders.length), h('span', null, '占位符')),
-        summary.taskNames.length ? h('div', { className: 'do-doc-line' }, '任务：' + summary.taskNames.join('、')) : null,
-        summary.crons.length ? h('div', { className: 'do-doc-line' }, 'cron：' + summary.crons.join('、')) : null)
+        summary.taskName ? h('div', { className: 'do-doc-line' }, '任务名：' + summary.taskName) : null,
+        summary.crons.length ? h('div', { className: 'do-doc-line' }, 'cron：' + summary.crons.join('、')) : null,
+        summary.jobs.length ? h('div', { className: 'do-doc-jobs' }, summary.jobs.map(function (job) {
+          return h('div', { key: job.name, className: 'do-doc-job' },
+            h('span', { className: 'do-doc-jobtype' }, job.type),
+            h('b', null, job.name),
+            job.parents.length ? h('span', { className: 'do-doc-jobparent' }, '← ' + job.parents.join(' / ')) : null)
+        })) : null)
     }
     if (summary.type === 'build') {
       return h('div', { className: 'do-doc-facts' },

@@ -1,7 +1,18 @@
 kind: data_api
 name: channel_metrics_demo
 version: 1
-path: /demo/channel/metrics
 method: GET
+path: /demo/channel/metrics
+params:
+  - name: dt
+    type: date
+    required: true
+  - name: channel_id
+    type: string
+    required: false
+response:
+  - name: order_cnt
+    type: bigint
+  - name: gmv
+    type: decimal
 mock: true
-description: sanitized sample, no real endpoint

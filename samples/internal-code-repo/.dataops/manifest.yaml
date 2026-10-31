@@ -1,4 +1,4 @@
-# Mock internal code repository — sanitized, no real URLs/IDs.
+# 平台代码位置事实源：只负责定位，不定义 group。
 version: "1.2"
 structure:
   ref:
@@ -9,5 +9,6 @@ structure:
     etl:
       flashsync: code/etl/flashsync
       bds: code/etl/bds
+      sp: code/etl/sp
     data-service:
       data-api: code/data_service

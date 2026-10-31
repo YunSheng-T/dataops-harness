@@ -1,0 +1,172 @@
+formatVersion: 2
+
+tasks:
+  - itemName: "<PROJECT_NAME>"
+    groupName: "<GROUP_NAME>"
+    name: "channel_daily_mixed"
+    type: "周期任务"
+    startTime: "2026/10/01 00:00:00"
+    endTime: null
+    cronExp: "0 10 2 * * ?"
+    depPrevious: "是"
+    isCleanTask: "否"
+    isMultitonal: "否"
+    isParallel: "否"
+    isCleanExceptionTask: "否"
+    isFullJob: "是"
+    scheduleHistory: "否"
+    owner: "<OWNER>"
+    taskParams:
+      - name: "bizdate"
+        value: "$getTaskPlanTime(yyyyMMdd)"
+      - name: "env"
+        value: "sit"
+    taskResource: null
+    freqConfigName: null
+    calendarData: null
+    taskExtension: null
+    rsyncMark: null
+
+    jobs:
+      - name: "load_check"
+        path: "load_check"
+        jobType: url
+        parentJobName: ["start"]
+        jobExecPath: "$$JOB_LOAD_CHECK_URL$$"
+        jobCallMethod: GET
+        jobTimeout: 30
+        jobRetryTimes: 2
+        jobRetryInterval: 60
+        jobExecNode: "任一节点"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam:
+          appId: ""
+          appToken: ""
+          authenticationType: "无"
+          headers: ""
+          invokingMode: "同步"
+          jobRunParams: ""
+          returnVal: ""
+          timeout: 10
+
+      - name: "G_1006"
+        path: "G_1006"
+        jobType: group
+        parentJobName: ["start"]
+        jobExecPath: ""
+        jobTimeout: 60
+        jobRetryTimes: 0
+        jobRetryInterval: 60
+        jobExecNode: "任一节点"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: ""
+        jobMailNotice: "不提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam: null
+
+      - name: "calc_sql"
+        path: "G_1006|calc_sql"
+        jobType: open_gauss
+        parentJobName: ["G_1006"]
+        jobExecPath: "$$DB_EXEC$$"
+        jobCallMethod: sql
+        jobTimeout: 120
+        jobRetryTimes: 1
+        jobRetryInterval: 30
+        jobExecNode: "<EXEC_NODE>"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: ""
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "是"
+        componentResources: "未设置"
+        jobParam:
+          dbsource: "$$DB_SOURCE$$"
+          exec: "$$DB_EXEC$$"
+          method: sql
+          dbsourceType: open_gauss
+          extends: ""
+          output: ""
+          outputType: ""
+          userVariables: []
+
+      - name: "export_shell"
+        path: "G_1006|export_shell"
+        jobType: shell
+        parentJobName: ["G_1006"]
+        jobExecPath: "$$SHELL_SCRIPT_PATH$$"
+        jobCallMethod: ""
+        jobTimeout: 30
+        jobRetryTimes: 1
+        jobRetryInterval: 30
+        jobExecNode: "<EXEC_NODE>"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: ""
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam: null
+
+      - name: "wait_upstream"
+        path: "wait_upstream"
+        jobType: tskdep
+        parentJobName: ["load_check"]
+        jobExecPath: ""
+        jobCallMethod: ""
+        jobTimeout: 60
+        jobRetryTimes: 0
+        jobRetryInterval: 60
+        jobExecNode: "任一节点"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: ""
+        jobMailNotice: "不提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam:
+          depTaskName: "<UPSTREAM_TASK>"
+          depJobName: "end"
+          mainJobName: "load_check"
+          taskGroupName: "<GROUP_NAME>"
+          itemName: "<PROJECT_NAME>"
+          applyName: "<APP_ID>"
+          breadthSenior: ["0"]
+          dayList: []
+          hourList: []
+          minList: []
+          dotSenior: []
+          rangeSenior: []
+
+      - name: "notify"
+        path: "notify"
+        jobType: url
+        parentJobName: ["load_check", "G_1006"]
+        jobExecPath: "$$JOB_NOTIFY_URL$$"
+        jobCallMethod: POST
+        jobTimeout: 30
+        jobRetryTimes: 2
+        jobRetryInterval: 30
+        jobExecNode: "任一节点"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam:
+          appId: ""
+          appToken: ""
+          authenticationType: "无"
+          headers: "Content-Type: application/json"
+          invokingMode: "同步"
+          jobRunParams: "{\"bizdate\":\"${bizdate}\"}"
+          returnVal: ""
+          timeout: 10

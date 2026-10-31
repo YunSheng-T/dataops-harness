@@ -1,82 +1,54 @@
-# ============================================================
-# 样例：LTS 任务定义 task.yaml（脱敏版 · formatVersion: 2）
-# 说明：本样例为「周期任务 + 纯串行 2 个 url 作业」结构，
-#       与仓库中 lts_<user>_test_01/task.yaml 同构。
-#       敏感值（项目/组名、工号、URL、应用标识等）已替换为
-#       <占位符>；字段名、枚举、取值范围注释均保留原结构。
-# ============================================================
 formatVersion: 2
 
 tasks:
-  # ── 任务级 ──────────────────────────────────────────────
-  - itemName: "<PROJECT_NAME>"            # 项目名称（须已存在）
-    groupName: "<GROUP_NAME>"              # 任务组名称（须已存在）
-    name: "demo"                           # 任务名称，2-200字符
-    type: "周期任务"                       # 实时任务 | 周期任务 | 触发型任务
-    startTime: "2026/10/20 00:00:00"       # yyyy/MM/dd HH:mm:ss
-    endTime: null                          # 需 > startTime
-    cronExp: "0 0 2 * * ?"                 # 每天 02:00（周期任务必填）
-    depPrevious: "否"                      # 是=依赖上一周期(1) 否=不依赖(0)
-    isCleanTask: "否"                      # ⚠反向开关：是=0 否=1
-    isMultitonal: "否"                     # ⚠反向开关：是=0 否=1
-    isParallel: "否"                       # ⚠反向开关：是=0 否=1
-    isCleanExceptionTask: "否"             # 是=1 否=0
-    isFullJob: "是"                        # 必须"是"（V04）
-    scheduleHistory: "否"                  # 否=过期周期补调度
-    owner: "<OWNER>"                       # 原值：字母+8位数字工号（已脱敏）
-    rsyncMark: null
+  - itemName: "<PROJECT_NAME>"
+    groupName: "<GROUP_NAME>"
+    name: "channel_alert_trigger"
+    type: "触发型任务"
+    startTime: "2026/10/01 00:00:00"
+    endTime: null
+    cronExp: null
+    depPrevious: "否"
+    isCleanTask: "否"
+    isMultitonal: "是"
+    isParallel: "是"
+    isCleanExceptionTask: "否"
+    isFullJob: "是"
+    scheduleHistory: "否"
+    owner: "<OWNER>"
+    taskParams: []
     taskResource: null
     freqConfigName: null
     calendarData: null
     taskExtension: null
-
-    # ── 任务参数 ──────────────────────────────────────────
-    taskParams: []                         # 本任务无参数；有参数时为
-                                           # [{name, value}]，value 支持
-                                           # $getTaskPlanTime(...) 等内置函数
-
-    # ── 作业列表 ──────────────────────────────────────────
-    # DAG: start → job_1 → job_2（纯串行）
+    rsyncMark: null
     jobs:
-
-      # ---- 作业 1：url（HTTP GET），链首 ----
-      - name: "job_1"
-        path: "job_1"                      # 无分组，path 与 name 相同
-        jobType: url
-        parentJobName: ["start"]           # 链首作业依赖 start
-        jobExecPath: "$$JOB_1_URL$$"       # 原值为内部 URL（已脱敏），
-                                           # 建议统一使用环境占位符
-        jobCallMethod: GET                 # url → POST/GET
-        jobTimeout: 60                     # 10-9999 分钟
-        jobRetryTimes: 3                   # 0-10
-        jobRetryInterval: 60               # 1-9999 秒
-        jobExecNode: "任一节点"
+      - name: "prep"
+        path: "prep"
+        jobType: shell
+        parentJobName: ["start"]
+        jobExecPath: "$$ALERT_SHELL$$"
+        jobCallMethod: ""
+        jobTimeout: 20
+        jobRetryTimes: 1
+        jobRetryInterval: 10
+        jobExecNode: "<EXEC_NODE>"
         jobExceptionHandleType: "fail"
-        jobInterruptHandle: "$$INTERRUPT_URL$$"   # 中断处理回调（占位符）
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
         jobMailNotice: "一次提醒"
-        isCleanJob: "跟随任务"             # 是=0 否=1 跟随任务=2
+        isCleanJob: "跟随任务"
         parameterEmptyVerify: "否"
         componentResources: "未设置"
-        jobParam:                          # url 八字段
-          appId: ""
-          appToken: ""
-          authenticationType: "无"         # 无 | 手动输入 | 通过服务获取 | iam认证
-          headers: ""
-          invokingMode: "同步"             # 同步 | 异步
-          jobRunParams: ""
-          returnVal: ""
-          timeout: 10                      # URL 超时（分钟）
-
-      # ---- 作业 2：url（HTTP GET），依赖 job_1 成功 ----
-      - name: "job_2"
-        path: "job_2"
+        jobParam: null
+      - name: "send_alert"
+        path: "send_alert"
         jobType: url
-        parentJobName: ["job_1"]           # 单父单下游
-        jobExecPath: "$$JOB_2_URL$$"
-        jobCallMethod: GET
-        jobTimeout: 60
-        jobRetryTimes: 3
-        jobRetryInterval: 60
+        parentJobName: ["prep"]
+        jobExecPath: "$$ALERT_URL$$"
+        jobCallMethod: POST
+        jobTimeout: 20
+        jobRetryTimes: 2
+        jobRetryInterval: 10
         jobExecNode: "任一节点"
         jobExceptionHandleType: "fail"
         jobInterruptHandle: "$$INTERRUPT_URL$$"
@@ -88,16 +60,8 @@ tasks:
           appId: ""
           appToken: ""
           authenticationType: "无"
-          headers: ""
-          invokingMode: "同步"
-          jobRunParams: ""
+          headers: "Content-Type: application/json"
+          invokingMode: "异步"
+          jobRunParams: "{\"task\":\"channel_alert\"}"
           returnVal: ""
           timeout: 10
-
-# ---- 其他结构变体（非本文件内容，仅提示）----
-#   · 组内并行：jobType: group（分组节点）+ 组内成员 path="<组>|<job>"
-#   · 跨任务依赖：jobType: tskdep（depTaskName/depJobName=end/mainJobName/
-#                 applyName=<APP_ID>/breadthSenior/dotSenior 等）
-#   · 数据库作业：jobType: open_gauss|libra（jobParam: dbsource/exec/method）
-#   · shell 作业：jobType: shell（jobExecPath=脚本路径）
-#   · 触发型任务：type: "触发型任务"，cronExp: null
