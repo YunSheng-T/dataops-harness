@@ -1,0 +1,33 @@
+version: "1.2"
+packages:
+  - packageName: lts_channel_alert
+    toolChain: data_schedule
+    serviceType: data_schedule_service
+    pipelineType: his_data_schedule
+    operationType: develop
+    files:
+      - path: lts_code/channel_alert/*
+
+  - packageName: sql_channel_report
+    toolChain: data_models
+    serviceType: data_model_datapipeline_service
+    pipelineType: datapipeline_offline_sql
+    operationType: develop
+    files:
+      - path: code/sql/channel_report/*/*
+
+  - packageName: flashsync_channel_alert
+    toolChain: extract_transform_load
+    serviceType: flashsync
+    pipelineType: adms_etl
+    operationType: develop
+    files:
+      - path: code/etl/flashsync/*
+
+  - packageName: api_channel_metrics
+    toolChain: data_service_type
+    serviceType: data_service
+    pipelineType: data_api
+    operationType: develop
+    files:
+      - path: code/data_service/*

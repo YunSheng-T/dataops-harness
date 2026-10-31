@@ -1,0 +1,13 @@
+# Mock internal code repository — sanitized, no real URLs/IDs.
+version: "1.2"
+structure:
+  ref:
+    data-schedule:
+      lts: lts_code
+    data-models:
+      offline-sql: code/sql
+    etl:
+      flashsync: code/etl/flashsync
+      bds: code/etl/bds
+    data-service:
+      data-api: code/data_service

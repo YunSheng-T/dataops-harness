@@ -1,0 +1,11 @@
+# ============================================================
+# 样例：FlashSync 数据加工（adms_etl）作业 CSV（脱敏版）
+# 说明：真实导出为一表一文件（<表名>_<jobId>.csv），
+#       列结构如下；敏感值（应用标识、工号、UUID、数据源、
+#       schema/表名、BPMN 字段映射）已替换为 <占位符>。
+#       真实文件中的 transformJobFlows 单元格内嵌完整 BPMN XML
+#       （reader→writer 两节点 + 字段映射表），此处仅给脱敏摘要。
+#       注：真实导出未加引号包裹，示例为便于阅读加了引号。
+# ============================================================
+jobId,dsJobId,jobName,appId,groupId,catalogues,jobType,flowId,jobOwner,createBy,createTime,updateBy,updateTime,remark,version,engineType,jobOwnerUid,systemParam,jobSource,jobUuid,partnerId,tempSchema,manualTempMode,transformJobFlows,errorMsg,
+<JOB_ID>,,<TABLE_NAME>,<APP_ID>,<PROJECT_ID>,<CATALOGUE>,ELT,<UUID>,<OWNER>,<EMPLOYEE_ID>,<CREATE_TIME>,<EMPLOYEE_ID>,<UPDATE_TIME>,,1,,<OWNER>,,WEB,<UUID>,,,0,"{""flowId"":""<UUID>"";""jobId"":<JOB_ID>;""status"":1;""version"":1;""flowText"":""<BPMN XML：reader→writer，数据源 <DB_SOURCE>，schema <SCHEMA>，表 <TABLE_NAME>，字段映射 <COL_MAP>，写入模式 Merge/Update，唯一键 <UNIQUE_KEY>>"";""startTime"":""<TIME>"";""createBy"":""<EMPLOYEE_ID>"";""createTime"":""<TIME>"";""updateBy"":""<EMPLOYEE_ID>"";""updateTime"":""<TIME>"";""jobSqlDocumentId"":""""}",,
