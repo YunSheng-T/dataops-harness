@@ -30,7 +30,8 @@ dist/dataops-harness-offline-<date>.tar.gz.sha256
 不包含：
 
 - `node_modules`
-- `deepseek-harness` / `dsh-desktop`
+- `deepseek-harness` 运行时代码 / `dsh-desktop`
+- 但会携带 `deepseek-harness/.agents/skills`（只读 upstream skills）
 - workitems 运行实例
 - token/凭据
 - 测试截图/临时目录
@@ -48,6 +49,7 @@ cd dataops-harness-offline-<date>
 ```sh
 node scripts/install-dataops-profile.mjs --home /path/to/DSH_HOME
 node scripts/install-dataops-skills.mjs
+node scripts/install-harness-skills.mjs   # 有 pinned upstream 时安装；离线包无 upstream 时自动 SKIP
 node scripts/check-dataops-preset.mjs
 node scripts/check-dataops-workitem.mjs
 node scripts/check-stage-contract.mjs

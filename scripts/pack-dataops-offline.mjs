@@ -32,7 +32,8 @@ const copy = (from) => {
   if (!existsSync(source)) throw new Error('missing offline payload: ' + from)
   cpSync(source, join(stage, from), { recursive: true, filter: path => !path.includes('node_modules') })
 }
-for (const path of ['packages/dataops-client', 'packages/dataops-brand', 'packages/dataops-tools', 'packages/dataops-preset', 'profiles/dataops', '.agents/skills', 'contracts', 'docs/ops/provider-config.example.yml', 'docs/ops/provider-config.example.json', 'workitems/_template', 'workitems/README.md', 'scripts/check-offline-surface.mjs', 'scripts/check-dataops-health.mjs', 'scripts/check-provider-config.mjs', 'scripts/check-install.mjs', 'scripts/verify-local.mjs', 'scripts/install-dataops-profile.mjs', 'scripts/install-dataops-skills.mjs', 'scripts/check-dataops-preset.mjs', 'scripts/check-dataops-workitem.mjs', 'scripts/check-stage-contract.mjs', 'upstream.json', 'README.md']) copy(path)
+if (existsSync(join(root, 'deepseek-harness', '.agents', 'skills'))) copy('deepseek-harness/.agents/skills')
+for (const path of ['packages/dataops-client', 'packages/dataops-brand', 'packages/dataops-tools', 'packages/dataops-preset', 'profiles/dataops', '.agents/skills', 'contracts', 'docs/ops/provider-config.example.yml', 'docs/ops/provider-config.example.json', 'workitems/_template', 'workitems/README.md', 'scripts/check-offline-surface.mjs', 'scripts/check-dataops-health.mjs', 'scripts/check-provider-config.mjs', 'scripts/check-install.mjs', 'scripts/verify-local.mjs', 'scripts/install-dataops-profile.mjs', 'scripts/install-dataops-skills.mjs', 'scripts/install-harness-skills.mjs', 'scripts/check-dataops-preset.mjs', 'scripts/check-dataops-workitem.mjs', 'scripts/check-stage-contract.mjs', 'upstream.json', 'README.md']) copy(path)
 
 writeFileSync(join(stage, 'OFFLINE-INSTALL.md'), `# DataOps offline install
 

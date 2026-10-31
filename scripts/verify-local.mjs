@@ -13,6 +13,7 @@ const checks = [
   ['tools check', 'packages/dataops-tools/scripts/check.mjs'],
   ['tools smoke', 'packages/dataops-tools/scripts/smoke-apply.mjs'],
   ['stage contract', 'scripts/check-stage-contract.mjs'],
+  ['harness skills', 'scripts/install-harness-skills.mjs', '--check'],
   ['preset check', 'scripts/check-dataops-preset.mjs'],
   ['workitem check', 'scripts/check-dataops-workitem.mjs'],
   ['repo components', 'packages/dataops-tools/scripts/repo-check.mjs'],

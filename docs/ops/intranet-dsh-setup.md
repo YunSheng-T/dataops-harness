@@ -72,6 +72,7 @@ export DSH_AGENTS_HOME="$HOME/.agents"
 
 node scripts/install-dataops-profile.mjs --home "$DSH_HOME"
 node scripts/install-dataops-skills.mjs --agents-home "$DSH_AGENTS_HOME"
+node scripts/install-harness-skills.mjs --agents-home "$DSH_AGENTS_HOME"
 node scripts/check-install.mjs --home "$DSH_HOME"
 node scripts/check-dataops-health.mjs
 ```
