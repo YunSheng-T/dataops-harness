@@ -222,7 +222,7 @@ export function createDataopsCards(React) {
     '.do-doc-muted{font-size:10px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.do-doc-types{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}',
     '.do-doc-type{font-size:8px;line-height:15px;padding:0 5px;border-radius:3px;background:var(--dsw-alias-bg-overlay,#eef0f5);color:var(--dsw-alias-label-secondary,#61666b);font-family:ui-monospace,Menlo,monospace}',
-    '.do-lineage-inline{padding:2px 0 12px}',
+    '.do-lineage-inline{display:flex;justify-content:center;padding:12px 10px 16px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
     '.do-lineage-inline > .do-label{margin-bottom:7px}',
     '.do-sched-card{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-top:4px;min-width:0}',
     '.do-sched-card[data-density="focus"]{grid-template-columns:minmax(0,1fr) 210px;align-items:stretch;min-height:330px}',
