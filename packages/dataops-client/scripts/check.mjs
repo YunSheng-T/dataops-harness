@@ -20,7 +20,7 @@ const React = {
 const Cards = createDataopsCards(React)
 const StageStore = createStageStore()
 const ContextStore = createContextStore()
-const Tabs = createDataopsTabs(React, ContextStore)
+const Tabs = createDataopsTabs(React, ContextStore, undefined, Cards)
 const Brief = createStageBrief(React, StageStore, ContextStore)
 
 const results = []
@@ -434,8 +434,8 @@ check('lineage tab draws a graph from real lineage', () => {
   })
   const body = text(Tabs.tabs[1].body.Component({ sessionId: 's-graph' }))
   assert(body.includes('dws.trade_channel_daily'), 'graph target')
-  assert(body.includes('3 个节点') && body.includes('2 条边'), 'graph node/edge counts')
-  assert(body.includes('下游'), 'graph direction')
+  assert(body.includes('设计血缘') && body.includes('一层上游'), 'graph card')
+  assert(body.includes('ads.channel_report') && body.includes('api.channel_metrics'), 'graph nodes')
 })
 
 check('design impact draws a synthetic lineage graph', () => {
@@ -448,8 +448,8 @@ check('design impact draws a synthetic lineage graph', () => {
   })
   const body = text(Tabs.tabs[1].body.Component({ sessionId: 's-impact' }))
   assert(body.includes('dim.member'), 'synthetic target: ' + body.slice(0, 800))
-  assert(body.includes('3 个节点') && body.includes('2 条边'), 'synthetic node/edge counts')
-  assert(body.includes('来自设计卡影响面'), 'synthetic marker')
+  assert(body.includes('ads.member_level') && body.includes('member_growth'), 'synthetic nodes')
+  assert(body.includes('设计血缘'), 'synthetic card')
 })
 
 check('three right-sidebar tabs read the context store', () => {

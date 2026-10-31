@@ -1,6 +1,6 @@
 # 调度血缘与代码预览重设计
 
-> 状态：原型。当前只改原型和文档，运行时代码保持上一版。  
+> 状态：已实现第一版（compact / focus 单卡，源码右侧分栏）。  
 > 原型：[schedule-lineage-redesign.html](../../prototype/schedule-lineage-redesign.html)  
 > 截图：[紧凑卡](../../prototype/shots/schedule-lineage-redesign.png) · [聚焦卡](../../prototype/shots/schedule-lineage-redesign-focus.png)
 

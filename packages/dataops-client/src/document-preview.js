@@ -260,6 +260,7 @@ export function createDataopsDocumentPreview(React, Cards) {
   function Body(props) {
     var content = props.content
     var modeState = React.useState('split')
+    var focusState = React.useState(false)
     var mode = modeState[0]
     if (!content || content.kind !== 'text') return null
     var text = String(content.text || '')
@@ -283,9 +284,9 @@ export function createDataopsDocumentPreview(React, Cards) {
         },
         gaps: []
       }
-      ltsCard = h(Cards.LineageV2Card, { block: { content: [{ type: 'text', text: JSON.stringify(lineage) }] } })
+      ltsCard = h(Cards.LineageV2Card, { block: { content: [{ type: 'text', text: JSON.stringify(lineage) }] }, onFocusChange: function (value) { focusState[1](value) } })
     }
-    return h('div', { className: 'do-doc do-doc-split', 'data-mode': mode },
+    return h('div', { className: 'do-doc do-doc-split', 'data-mode': mode, 'data-focus': focusState[0] ? 'true' : undefined },
       h('div', { className: 'do-doc-head' },
         h('span', { className: 'do-doc-badge' }, kindLabel(summary)),
         h('b', { className: 'do-doc-name' }, name),

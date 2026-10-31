@@ -129,7 +129,7 @@ ${inlined}
         return React.createElement(LineageWorkbenchImpl, props)
       }
     }
-    var Tabs = createDataopsTabs(React, ContextStore, LineageFlow)
+    var Tabs = createDataopsTabs(React, ContextStore, LineageFlow, Cards)
     var Brief = createStageBrief(React, StageStore, ContextStore)
     var DataopsDocumentPreview = createDataopsDocumentPreview(React, Cards)
 

@@ -222,6 +222,24 @@ export function createDataopsCards(React) {
     '.do-doc-muted{font-size:10px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.do-doc-types{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}',
     '.do-doc-type{font-size:8px;line-height:15px;padding:0 5px;border-radius:3px;background:var(--dsw-alias-bg-overlay,#eef0f5);color:var(--dsw-alias-label-secondary,#61666b);font-family:ui-monospace,Menlo,monospace}',
+    '.do-lineage-inline{padding:2px 0 12px}',
+    '.do-lineage-inline > .do-label{margin-bottom:7px}',
+    '.do-sched-card{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-top:4px;min-width:0}',
+    '.do-sched-card[data-density="focus"]{grid-template-columns:minmax(0,1fr) 210px;align-items:stretch;min-height:330px}',
+    '.do-sched-graph{min-width:0;min-height:0;overflow:hidden}',
+    '.do-sched-side{min-width:0;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));padding-top:7px}',
+    '.do-sched-card[data-density="focus"] .do-sched-side{border-top:0;border-left:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));padding:0 0 0 10px}',
+    '.do-sched-card .do-doc-lts-meta{grid-column:1/-1}',
+    '.do-sched-inspector{min-width:0}',
+    '.do-sched-name{font-size:12px;font-weight:700;line-height:17px;margin:1px 0 3px;overflow-wrap:anywhere}',
+    '.do-sched-kv{display:grid;grid-template-columns:42px minmax(0,1fr);gap:3px 6px;margin-top:8px;font-size:9px}',
+    '.do-sched-kv span{color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-sched-kv b{font-weight:500;color:var(--dsw-alias-label-secondary,#61666b);overflow-wrap:anywhere}',
+    '.do-doc-dag-node[data-selected="true"] rect{stroke:var(--dsw-alias-state-business-primary,#4176e6);stroke-width:1.5}',
+    '.do-doc-dag-node[role="button"]{cursor:pointer}',
+    '.do-doc-dag-node[role="button"]:focus rect{stroke:var(--dsw-alias-state-business-primary,#4176e6);stroke-width:1.5}',
+    '.do-doc-split[data-focus="true"] .do-doc-panes{grid-template-columns:1fr}',
+    '.do-doc-split[data-focus="true"] .do-doc-editor{display:none}',
     '.do-doc-lts-meta{display:flex;flex-wrap:wrap;gap:3px 8px;margin:4px 0 2px;font-size:9px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.do-doc-types-inline{font-family:ui-monospace,Menlo,monospace;color:var(--dsw-alias-label-secondary,#61666b)}',
     '.do-doc-graph{margin-top:8px;padding:8px 9px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));border-radius:9px;background:var(--dsw-alias-bg-layer-1,#fff)}',
@@ -733,13 +751,6 @@ export function createDataopsCards(React) {
     return [artifact || deliverablePath(m), m.source, m.asOf].filter(Boolean).join(' · ')
   }
 
-  function openScheduleView(schedule) {
-    if (typeof window === 'undefined') return
-    var request = { view: 'schedule', schedule: schedule }
-    try { window.__dataopsLineageRequest = request } catch (error) { /* ignore */ }
-    try { window.dispatchEvent(new CustomEvent('dataops:open-schedule', { detail: request })) } catch (error) { /* ignore */ }
-    openTab('dataops-lineage')
-  }
 
   function openTab(kind) {
     if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return
@@ -1052,6 +1063,8 @@ export function createDataopsCards(React) {
 
   function ScheduleDag(props) {
     var schedule = props.schedule || {}
+    var selected = props.selected || ''
+    var onSelect = props.onSelect
     var jobs = schedule.jobs || []
     var taskName = schedule.taskName || 'task'
     if (!jobs.length) return h('div', { className: 'do-empty' }, '暂无调度作业')
@@ -1091,7 +1104,7 @@ export function createDataopsCards(React) {
     function truncate(value, n) { var text = String(value || ''); return text.length > n ? text.slice(0, n - 1) + '…' : text }
     function nodeView(node) {
       var point = positions[node.id]
-      return h('g', { key: node.id, className: 'do-graph-v2-node do-doc-dag-node', transform: 'translate(' + point.x + ',' + point.y + ')', 'data-kind': node.type },
+      return h('g', { key: node.id, className: 'do-graph-v2-node do-doc-dag-node', transform: 'translate(' + point.x + ',' + point.y + ')', 'data-kind': node.type, 'data-selected': selected === node.id ? 'true' : undefined, role: node.id === '__start' ? undefined : 'button', tabIndex: node.id === '__start' ? undefined : 0, onClick: node.id === '__start' ? undefined : function () { if (onSelect) onSelect(node.id) }, onKeyDown: node.id === '__start' ? undefined : function (event) { if ((event.key === 'Enter' || event.key === ' ') && onSelect) { event.preventDefault(); onSelect(node.id) } } },
         h('rect', { width: NODE_W, height: NODE_H, rx: 8 }),
         h('text', { x: 10, y: 17, className: 'do-graph-v2-label' }, truncate(node.label, 21)),
         h('text', { x: 10, y: 31, className: 'do-graph-v2-meta' }, truncate(node.type === 'start' ? 'task start' : node.type, 26)))
@@ -1127,10 +1140,30 @@ export function createDataopsCards(React) {
         h('span', null, h('i', { className: 'do-legend-dot' }), '节点 = 作业')))
   }
 
+  function ScheduleInspector(props) {
+    var schedule = props.schedule || {}
+    var job = (schedule.jobs || []).filter(function (item) { return item.name === props.selected })[0] || (schedule.jobs || [])[0]
+    if (!job) return h('div', { className: 'do-muted' }, '选择一个作业查看详情')
+    return h('div', { className: 'do-sched-inspector' },
+      h('div', { className: 'do-label' }, job.type === 'open_gauss' || job.type === 'libra' ? '数据库作业' : job.type === 'group' ? '组作业' : job.type === 'tskdep' ? '跨任务依赖' : job.type === 'url' ? 'HTTP 作业' : '脚本作业'),
+      h('div', { className: 'do-sched-name' }, job.name),
+      h('div', { className: 'do-muted' }, '类型 ' + job.type + ' · 父依赖 ' + ((job.parents || []).join(' / ') || '入口')),
+      h('div', { className: 'do-sched-kv' },
+        h('span', null, '参数'), h('b', null, (schedule.taskParams || []).join('、') || '无'),
+        h('span', null, '占位符'), h('b', { className: 'mono' }, (schedule.placeholders || []).slice(0, 3).join('、') || '无')))
+  }
+
   function LineageV2Card(props) {
+    var focusState = React.useState(false)
+    var selectedState = React.useState('')
     var m = parseModel(props.block, 'lineage')
     if (!m) return h(Fallback, props)
     var schedule = m.view === 'schedule' && m.schedule ? m.schedule : null
+    var jobs = schedule && Array.isArray(schedule.jobs) ? schedule.jobs : []
+    var defaultJob = jobs.filter(function (job) { return job.type === 'open_gauss' || job.type === 'libra' })[0] || jobs[0]
+    var selected = selectedState[0] || (defaultJob ? defaultJob.name : '')
+    var selectedJob = jobs.filter(function (job) { return job.name === selected })[0] || jobs[0]
+    var focus = focusState[0]
     return h(Frame, {
       title: (schedule ? '调度血缘 · ' : '设计血缘 · ') + (m.table || ''),
       state: 'done',
@@ -1147,17 +1180,22 @@ export function createDataopsCards(React) {
           h(Pill, { key: 'mode' }, m.mode || 'planned'),
           h(Pill, { key: 'depth' }, '一层上游')
         ],
-      footer: [
-        h('span', { key: 'meta', className: 'do-muted do-meta' }, schedule ? (schedule.taskName || '') + ' · ' + (schedule.jobCount || 0) + ' 作业' : metaLine(m, 'lineage')),
-        h(Btn, { key: 'tab', variant: 'ghost', onClick: function () { schedule ? openScheduleView(schedule) : openTab('dataops-lineage') } }, schedule ? '打开调度视图' : '打开血缘工作台')
-      ]
+      footer: schedule
+        ? [
+          h('span', { key: 'meta', className: 'do-muted do-meta' }, (schedule.taskName || '') + ' · ' + (schedule.jobCount || jobs.length) + ' 作业' + (selectedJob ? ' · ' + selectedJob.name : '')),
+          h(Btn, { key: 'focus', variant: focus ? 'primary' : 'ghost', onClick: function () { var next = !focus; focusState[1](next); if (props.onFocusChange) props.onFocusChange(next) } }, focus ? '退出聚焦' : '聚焦')
+        ]
+        : [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'lineage'))]
     },
-      schedule ? h('div', null,
-        h('div', { className: 'do-doc-lts-meta' },
-          schedule.typeCounts ? h('span', { className: 'do-doc-types-inline' }, Object.keys(schedule.typeCounts).map(function (type) { return type + ' × ' + schedule.typeCounts[type] }).join(' · ')) : null,
-          schedule.taskParams && schedule.taskParams.length ? h('span', null, '参数：' + schedule.taskParams.join('、')) : null,
-          schedule.placeholders && schedule.placeholders.length ? h('span', null, '占位符：' + schedule.placeholders.join('、')) : null),
-        h(ScheduleDag, { schedule: schedule })) : h(LineageV2Preview, { lineage: m }),
+      schedule
+        ? h('div', { className: 'do-sched-card', 'data-density': focus ? 'focus' : 'compact' },
+          h('div', { className: 'do-sched-graph' }, h(ScheduleDag, { schedule: schedule, selected: selected, onSelect: function (id) { selectedState[1](id) } })),
+          h('div', { className: 'do-sched-side' }, h(ScheduleInspector, { schedule: schedule, selected: selected })),
+          h('div', { className: 'do-doc-lts-meta' },
+            schedule.typeCounts ? h('span', { className: 'do-doc-types-inline' }, Object.keys(schedule.typeCounts).map(function (type) { return type + ' × ' + schedule.typeCounts[type] }).join(' · ')) : null,
+            schedule.taskParams && schedule.taskParams.length ? h('span', null, '参数：' + schedule.taskParams.join('、')) : null,
+            schedule.placeholders && schedule.placeholders.length ? h('span', null, '占位符：' + schedule.placeholders.join('、')) : null))
+        : h(LineageV2Preview, { lineage: m }),
       (m.downstream || []).length ? h('div', null, h('div', { className: 'do-label' }, '下游影响'), h('div', { className: 'do-kv' }, m.downstream.map(function (d, i) { return h(Pill, { key: i }, (d.id || d.asset) + ' · ' + (d.owner || d.type || '')) }))) : null,
       h(Gaps, { gaps: m.gaps })
     )

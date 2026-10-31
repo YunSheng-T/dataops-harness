@@ -6,7 +6,7 @@
  * per-session context store that the turn definition fills from tool results;
  * they never fetch and never invent data.
  */
-export function createDataopsTabs(React, contextStore, LineageFlow) {
+export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   var Flow = LineageFlow || { LineageWorkbench: function () { return null } }
   var h = React.createElement
   var PREFIX = '@dataops/dsh-dataops-client/'
@@ -236,43 +236,35 @@ export function createDataopsTabs(React, contextStore, LineageFlow) {
     return null
   }
 
+  function lineageCardPayload(graph) {
+    if (!graph || !graph.target) return null
+    var nodes = (graph.nodes || []).map(function (node) {
+      var table = node.table || node.id || ''
+      return { id: 'table:' + table, type: 'physical_table', label: table, layer: node.type || 'table', owner: node.owner }
+    })
+    var edges = (graph.edges || []).map(function (edge) {
+      return { from: 'table:' + edge.from, to: 'table:' + edge.to, type: edge.kind || 'reads' }
+    })
+    return {
+      kind: 'lineage', schemaVersion: 2, table: graph.target, view: 'design', mode: 'planned',
+      graph: { nodes: nodes, edges: edges }, downstream: [], gaps: []
+    }
+  }
+
   function LineageBody(props) {
     var context = useContext(props.sessionId) || {}
     var lineage = context.lineage
     var design = context.design
-    var open = React.useState(false)
-    var requestState = React.useState((typeof window !== 'undefined' && window.__dataopsLineageRequest) || null)
-    React.useEffect(function () {
-      if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
-      var onSchedule = function (event) { requestState[1]((event && event.detail) || null) }
-      window.addEventListener('dataops:open-schedule', onSchedule)
-      return function () { window.removeEventListener('dataops:open-schedule', onSchedule) }
-    }, [])
-    var request = requestState[0]
-    var schedule = request && request.view === 'schedule' ? request.schedule : null
     var graph = (lineage || (design && design.target)) ? buildGraph(lineage, design) : null
-    var target = graph ? graph.target : ''
-    var view = lineage
-      ? ((lineage.nodes || []).some(function (node) { return node.type === 'task' || node.type === 'job' }) ? '调度视图' : '生产视图')
-      : '设计视图'
-    var direction = lineage ? (lineage.direction === 'up' ? '上游' : lineage.direction === 'down' ? '下游' : '上下游') : '下游'
-    var sub = graph
-      ? view + ' · ' + direction + ' · ' + graph.nodes.length + ' 个节点 / ' + graph.edges.length + ' 条边' +
-        (graph.synthetic ? ' · 来自设计卡影响面' : '')
-      : '当前 session 还没有血缘上下文，打开的是 Mock 示例'
-    return h('div', null,
-      h(CtxCard, {
-        title: '血缘工作台',
-        sub: sub
-      },
-        h('div', { className: 'do-workbench-entry' },
-          h('div', { className: 'do-workbench-line' }, h('span', null, '当前上下文'), h('b', null, target || '未加载')),
-          h('div', { className: 'do-workbench-line' }, h('span', null, '图谱'), h('b', null, '设计 / 生产 / 调度 · 全宽富节点')),
-          h('div', { className: 'do-workbench-line' }, h('span', null, '节点'), h('b', null, '类型徽标 · 图标 · 点击详情')),
-          h('button', { type: 'button', className: 'do-btn do-workbench-open', onClick: function () { open[1](true) } }, '打开全宽血缘工作台'))
-      ),
-      h(Flow.LineageWorkbench, { open: open[0], onClose: function () { open[1](false) }, initialView: schedule ? 'schedule' : null, schedule: schedule })
-    )
+    var payload = lineageCardPayload(graph)
+    if (Cards && typeof Cards.LineageV2Card === 'function' && payload) {
+      return h('div', { className: 'do-lineage-inline' },
+        h('div', { className: 'do-label' }, '当前会话血缘'),
+        h(Cards.LineageV2Card, { block: { content: [{ type: 'text', text: JSON.stringify(payload) }] } }))
+    }
+    return h('div', { className: 'do-lineage-inline' },
+      h(CtxCard, { title: '血缘', sub: '当前会话还没有血缘上下文' },
+        h('div', { className: 'do-muted' }, '打开带血缘的设计/技术方案卡后，会在这里展示同一张血缘卡。')))
   }
 
   function EvidenceBody(props) {
