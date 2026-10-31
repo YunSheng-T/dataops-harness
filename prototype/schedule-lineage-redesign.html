@@ -71,6 +71,41 @@
   .file-mode{display:inline-flex;align-items:center;font-size:10px;color:var(--faint);padding:4px 9px}
   .drawer-copy{margin-left:6px}
   .source{line-height:1.8}
+  .view-switch{display:flex;align-items:center;gap:2px;margin-left:auto;background:var(--panel2);border:1px solid var(--line);padding:2px;border-radius:7px}
+  .view-switch button{border:0;background:transparent;color:var(--muted);font-size:10.5px;padding:4px 9px;border-radius:5px;cursor:pointer}
+  .view-switch button[data-active="true"]{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  .split-layout{display:grid;grid-template-columns:minmax(0,var(--split-left,58%)) 8px minmax(320px,1fr);gap:10px;align-items:start;--split-left:58%}
+  .split-layout[data-view="preview"]{grid-template-columns:minmax(0,1fr)}
+  .split-layout[data-view="preview"] .source-pane,.split-layout[data-view="preview"] .split-resizer{display:none}
+  .split-layout[data-view="source"]{grid-template-columns:minmax(0,1fr)}
+  .split-layout[data-view="source"] .preview-pane,.split-layout[data-view="source"] .split-resizer{display:none}
+  .preview-pane{min-width:0}
+  .split-layout[data-view="split"] .card-body{grid-template-columns:1fr}
+  .split-layout[data-view="split"] .inspector{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) 210px;column-gap:18px}
+  .split-layout[data-view="split"] .inspector .eyebrow,.split-layout[data-view="split"] .inspector h3,.split-layout[data-view="split"] .inspector-sub{grid-column:1}
+  .split-layout[data-view="split"] .inspector .kv{grid-column:1}
+  .split-layout[data-view="split"] .inspector .section-label{grid-column:1}
+  .split-layout[data-view="split"] .inspector .placeholder-list{grid-column:1}
+  .split-resizer{width:8px;align-self:stretch;min-height:620px;cursor:col-resize;position:relative;border-radius:3px}
+  .split-resizer::after{content:"";position:absolute;left:3px;top:0;bottom:0;width:1px;background:var(--line2)}
+  .split-resizer:hover::after{background:var(--brand)}
+  .source-pane{position:sticky;top:66px;min-width:0;display:flex;flex-direction:column;height:min(720px,calc(100vh - 92px));background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .editor-head{display:flex;align-items:center;gap:7px;padding:9px 11px;border-bottom:1px solid var(--line);min-height:37px;flex:none}
+  .editor-head .editor-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .editor-head .editor-kind{font-size:8.5px;line-height:16px;padding:0 5px;border-radius:3px;background:var(--panel2);color:var(--muted);font-family:ui-monospace,Menlo,monospace;flex:none}
+  .editor-head .spacer{flex:1}
+  .editor-head .btn{padding:2px 6px;font-size:9px;line-height:16px}
+  .editor-body{display:flex;flex:1;min-height:0;overflow:auto;background:var(--code)}
+  .gutter{flex:none;width:39px;padding:10px 6px 10px 0;text-align:right;color:var(--faint);font-family:ui-monospace,Menlo,monospace;font-size:10px;line-height:19px;user-select:none;border-right:1px solid var(--line);background:var(--panel2)}
+  .gutter div{height:19px}
+  .code-view{flex:1;min-width:0;padding:10px 12px 20px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;line-height:19px;color:var(--text);white-space:pre;tab-size:2}
+  .code-line{min-height:19px;padding:0 3px;border-radius:2px}
+  .code-line.active{background:color-mix(in srgb,var(--brand-bg) 72%,transparent)}
+  .cm{color:var(--faint)}
+  .ck{color:var(--brand)}
+  .cs{color:var(--green)}
+  .cp{color:var(--amber)}
+  .editor-foot{flex:none;padding:6px 10px;border-top:1px solid var(--line);font-size:9px;color:var(--faint);display:flex;gap:8px;align-items:center;background:var(--panel)}
   .source-hint{color:var(--faint);font-size:10.5px;margin-top:8px}
   .schedule-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
   .card-head{display:flex;align-items:flex-start;gap:12px;padding:15px 16px 12px}
@@ -167,6 +202,7 @@
     .card-body{grid-template-columns:minmax(0,1fr) 220px}
     .wb-body{grid-template-columns:166px minmax(0,1fr) 240px}
   }
+  @media(max-width:1000px){.split-layout{grid-template-columns:1fr}.source-pane{position:static;height:520px}.split-resizer{display:none}.split-layout[data-view="split"] .preview-pane{margin-bottom:10px}}
   @media(max-width:820px){.notes-grid{grid-template-columns:1fr}.notes-head{display:block}.notes-head h2{margin-top:3px}
     .rail{display:none}.card-body{grid-template-columns:1fr}.inspector{border-left:0;border-top:1px solid var(--line)}
     .wb-body{grid-template-columns:1fr}.wb-left,.wb-right{display:none}.wb-canvas{min-height:500px}
@@ -214,8 +250,14 @@
             <h1 class="file-title">task.yaml</h1>
             <p class="file-sub">lts_code/channel_daily/task.yaml · <span class="mono">formatVersion: 2</span> · 173 行</p>
           </div>
-          <div class="file-tabs" aria-label="文件预览"><span class="file-mode">结构预览</span></div>
+          <div class="view-switch" id="viewSwitch" role="group" aria-label="文件视图">
+            <button data-view="split" data-active="true">分栏</button>
+            <button data-view="preview">预览</button>
+            <button data-view="source">源码</button>
+          </div>
         </div>
+        <div class="split-layout" id="splitLayout" data-view="split">
+          <div class="preview-pane">
         <div class="schedule-card">
           <div class="card-head">
             <div>
@@ -250,7 +292,23 @@
             <button class="btn" id="focusWork">聚焦 calc_sql</button>
           </div>
         </div>
-        <div class="source-hint">点击作业节点查看参数、依赖和风险；源码在独立抽屉中打开。</div>
+          </div>
+          <div class="split-resizer" id="splitResizer" role="separator" aria-label="调整预览和源码宽度"></div>
+          <aside class="source-pane" aria-label="源码预览">
+            <div class="editor-head">
+              <span class="editor-name">task.yaml</span>
+              <span class="editor-kind">YAML</span>
+              <span class="spacer"></span>
+              <button class="btn ghost" id="copySource">复制</button>
+            </div>
+            <div class="editor-body">
+              <div class="gutter" id="sourceGutter" aria-hidden="true"></div>
+              <div class="code-view" id="sourceCode" tabindex="0" aria-label="task.yaml 源码，只读"></div>
+            </div>
+            <div class="editor-foot"><span>只读源码</span><span>·</span><span>CodeMirror 6 目标</span><span class="spacer"></span><span>Esc 关闭源码视图</span></div>
+          </aside>
+        </div>
+        <div class="source-hint">左侧预览，右侧源码；拖动中间分隔条调整宽度。点击作业节点查看参数、依赖和风险。</div>
         <section class="design-notes" aria-label="设计说明">
           <div class="notes-head"><span class="eyebrow">DESIGN DIRECTION</span><h2>把文件预览做成调度检查器，而不是第二套文档 UI</h2></div>
           <div class="notes-grid">
@@ -297,11 +355,6 @@
     </main>
   </div>
 </div>
-<div class="drawer-mask" id="drawerMask">
-  <aside class="drawer" role="dialog" aria-modal="true" aria-label="源码">
-    <div class="drawer-head"><span>源码</span><span class="mono">lts_code/channel_daily/task.yaml</span><span class="spacer"></span><button class="btn ghost drawer-copy" id="copySource">复制</button><button class="btn ghost" id="closeDrawer">关闭</button></div>
-    <pre class="source" id="sourceBody"></pre>
-  </aside>
 </div>
 <div class="toast" id="toast" role="status"></div>
 <script>
@@ -397,6 +450,39 @@ function renderAll(){
   renderGraph($('workGraph'));
   $('cardInspector').innerHTML=inspectorHtml();
   $('workInspector').innerHTML=inspectorHtml();
+  renderSource();
+}
+function setMode(mode){
+  $('fileView').hidden=mode!=='file';
+  $('workView').hidden=mode!=='work';
+  $('modeFile').dataset.active=String(mode==='file');
+  $('modeWork').dataset.active=String(mode==='work');
+}
+const jobLine = { load_check: 18, G_1006: 23, calc_sql: 29, export_shell: 34, wait_upstream: 38, notify: 42 };
+function setViewMode(view){
+  const target = ['split','preview','source'].includes(view) ? view : 'split';
+  $('splitLayout').dataset.view = target;
+  document.querySelectorAll('#viewSwitch button').forEach(button=>button.dataset.active=String(button.dataset.view===target));
+  if (target === 'source') renderSource();
+}
+function highlightLine(line){
+  const raw = esc(line);
+  if (/^\s*#/.test(line)) return `<span class="cm">${raw}</span>`;
+  let out = raw.replace(/^(\s*)([A-Za-z0-9_-]+):/, (m, space, key)=>`${space}<span class="ck">${key}</span>:`);
+  out = out.replace(/(&quot;[^&]*?&quot;|'[^']*')/g, '<span class="cs">$1</span>');
+  out = out.replace(/(\$\$[A-Za-z0-9_]+\$\$)/g, '<span class="cp">$1</span>');
+  return out;
+}
+function renderSource(){
+  const lines = sourceText.split('\n');
+  $('sourceGutter').innerHTML = lines.map((_, index)=>`<div>${String(index+1).padStart(2,'0')}</div>`).join('');
+  $('sourceCode').innerHTML = lines.map((line, index)=>`<div class="code-line" data-line="${index+1}">${highlightLine(line) || ' '}</div>`).join('');
+  const activeLine = jobLine[selected.id] || 1;
+  const active = $('sourceCode').querySelector(`[data-line="${activeLine}"]`);
+  if (active) {
+    active.classList.add('active');
+    active.scrollIntoView({block:'center'});
+  }
 }
 function setMode(mode){
   $('fileView').hidden=mode!=='file';
@@ -405,29 +491,43 @@ function setMode(mode){
   $('modeWork').dataset.active=String(mode==='work');
 }
 function openSource(){
-  $('sourceBody').textContent=sourceText;
-  $('drawerMask').classList.add('open');
+  setMode('file');
+  setViewMode('source');
 }
-function closeSource(){ $('drawerMask').classList.remove('open') }
+function closeSource(){
+  setViewMode('split');
+}
 function toast(text){const el=$('toast');el.textContent=text;el.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove('show'),1500)}
 $('modeFile').onclick=()=>setMode('file');
 $('modeWork').onclick=()=>setMode('work');
-$('openWork').onclick=()=>setMode('work');
+$('openWork').onclick=()=>{setMode('work');setViewMode('split')};
 $('backToFile').onclick=()=>setMode('file');
 $('openSource').onclick=openSource;
 $('openSourceFoot').onclick=openSource;
 $('openSourceWork').onclick=openSource;
-$('closeDrawer').onclick=closeSource;
 $('copySource').onclick=()=>{navigator.clipboard?.writeText(sourceText);toast('源码已复制')};
-$('drawerMask').onclick=(e)=>{if(e.target===$('drawerMask'))closeSource()};
 $('focusWork').onclick=()=>{selected.id='calc_sql';setMode('work');renderAll();toast('已聚焦 calc_sql')};
 $('theme').onclick=()=>{const root=document.documentElement;const dark=root.dataset.theme!=='dark';root.dataset.theme=dark?'dark':'light';$('theme').textContent=dark?'浅色':'深色'};
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSource()});
+document.querySelectorAll('#viewSwitch button').forEach(button=>button.onclick=()=>setViewMode(button.dataset.view));
+let splitDragging = false;
+$('splitResizer').onpointerdown = (event) => { splitDragging = true; $('splitResizer').setPointerCapture?.(event.pointerId); document.body.style.cursor='col-resize'; };
+window.addEventListener('pointermove', (event) => {
+  if (!splitDragging) return;
+  const rect = $('splitLayout').getBoundingClientRect();
+  const pct = Math.max(38, Math.min(72, ((event.clientX - rect.left) / rect.width) * 100));
+  $('splitLayout').style.setProperty('--split-left', pct + '%');
+});
+window.addEventListener('pointerup', () => { if (!splitDragging) return; splitDragging = false; document.body.style.cursor=''; });
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  if ($('splitLayout').dataset.view === 'source') setViewMode('split');
+});
+
 const query = new URLSearchParams(location.search);
 const initialMode = query.get('mode') === 'work' ? 'work' : 'file';
 setMode(initialMode);
+setViewMode(query.get('view') || (query.get('drawer') === 'source' ? 'source' : 'split'));
 renderAll();
-if (query.get('drawer') === 'source') openSource();
 </script>
 </body>
 </html>

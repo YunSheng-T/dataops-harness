@@ -4,9 +4,9 @@
   "slug": "schedule-lineage-redesign",
   "file": "prototype/schedule-lineage-redesign.html",
   "fileUrl": "file:///Users/zhangshu/code/dataops-harness/prototype/schedule-lineage-redesign.html",
-  "startedAt": "2026-10-31T07:33:26.217Z",
-  "finishedAt": "2026-10-31T07:33:28.719Z",
-  "durationMs": 2501,
+  "startedAt": "2026-10-31T07:37:22.913Z",
+  "finishedAt": "2026-10-31T07:37:25.695Z",
+  "durationMs": 2781,
   "runtime": {
     "node": "v22.22.0",
     "platform": "darwin",
@@ -18,7 +18,7 @@
     "version": "Chrome/156.0.8078.48",
     "protocolVersion": "1.3",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
-    "port": 50259,
+    "port": 52475,
     "headless": true,
     "product": "Chrome/156.0.8078.48"
   },
@@ -46,8 +46,8 @@
   "page": {
     "title": "DataOps · 调度血缘与代码预览重设计",
     "readyState": "complete",
-    "bodyTextLength": 1270,
-    "bodyChildren": 4,
+    "bodyTextLength": 2372,
+    "bodyChildren": 3,
     "hasThemeButton": true,
     "scrollWidth": 1440,
     "innerWidth": 1440,
@@ -64,77 +64,13 @@
       "innerHeight": 900,
       "scrollWidth": 1024,
       "clientWidth": 1024,
-      "scrollHeight": 967,
+      "scrollHeight": 1294,
       "bodyScrollWidth": 1024,
       "devicePixelRatio": 1,
       "widthOk": true,
       "emulationOk": true,
       "pass": true,
-      "overflowingElements": [
-        {
-          "tag": "aside",
-          "id": null,
-          "className": "drawer",
-          "left": 1024,
-          "right": 1564,
-          "width": 540,
-          "text": "源码lts_code/channel_daily/task.yaml复制关闭"
-        },
-        {
-          "tag": "div",
-          "id": null,
-          "className": "drawer-head",
-          "left": 1025,
-          "right": 1564,
-          "width": 539,
-          "text": "源码lts_code/channel_daily/task.yaml复制关闭"
-        },
-        {
-          "tag": "span",
-          "id": null,
-          "className": null,
-          "left": 1039,
-          "right": 1064,
-          "width": 25,
-          "text": "源码"
-        },
-        {
-          "tag": "span",
-          "id": null,
-          "className": "mono",
-          "left": 1072,
-          "right": 1264,
-          "width": 193,
-          "text": "lts_code/channel_daily/task.yaml"
-        },
-        {
-          "tag": "button",
-          "id": "copySource",
-          "className": "btn ghost drawer-copy",
-          "left": 1457,
-          "right": 1500,
-          "width": 42,
-          "text": "复制"
-        },
-        {
-          "tag": "button",
-          "id": "closeDrawer",
-          "className": "btn ghost",
-          "left": 1508,
-          "right": 1550,
-          "width": 42,
-          "text": "关闭"
-        },
-        {
-          "tag": "pre",
-          "id": "sourceBody",
-          "className": "source",
-          "left": 1025,
-          "right": 1564,
-          "width": 539,
-          "text": ""
-        }
-      ]
+      "overflowingElements": []
     },
     {
       "requested": {
@@ -145,77 +81,13 @@
       "innerHeight": 900,
       "scrollWidth": 1440,
       "clientWidth": 1440,
-      "scrollHeight": 1046,
+      "scrollHeight": 1357,
       "bodyScrollWidth": 1440,
       "devicePixelRatio": 1,
       "widthOk": true,
       "emulationOk": true,
       "pass": true,
-      "overflowingElements": [
-        {
-          "tag": "aside",
-          "id": null,
-          "className": "drawer",
-          "left": 1440,
-          "right": 1980,
-          "width": 540,
-          "text": "源码lts_code/channel_daily/task.yaml复制关闭"
-        },
-        {
-          "tag": "div",
-          "id": null,
-          "className": "drawer-head",
-          "left": 1441,
-          "right": 1980,
-          "width": 539,
-          "text": "源码lts_code/channel_daily/task.yaml复制关闭"
-        },
-        {
-          "tag": "span",
-          "id": null,
-          "className": null,
-          "left": 1455,
-          "right": 1480,
-          "width": 25,
-          "text": "源码"
-        },
-        {
-          "tag": "span",
-          "id": null,
-          "className": "mono",
-          "left": 1488,
-          "right": 1680,
-          "width": 193,
-          "text": "lts_code/channel_daily/task.yaml"
-        },
-        {
-          "tag": "button",
-          "id": "copySource",
-          "className": "btn ghost drawer-copy",
-          "left": 1873,
-          "right": 1916,
-          "width": 42,
-          "text": "复制"
-        },
-        {
-          "tag": "button",
-          "id": "closeDrawer",
-          "className": "btn ghost",
-          "left": 1924,
-          "right": 1966,
-          "width": 42,
-          "text": "关闭"
-        },
-        {
-          "tag": "pre",
-          "id": "sourceBody",
-          "className": "source",
-          "left": 1441,
-          "right": 1980,
-          "width": 539,
-          "text": ""
-        }
-      ]
+      "overflowingElements": []
     },
     {
       "requested": {
@@ -226,77 +98,13 @@
       "innerHeight": 1000,
       "scrollWidth": 1600,
       "clientWidth": 1600,
-      "scrollHeight": 1046,
+      "scrollHeight": 1357,
       "bodyScrollWidth": 1600,
       "devicePixelRatio": 1,
       "widthOk": true,
       "emulationOk": true,
       "pass": true,
-      "overflowingElements": [
-        {
-          "tag": "aside",
-          "id": null,
-          "className": "drawer",
-          "left": 1600,
-          "right": 2140,
-          "width": 540,
-          "text": "源码lts_code/channel_daily/task.yaml复制关闭"
-        },
-        {
-          "tag": "div",
-          "id": null,
-          "className": "drawer-head",
-          "left": 1601,
-          "right": 2140,
-          "width": 539,
-          "text": "源码lts_code/channel_daily/task.yaml复制关闭"
-        },
-        {
-          "tag": "span",
-          "id": null,
-          "className": null,
-          "left": 1615,
-          "right": 1640,
-          "width": 25,
-          "text": "源码"
-        },
-        {
-          "tag": "span",
-          "id": null,
-          "className": "mono",
-          "left": 1648,
-          "right": 1840,
-          "width": 193,
-          "text": "lts_code/channel_daily/task.yaml"
-        },
-        {
-          "tag": "button",
-          "id": "copySource",
-          "className": "btn ghost drawer-copy",
-          "left": 2033,
-          "right": 2076,
-          "width": 42,
-          "text": "复制"
-        },
-        {
-          "tag": "button",
-          "id": "closeDrawer",
-          "className": "btn ghost",
-          "left": 2084,
-          "right": 2126,
-          "width": 42,
-          "text": "关闭"
-        },
-        {
-          "tag": "pre",
-          "id": "sourceBody",
-          "className": "source",
-          "left": 1601,
-          "right": 2140,
-          "width": 539,
-          "text": ""
-        }
-      ]
+      "overflowingElements": []
     },
     {
       "requested": {
@@ -307,77 +115,13 @@
       "innerHeight": 1080,
       "scrollWidth": 1920,
       "clientWidth": 1920,
-      "scrollHeight": 1080,
+      "scrollHeight": 1357,
       "bodyScrollWidth": 1920,
       "devicePixelRatio": 1,
       "widthOk": true,
       "emulationOk": true,
       "pass": true,
-      "overflowingElements": [
-        {
-          "tag": "aside",
-          "id": null,
-          "className": "drawer",
-          "left": 1920,
-          "right": 2460,
-          "width": 540,
-          "text": "源码lts_code/channel_daily/task.yaml复制关闭"
-        },
-        {
-          "tag": "div",
-          "id": null,
-          "className": "drawer-head",
-          "left": 1921,
-          "right": 2460,
-          "width": 539,
-          "text": "源码lts_code/channel_daily/task.yaml复制关闭"
-        },
-        {
-          "tag": "span",
-          "id": null,
-          "className": null,
-          "left": 1935,
-          "right": 1960,
-          "width": 25,
-          "text": "源码"
-        },
-        {
-          "tag": "span",
-          "id": null,
-          "className": "mono",
-          "left": 1968,
-          "right": 2160,
-          "width": 193,
-          "text": "lts_code/channel_daily/task.yaml"
-        },
-        {
-          "tag": "button",
-          "id": "copySource",
-          "className": "btn ghost drawer-copy",
-          "left": 2353,
-          "right": 2396,
-          "width": 42,
-          "text": "复制"
-        },
-        {
-          "tag": "button",
-          "id": "closeDrawer",
-          "className": "btn ghost",
-          "left": 2404,
-          "right": 2446,
-          "width": 42,
-          "text": "关闭"
-        },
-        {
-          "tag": "pre",
-          "id": "sourceBody",
-          "className": "source",
-          "left": 1921,
-          "right": 2460,
-          "width": 539,
-          "text": ""
-        }
-      ]
+      "overflowingElements": []
     }
   ],
   "theme": {
@@ -486,7 +230,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/schedule-lineage-redesign.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/schedule-lineage-redesign.png",
-      "bytes": 143429,
+      "bytes": 187856,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -504,12 +248,12 @@
       "viewport": "1440x900",
       "file": "prototype/shots/schedule-lineage-redesign-full.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/schedule-lineage-redesign-full.png",
-      "bytes": 161145,
+      "bytes": 242157,
       "width": 1440,
-      "height": 1046,
+      "height": 1357,
       "expected": {
         "width": 1440,
-        "height": 1046
+        "height": 1357
       },
       "dimensionsMatch": true,
       "tallerThanViewport": true,
@@ -522,7 +266,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/schedule-lineage-redesign-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/schedule-lineage-redesign-dark.png",
-      "bytes": 145716,
+      "bytes": 189727,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -540,12 +284,12 @@
       "viewport": "1440x900",
       "file": "prototype/shots/schedule-lineage-redesign-full-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/schedule-lineage-redesign-full-dark.png",
-      "bytes": 164703,
+      "bytes": 246155,
       "width": 1440,
-      "height": 1046,
+      "height": 1357,
       "expected": {
         "width": 1440,
-        "height": 1046
+        "height": 1357
       },
       "dimensionsMatch": true,
       "tallerThanViewport": true,
