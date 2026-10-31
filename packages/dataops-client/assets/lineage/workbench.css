@@ -137,3 +137,4 @@
 /* The embedded surface reuses workbench node styles, but must not inherit the
    full-screen overlay positioning applied to .do-workbench-overlay. */
 .do-surface-body.do-workbench-overlay{position:static;inset:auto;z-index:auto;height:auto;width:auto;margin:0;background:transparent;overflow:visible}
+.do-lineage-surface .do-workbench-overlay .detail{display:flex}

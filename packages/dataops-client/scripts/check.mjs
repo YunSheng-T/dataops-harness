@@ -252,6 +252,19 @@ check('DataOps document preview renders the rich LTS sample DAG and params', () 
   assert(body.includes('wait_upstream'), 'tskdep job')
 })
 
+check('DataOps document preview passes parsed YAML schedule to the lineage surface', () => {
+  let captured = null
+  const Preview = createDataopsDocumentPreview(React, Cards, {
+    LineageSurface: props => { captured = props; return React.createElement('div', null, 'surface') }
+  })
+  const source = 'formatVersion: 2\ntasks:\n  - itemName: PROJ\n    name: channel_alert_trigger\n    type: 触发型任务\n    cronExp: null\n    jobs:\n      - name: prep\n        jobType: shell\n        parentJobName: ["start"]\n      - name: send_alert\n        jobType: url\n        parentJobName: ["prep"]\n'
+  const body = text2(Preview.Body({ resourceAddress: 'dsh-resource://file/session/s/task.yaml', content: { kind: 'text', text: source, eof: true }, wrap: false }))
+  assert(body.includes('surface'), 'surface not rendered')
+  assert(captured && captured.schedule && captured.schedule.taskName === 'channel_alert_trigger', 'task name mismatch')
+  assert(captured.schedule.jobs.length === 2 && captured.schedule.jobs[0].name === 'prep' && captured.schedule.jobs[1].name === 'send_alert', 'jobs mismatch')
+  assert(captured.schedule.cron === null, 'cron should be null for trigger task')
+})
+
 check('DataOps document preview uses the embedded lineage surface when available', () => {
   const Preview = createDataopsDocumentPreview(React, Cards, {
     LineageSurface: () => React.createElement('div', null, 'embedded lineage surface')

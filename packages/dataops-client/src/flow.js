@@ -662,54 +662,103 @@ function content(info, tab) {
 
   function LineageSurface(props) {
     ensureWorkbenchStyles()
-    var initial = props.initialView || 'schedule'
+    var schedule = props.schedule || null
+    var initial = schedule ? 'schedule' : (props.initialView || 'schedule')
     var viewState = React.useState(VIEWS[initial] ? initial : 'schedule')
-    var selectedState = React.useState(null)
+    var selectedState = React.useState(schedule ? 'task:current' : null)
     var selectedTab = React.useState('overview')
     var densityState = React.useState('compact')
     var view = viewState[0]
     var selectedId = selectedState[0]
     var tab = selectedTab[0]
     var density = densityState[0]
-    var flow = buildFlow(view)
+    var flow = schedule ? buildScheduleFlow(schedule) : buildFlow(view)
     var nodes = flow.nodes
     var edges = flow.edges
     var info = selectedId ? INFO[selectedId] : null
     var selected = selectedId ? nodes.find(function (node) { return node.id === selectedId }) : null
     var nodeTypes = React.useMemo(function () { return { rich: RichNode, taskGroup: GroupNode } }, [])
+    var jobs = schedule && Array.isArray(schedule.jobs) ? schedule.jobs : []
+    var viewDef = schedule
+      ? { title: schedule.taskName || '调度任务', tag: '调度视图', summary: [schedule.taskType || '调度任务', schedule.cron || '触发型', jobs.length + ' 作业'].filter(Boolean).join(' · ') }
+      : VIEWS[view]
     function onNodeClick(_event, node) {
       selectedState[1](node.id)
       selectedTab[1](node.type === 'taskGroup' ? 'schedule' : defaultTab(node.id))
+    }
+    function scheduleDetail() {
+      var jobName = selectedId && String(selectedId).indexOf('job:') === 0 ? String(selectedId).slice(4) : null
+      var job = jobName ? jobs.filter(function (item) { return item.name === jobName })[0] : null
+      if (job) {
+        return h('div', { className: 'detail' },
+          h('div', { className: 'detail-head' },
+            h('div', { className: 'eyebrow' }, 'SCHEDULE JOB'),
+            h('h2', null, job.name),
+            h('div', { className: 'detail-sub' }, [job.type, (job.parents || []).join(' / ')].filter(Boolean).join(' · '))),
+          h('div', { className: 'detail-tabs' }, h('button', { className: 'dt', 'data-active': 'true' }, '概览')),
+          h('div', { className: 'detail-body' },
+            h('dl', { className: 'kv' },
+              h('dt', null, '类型'), h('dd', { className: 'mono' }, job.type || '—'),
+              h('dt', null, '父依赖'), h('dd', { className: 'mono' }, (job.parents || []).join(' / ') || '入口'),
+              job.path ? h('dt', null, 'path') : null, job.path ? h('dd', { className: 'mono' }, job.path) : null,
+              job.exec ? h('dt', null, '执行') : null, job.exec ? h('dd', { className: 'mono' }, job.exec) : null,
+              job.timeout ? h('dt', null, '超时') : null, job.timeout ? h('dd', null, job.timeout + 's') : null,
+              job.retries ? h('dt', null, '重试') : null, job.retries ? h('dd', null, job.retries) : null,
+              job.paramKind ? h('dt', null, '参数类别') : null, job.paramKind ? h('dd', null, job.paramKind) : null)))
+      }
+      return h('div', { className: 'detail' },
+        h('div', { className: 'detail-head' },
+          h('div', { className: 'eyebrow' }, 'SCHEDULE TASK'),
+          h('h2', null, schedule.taskName || '调度任务'),
+          h('div', { className: 'detail-sub' }, viewDef.summary)),
+        h('div', { className: 'detail-tabs' }, h('button', { className: 'dt', 'data-active': 'true' }, '概览')),
+        h('div', { className: 'detail-body' },
+          h('dl', { className: 'kv' },
+            h('dt', null, '类型'), h('dd', null, schedule.taskType || '—'),
+            h('dt', null, 'cron'), h('dd', { className: 'mono' }, schedule.cron || '触发型'),
+            h('dt', null, '作业'), h('dd', null, jobs.length),
+            h('dt', null, '参数'), h('dd', { className: 'mono' }, (schedule.taskParams || []).join('、') || '无'),
+            h('dt', null, '占位符'), h('dd', { className: 'mono' }, (schedule.placeholders || []).slice(0, 4).join('、') || '无'),
+            schedule.source ? h('dt', null, '来源') : null, schedule.source ? h('dd', { className: 'mono' }, schedule.source) : null),
+          jobs.length ? h('div', { className: 'section-title' }, '作业') : null,
+          jobs.length ? h('div', { className: 'jobs' }, jobs.map(function (job, index) {
+            return h('div', { key: job.name, className: 'job-row', onClick: function () { selectedState[1]('job:' + job.name) } },
+              h('span', { className: 'idx' }, String(index + 1)),
+              h('span', { className: 'name' }, job.name),
+              h('span', { className: 'kind' }, job.type || 'JOB'))
+          })) : null))
     }
     return h('section', { className: 'do-lineage-surface', 'data-density': density, 'aria-label': '血缘视图' },
       h('header', { className: 'do-surface-head' },
         h('div', { className: 'do-surface-title' },
           h('span', { className: 'do-surface-mark' }, '血缘'),
           h('div', null,
-            h('strong', null, VIEWS[view].title),
-            h('span', null, VIEWS[view].summary))),
+            h('strong', null, viewDef.title),
+            h('span', null, viewDef.summary))),
         h('div', { className: 'do-surface-actions' },
           h('div', { className: 'do-surface-tabs', role: 'tablist' },
-            ['design', 'production', 'schedule'].map(function (key) {
-              return h('button', { key: key, type: 'button', className: 'do-surface-tab', 'data-active': String(view === key), onClick: function () { viewState[1](key); selectedState[1](null) } }, VIEWS[key].tabs)
-            })),
+            schedule
+              ? h('button', { type: 'button', className: 'do-surface-tab', 'data-active': 'true' }, '调度视图')
+              : ['design', 'production', 'schedule'].map(function (key) {
+                return h('button', { key: key, type: 'button', className: 'do-surface-tab', 'data-active': String(view === key), onClick: function () { viewState[1](key); selectedState[1](null) } }, VIEWS[key].tabs)
+              })),
           h('button', { type: 'button', className: 'do-surface-focus', onClick: function () { densityState[1](density === 'focus' ? 'compact' : 'focus') } }, density === 'focus' ? '退出聚焦' : '聚焦'))),
       h('div', { className: 'do-surface-body do-workbench-overlay' },
         h('div', { className: 'do-surface-canvas' },
-          h('div', { className: 'do-surface-canvas-note' }, h('span', null, VIEWS[view].tag), h('span', null, '点击节点查看详情 · 滚轮缩放')),
+          h('div', { className: 'do-surface-canvas-note' }, h('span', null, viewDef.tag), h('span', null, '点击节点查看详情 · 滚轮缩放')),
           h(ReactFlow, {
             nodes: nodes, edges: edges, nodeTypes: nodeTypes,
-            onNodeClick: onNodeClick, onPaneClick: function () { selectedState[1](null) },
+            onNodeClick: onNodeClick, onPaneClick: function () { selectedState[1](schedule ? 'task:current' : null) },
             fitView: true, fitViewOptions: { padding: 0.16 },
             minZoom: 0.2, maxZoom: 1.8, nodesDraggable: false, nodesConnectable: false, elementsSelectable: false
           })),
         h('aside', { className: 'do-surface-detail' },
-          h(Detail, {
+          schedule ? scheduleDetail() : h(Detail, {
             info: info, selected: selected, selectedId: selectedId, tab: tab,
             setTab: selectedTab[1], setSelectedId: selectedState[1],
             setToast: function () {}
           }))),
-      h('div', { className: 'do-surface-foot' }, h('span', null, '设计 / 生产 / 调度三视图'), h('span', null, '只读 · 来自血缘模型')))
+      h('div', { className: 'do-surface-foot' }, h('span', null, schedule ? '来自 task.yaml · 只读' : '设计 / 生产 / 调度三视图'), h('span', null, schedule ? (schedule.source || '解析结果') : '只读 · 来自血缘模型')))
   }
 
   function LineageWorkbench(props) {

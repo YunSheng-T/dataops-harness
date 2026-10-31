@@ -43,7 +43,11 @@ export function createDataopsDocumentPreview(React, Cards, LineageFlow) {
       var type = (block.match(/^\s*jobType:\s*([A-Za-z0-9_]+)\s*$/mu) || [])[1] || 'unknown'
       var parentText = (block.match(/^\s*parentJobName:\s*\[([^\]]*)\]/mu) || [])[1] || ''
       var parents = parentText.split(',').map(function (value) { return value.trim().replace(/^["']|["']$/gu, '') }).filter(Boolean)
-      return { name: entry.name, type: type, parents: parents, paramKind: type === 'tskdep' ? 'dependency' : type === 'group' ? 'group' : type === 'open_gauss' || type === 'libra' ? 'database' : type === 'url' ? 'http' : 'script' }
+      var path = (block.match(/^\s*path:\s*["']?([^"'\n]+)["']?\s*$/mu) || [])[1] || null
+      var exec = (block.match(/^\s*jobExecPath:\s*["']?([^"'\n]+)["']?\s*$/mu) || [])[1] || null
+      var timeout = (block.match(/^\s*jobTimeout:\s*(\d+)/mu) || [])[1] || null
+      var retries = (block.match(/^\s*jobRetryTimes:\s*(\d+)/mu) || [])[1] || null
+      return { name: entry.name, type: type, parents: parents, path: path, exec: exec, timeout: timeout, retries: retries, paramKind: type === 'tskdep' ? 'dependency' : type === 'group' ? 'group' : type === 'open_gauss' || type === 'libra' ? 'database' : type === 'url' ? 'http' : 'script' }
     })
     var typeCounts = {}
     jobs.forEach(function (job) { typeCounts[job.type] = (typeCounts[job.type] || 0) + 1 })
@@ -58,7 +62,10 @@ export function createDataopsDocumentPreview(React, Cards, LineageFlow) {
     while ((match = itemRe.exec(text))) taskNames.push(match[1].trim())
     var crons = []
     var cronRe = /^\s*cronExp:\s*["']?([^"'\n]+)["']?\s*$/gmu
-    while ((match = cronRe.exec(text))) crons.push(match[1].trim())
+    while ((match = cronRe.exec(text))) {
+      var cronValue = match[1].trim()
+      if (cronValue && cronValue !== 'null' && cronValue !== '~') crons.push(cronValue)
+    }
     return {
       type: 'lts',
       taskCount: taskCount,
@@ -269,7 +276,18 @@ export function createDataopsDocumentPreview(React, Cards, LineageFlow) {
     var all = lines(text)
     var ltsCard = null
     if (summary.type === 'lts' && LineageFlow && typeof LineageFlow.LineageSurface === 'function') {
-      ltsCard = h(LineageFlow.LineageSurface, { initialView: 'schedule' })
+      ltsCard = h(LineageFlow.LineageSurface, {
+        initialView: 'schedule',
+        schedule: {
+          taskName: summary.taskName || name,
+          taskType: summary.taskType || '调度任务',
+          cron: summary.crons[0] || null,
+          jobs: summary.jobs,
+          taskParams: summary.taskParamNames,
+          placeholders: summary.placeholders,
+          source: name
+        }
+      })
     } else if (summary.type === 'lts' && Cards && typeof Cards.LineageV2Card === 'function' && summary.jobs.length) {
       var lineage = {
         kind: 'lineage', schemaVersion: 2, view: 'schedule', mode: 'planned', table: summary.taskName || name,
