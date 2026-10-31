@@ -134,53 +134,82 @@ export function createDataopsDocumentPreview(React) {
 
   function Dag(props) {
     var jobs = props.jobs || []
-    var levels = {}
+    var taskName = props.taskName || 'task'
+    if (!jobs.length) return null
+    var nodes = [{ id: '__start', label: '开始', type: 'start', parents: [] }].concat(jobs.map(function (job) {
+      return { id: job.name, label: job.name, type: job.type, parents: job.parents || [] }
+    }))
     var names = {}
-    jobs.forEach(function (job) { names[job.name] = true; levels[job.name] = 0 })
-    for (var pass = 0; pass < jobs.length; pass++) {
-      jobs.forEach(function (job) {
-        (job.parents || []).forEach(function (parent) {
-          if (names[parent]) levels[job.name] = Math.max(levels[job.name], (levels[parent] || 0) + 1)
+    nodes.forEach(function (node) { names[node.id] = node })
+    var levels = {}
+    nodes.forEach(function (node) { levels[node.id] = 0 })
+    for (var pass = 0; pass < nodes.length; pass++) {
+      nodes.forEach(function (node) {
+        (node.parents || []).forEach(function (parent) {
+          if (names[parent]) levels[node.id] = Math.max(levels[node.id], (levels[parent] || 0) + 1)
         })
       })
     }
     var groups = {}
-    jobs.forEach(function (job) {
-      var level = levels[job.name] || 0
+    nodes.forEach(function (node) {
+      var level = levels[node.id] || 0
       if (!groups[level]) groups[level] = []
-      groups[level].push(job)
+      groups[level].push(node)
     })
     var levelKeys = Object.keys(groups).map(Number).sort(function (a, b) { return a - b })
-    var nodeW = 104, nodeH = 24, gapX = 30, gapY = 10, left = 8, top = 8
-    var maxRows = Math.max.apply(null, levelKeys.map(function (key) { return groups[String(key)].length }))
-    var width = Math.max(260, levelKeys.length * (nodeW + gapX) + left * 2)
-    var height = Math.max(50, maxRows * (nodeH + gapY) + top * 2)
+    var cols = ['开始', '前置', '并行', '加工', '汇聚', '通知']
+    var NODE_W = 148, NODE_H = 42, COL_GAP = 18, ROW_GAP = 18, LEFT = 18, TOP = 34
     var positions = {}
-    levelKeys.forEach(function (key, col) {
-      groups[String(key)].forEach(function (job, row) {
-        positions[job.name] = { x: left + col * (nodeW + gapX), y: top + row * (nodeH + gapY) }
-      })
+    var maxRows = 1
+    nodes.forEach(function (node) {
+      var level = levels[node.id] || 0
+      var same = groups[String(level)] || []
+      var row = same.indexOf(node)
+      maxRows = Math.max(maxRows, same.length)
+      positions[node.id] = { x: LEFT + level * (NODE_W + COL_GAP), y: TOP + row * (NODE_H + ROW_GAP), level: level, node: node }
     })
+    var height = Math.max(220, TOP + maxRows * (NODE_H + ROW_GAP) + 18)
+    var marker = 'do-doc-dag-arrow'
+    function truncate(value, n) { var text = String(value || ''); return text.length > n ? text.slice(0, n - 1) + '…' : text }
+    function nodeView(node) {
+      var p = positions[node.id]
+      return h('g', { key: node.id, className: 'do-graph-v2-node do-doc-dag-node', transform: 'translate(' + p.x + ',' + p.y + ')', 'data-kind': node.type },
+        h('rect', { width: NODE_W, height: NODE_H, rx: 8 }),
+        h('text', { x: 10, y: 17, className: 'do-graph-v2-label' }, truncate(node.label, 21)),
+        h('text', { x: 10, y: 31, className: 'do-graph-v2-meta' }, truncate(node.type === 'start' ? 'task start' : node.type, 26)))
+    }
+    function edgeView(edge) {
+      var a = positions[edge.from], b = positions[edge.to]
+      if (!a || !b) return null
+      var x1 = a.x + NODE_W, y1 = a.y + NODE_H / 2, x2 = b.x, y2 = b.y + NODE_H / 2
+      var mid = (x1 + x2) / 2
+      return h('path', { key: edge.from + '>' + edge.to, className: 'do-graph-v2-edge', 'marker-end': 'url(#' + marker + ')', d: 'M ' + x1 + ' ' + y1 + ' C ' + mid + ' ' + y1 + ' ' + mid + ' ' + y2 + ' ' + x2 + ' ' + y2 })
+    }
     var edges = []
-    jobs.forEach(function (job) {
-      (job.parents || []).forEach(function (parent) {
-        if (positions[parent] && positions[job.name]) edges.push({ from: parent, to: job.name })
-      })
+    nodes.forEach(function (node) {
+      if (node.id === '__start') return
+      var parents = (node.parents || []).filter(function (parent) { return names[parent] })
+      if (!parents.length) parents = ['__start']
+      parents.forEach(function (parent) { edges.push({ from: parent, to: node.id }) })
     })
-    return h('div', { className: 'do-doc-dag-scroll' },
-      h('div', { className: 'do-doc-muted' }, '拓扑 · ' + jobs.length + ' 作业 · ' + edges.length + ' 依赖'),
-      h('svg', { className: 'do-doc-dag', viewBox: '0 0 ' + width + ' ' + height, width: width, height: height, role: 'img', 'aria-label': 'LTS job DAG' },
-        edges.map(function (edge, index) {
-          var a = positions[edge.from], b = positions[edge.to]
-          return h('path', { key: 'e' + index, className: 'do-doc-dag-edge', d: 'M' + (a.x + nodeW) + ' ' + (a.y + nodeH / 2) + ' H' + (b.x - 6) + ' V' + (b.y + nodeH / 2) + ' H' + b.x })
-        }),
-        jobs.map(function (job) {
-          var point = positions[job.name]
-          return h('g', { key: job.name, className: 'do-doc-dag-node', transform: 'translate(' + point.x + ',' + point.y + ')', 'data-type': job.type },
-            h('rect', { width: nodeW, height: nodeH, rx: 5 }),
-            h('text', { x: 7, y: 10, className: 'do-doc-dag-name' }, String(job.name).slice(0, 16)),
-            h('text', { x: 7, y: 19, className: 'do-doc-dag-type' }, job.type))
-        })))
+    var width = Math.max(900, levelKeys.length * (NODE_W + COL_GAP) + LEFT * 2)
+    return h('div', { className: 'do-doc-graph' },
+      h('div', { className: 'do-doc-graph-head' },
+        h('span', { className: 'do-doc-graph-title' }, '调度血缘'),
+        h('span', { className: 'do-doc-graph-task' }, taskName),
+        h('span', { className: 'do-doc-graph-meta' }, nodes.length + ' 节点 · ' + edges.length + ' 依赖')),
+      h('div', { className: 'do-graph-v2-scroll' },
+        h('svg', { viewBox: '0 0 ' + width + ' ' + height, className: 'do-graph-v2-svg', role: 'img', 'aria-label': '调度血缘图' },
+          h('defs', null, h('marker', { id: marker, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, h('path', { d: 'M 0 0 L 10 5 L 0 10 z', className: 'do-graph-v2-arrow' }))),
+          cols.slice(0, levelKeys.length).map(function (label, index) {
+            return h('text', { key: label, x: LEFT + index * (NODE_W + COL_GAP), y: 17, className: 'do-graph-v2-col-label' }, label)
+          }),
+          edges.map(edgeView),
+          nodes.map(nodeView))),
+      h('div', { className: 'do-graph-v2-legend' },
+        h('span', null, h('i', { className: 'do-legend-line' }), '实线 = 依赖'),
+        h('span', null, h('i', { className: 'do-legend-dot' }), '节点 = 作业'),
+        h('span', null, '按 jobType 着色')))
   }
 
   function Summary(props) {
@@ -196,7 +225,7 @@ export function createDataopsDocumentPreview(React) {
         h('div', { className: 'do-doc-types' }, Object.keys(summary.typeCounts || {}).map(function (type) {
           return h('span', { key: type, className: 'do-doc-type' }, type + ' × ' + summary.typeCounts[type])
         })),
-        summary.jobs.length ? h(Dag, { jobs: summary.jobs }) : null)
+        summary.jobs.length ? h(Dag, { jobs: summary.jobs, taskName: summary.taskName }) : null)
     }
     if (summary.type === 'build') {
       return h('div', { className: 'do-doc-facts' },
