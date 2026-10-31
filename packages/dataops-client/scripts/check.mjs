@@ -252,6 +252,15 @@ check('DataOps document preview renders the rich LTS sample DAG and params', () 
   assert(body.includes('wait_upstream'), 'tskdep job')
 })
 
+check('DataOps document preview uses the embedded lineage surface when available', () => {
+  const Preview = createDataopsDocumentPreview(React, Cards, {
+    LineageSurface: () => React.createElement('div', null, 'embedded lineage surface')
+  })
+  const source = readFileSync(new URL('../../../samples/internal-code-repo/lts_code/channel_daily/task.yaml', import.meta.url), 'utf8')
+  const body = text2(Preview.Body({ resourceAddress: 'dsh-resource://file/session/s/lts_code/channel_daily/task.yaml', content: { kind: 'text', text: source, eof: true }, wrap: false }))
+  assert(body.includes('embedded lineage surface'), 'document preview did not use LineageSurface')
+})
+
 check('DataOps document preview renders LTS, build, SQL and properties', () => {
   const Preview = createDataopsDocumentPreview(React, Cards)
   const body = (name, text) => text2(Preview.Body({ resourceAddress: 'dsh-resource://file/session/s/' + name, content: { kind: 'text', text, eof: true }, wrap: false }))

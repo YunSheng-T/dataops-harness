@@ -55,7 +55,7 @@ LineageSurface
 
 ## 4. 文件预览
 
-`task.yaml` 仍保留左右分栏：左侧血缘卡，右侧 CodeMirror 源码。
+`task.yaml` 也使用同一个 `LineageSurface`：左侧三视图血缘卡，右侧 CodeMirror 源码。文件卡不再走旧的简化 `LineageV2Card`。
 
 右侧源码分栏是文件预览的能力，不塞进右栏三视图卡。
 

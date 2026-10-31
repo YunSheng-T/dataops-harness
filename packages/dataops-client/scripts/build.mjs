@@ -136,7 +136,7 @@ ${inlined}
     }
     var Tabs = createDataopsTabs(React, ContextStore, LineageFlow, Cards)
     var Brief = createStageBrief(React, StageStore, ContextStore)
-    var DataopsDocumentPreview = createDataopsDocumentPreview(React, Cards)
+    var DataopsDocumentPreview = createDataopsDocumentPreview(React, Cards, LineageFlow)
 
 /* ---- src/index.js ---- */
 ${index}

@@ -5,7 +5,7 @@
  * code/config suffixes and gives DataOps files their own structure summary:
  * LTS tasks/jobs, build packages, manifest refs, SQL blocks, properties.
  */
-export function createDataopsDocumentPreview(React, Cards) {
+export function createDataopsDocumentPreview(React, Cards, LineageFlow) {
   var h = React.createElement
   var ID = '@dataops/dsh-dataops-client/code-preview'
   var EXTENSIONS = ['yaml', 'yml', 'sql', 'properties']
@@ -268,7 +268,9 @@ export function createDataopsDocumentPreview(React, Cards) {
     var summary = describe(name, text)
     var all = lines(text)
     var ltsCard = null
-    if (summary.type === 'lts' && Cards && typeof Cards.LineageV2Card === 'function' && summary.jobs.length) {
+    if (summary.type === 'lts' && LineageFlow && typeof LineageFlow.LineageSurface === 'function') {
+      ltsCard = h(LineageFlow.LineageSurface, { initialView: 'schedule' })
+    } else if (summary.type === 'lts' && Cards && typeof Cards.LineageV2Card === 'function' && summary.jobs.length) {
       var lineage = {
         kind: 'lineage', schemaVersion: 2, view: 'schedule', mode: 'planned', table: summary.taskName || name,
         schedule: {
