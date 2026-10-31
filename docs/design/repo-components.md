@@ -128,11 +128,64 @@ LTS task / jobs / placeholders
 缺失占位符声明
 ```
 
-## 6. 后续
+## 6. C1/C2 适配器
+
+### BuildAdapter
+
+```js
+import { createBuildAdapter } from '@dataops/dsh-dataops-tools/repo/build'
+
+const build = createBuildAdapter({
+  root,
+  enterpriseId,
+  projectId,
+  execFileImpl // 测试/内网可注入
+})
+
+const result = await build.run({ packageName: 'lts_demo_01' })
+```
+
+执行：
+
+```sh
+dataops build run --package <pkg> --config .dataops/build.yaml --output-dir output --enterprise-id <ENT> --project-id <PROJ>
+```
+
+行为：
+
+- 先按 A 校验 package 存在
+- 参数数组执行，不拼 shell
+- 不替换 `$$KEY$$`
+- 成功判定：exit 0 + `output/<package>.zip` 存在
+- 返回 `artifact/buildInfo/exitCode/logExcerpt/errors`
+
+### DeployAdapter
+
+```js
+import { createDeployAdapter } from '@dataops/dsh-dataops-tools/repo/deploy'
+
+const deploy = createDeployAdapter({ root, enterpriseId, projectId })
+const result = await deploy.run({ packageName: 'lts_demo_01' })
+```
+
+执行：
+
+```sh
+dataops deploy execute --package <pkg> --artifact <zip> --config .dataops/build.yaml --target-env sit --mode execute --enterprise-id <ENT> --project-id <PROJ>
+```
+
+当前范围：
+
+- only sit
+- explicit `--mode execute`
+- no approval-id
+- no dry-run
+- no deployment receipt
+
+## 7. 后续
 
 ```text
-C. BuildAdapter
-C. DeployAdapter
 UI: 仓库/package/LTS 只读检查器
+Agent tool: 暴露 A/B/C 只读入口
 真实 CLI：--json 或稳定 exit code/log contract
 ```

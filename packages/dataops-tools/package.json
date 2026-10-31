@@ -8,6 +8,8 @@
   "exports": {
     ".": "./src/index.js",
     "./repo": "./src/repo/index.js",
+    "./repo/build": "./src/repo/build.js",
+    "./repo/deploy": "./src/repo/deploy.js",
     "./lts": "./src/lts.js",
     "./package.json": "./package.json"
   },

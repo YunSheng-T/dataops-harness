@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { indexRepository, parseBuildConfig, parseManifest, resolveManifestExpression } from '../src/repo/index.js'
 import { parseLtsTask, parseProperties } from '../src/lts.js'
+import { createBuildAdapter } from '../src/repo/build.js'
+import { createDeployAdapter } from '../src/repo/deploy.js'
 
 const root = resolve(import.meta.dirname, '..')
 const fixtures = join(root, 'test', 'fixtures')
@@ -58,9 +60,74 @@ check('LTS source rejects missing parents and missing placeholder declarations',
   assert(missing.findings.some(f => f.code === 'LTS_PLACEHOLDER'), 'missing placeholder declaration')
 })
 
+check('BuildAdapter invokes build run with array args and verifies artifact', async () => {
+  const temp = mkdtempSync(join(tmpdir(), 'dataops-build-'))
+  try {
+    mkdirSync(join(temp, '.dataops'), { recursive: true })
+    mkdirSync(join(temp, 'output'), { recursive: true })
+    writeFileSync(join(temp, '.dataops', 'build.yaml'), 'version: "1.2"\npackages:\n  - packageName: lts_demo\n    toolChain: data_schedule\n    serviceType: data_schedule_service\n    pipelineType: his_data_schedule\n    operationType: develop\n    files:\n      - path: lts_code/demo/*\n')
+    let captured = null
+    const adapter = createBuildAdapter({ root: temp, enterpriseId: 'ENT', projectId: 'PROJ', execFileImpl: (command, args, options, done) => {
+      captured = { command, args, options }
+      writeFileSync(join(temp, 'output', 'lts_demo.zip'), 'zip')
+      writeFileSync(join(temp, 'output', 'buildInfo.properties'), 'buildVersion=1\n')
+      done(null, 'built', '')
+    } })
+    const result = await adapter.run({ packageName: 'lts_demo' })
+    assert(result.ok && result.artifact.endsWith('output/lts_demo.zip'), 'build artifact result')
+    assert(captured.command === 'dataops' && captured.args.includes('build') && captured.args.includes('run'), 'build command')
+    assert(captured.args.includes('--enterprise-id') && captured.args.includes('ENT'), 'build enterprise arg')
+    assert(captured.options.cwd === temp && !captured.args.some(arg => /\s/u.test(arg)), 'no shell args')
+  } finally { rmSync(temp, { recursive: true, force: true }) }
+})
+
+check('DeployAdapter invokes execute for sit without approval-id', async () => {
+  const temp = mkdtempSync(join(tmpdir(), 'dataops-deploy-'))
+  try {
+    mkdirSync(join(temp, '.dataops'), { recursive: true })
+    mkdirSync(join(temp, 'output'), { recursive: true })
+    writeFileSync(join(temp, 'output', 'lts_demo.zip'), 'zip')
+    let captured = null
+    const adapter = createDeployAdapter({ root: temp, enterpriseId: 'ENT', projectId: 'PROJ', execFileImpl: (command, args, options, done) => {
+      captured = { command, args, options }
+      done(null, 'deployed', '')
+    } })
+    const result = await adapter.run({ packageName: 'lts_demo' })
+    assert(result.ok && result.targetEnv === 'sit', 'deploy result')
+    assert(captured.args.includes('execute') && captured.args.includes('sit'), 'deploy target')
+    assert(captured.args.includes('--mode') && captured.args.includes('execute'), 'explicit execute')
+    assert(!captured.args.includes('--approval-id') && !captured.args.includes('--dry-run'), 'no approval/dryrun')
+  } finally { rmSync(temp, { recursive: true, force: true }) }
+})
+
+check('BuildAdapter fails closed on missing package and missing artifact', async () => {
+  const temp = mkdtempSync(join(tmpdir(), 'dataops-build-fail-'))
+  try {
+    mkdirSync(join(temp, '.dataops'), { recursive: true })
+    writeFileSync(join(temp, '.dataops', 'build.yaml'), 'version: "1.2"\npackages:\n  - packageName: lts_demo\n    toolChain: data_schedule\n    serviceType: data_schedule_service\n    pipelineType: his_data_schedule\n    operationType: develop\n    files:\n      - path: lts_code/demo/*\n')
+    const adapter = createBuildAdapter({ root: temp, enterpriseId: 'ENT', projectId: 'PROJ', execFileImpl: (_c, _a, _o, done) => done(null, '', '') })
+    let missing = false
+    try { await adapter.run({ packageName: 'not_declared' }) } catch { missing = true }
+    assert(missing, 'missing package rejected')
+    const result = await adapter.run({ packageName: 'lts_demo' })
+    assert(result.ok === false && result.errors.some(e => e.includes('not found')), 'missing artifact fail closed')
+  } finally { rmSync(temp, { recursive: true, force: true }) }
+})
+
+check('DeployAdapter rejects a missing artifact before spawning', async () => {
+  const temp = mkdtempSync(join(tmpdir(), 'dataops-deploy-fail-'))
+  try {
+    let spawned = false
+    const adapter = createDeployAdapter({ root: temp, enterpriseId: 'ENT', projectId: 'PROJ', execFileImpl: (_c, _a, _o, done) => { spawned = true; done(null, '', '') } })
+    let rejected = false
+    try { await adapter.run({ packageName: 'missing' }) } catch { rejected = true }
+    assert(rejected && !spawned, 'missing artifact rejected before spawn')
+  } finally { rmSync(temp, { recursive: true, force: true }) }
+})
+
 let failed = 0
 for (const [name, fn] of checks) {
-  try { fn(); console.log('ok   ' + name) } catch (error) { failed++; console.error('FAIL ' + name + ': ' + error.message) }
+  try { await fn(); console.log('ok   ' + name) } catch (error) { failed++; console.error('FAIL ' + name + ': ' + error.message) }
 }
 if (failed) process.exit(1)
 console.log('repo components: PASS (' + checks.length + ' checks)')
