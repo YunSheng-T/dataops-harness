@@ -71,10 +71,11 @@ function buildCodeMirrorRuntime() {
   const dir = join(root, 'assets/codemirror')
   const lib = readFileSync(join(dir, 'codemirror.js'), 'utf8').replace(/\(this,\s*\(function\s*\(\)/u, '(window, (function ()')
   const css = readFileSync(join(dir, 'codemirror.css'), 'utf8')
-  const transformMode = path => readFileSync(join(dir, path), 'utf8').replace(
-    /^\(function\s*\(mod\)\s*\{[\s\S]*?\}\)\(function\s*\(CodeMirror\)\s*\{/mu,
-    '(function (CodeMirror) {'
-  )
+  const modeRuntime = path => [
+    '(function (module, exports, require) {',
+    readFileSync(join(dir, path), 'utf8'),
+    '})({ exports: {} }, {}, function () { return CodeMirror; });'
+  ].join('\n')
   return [
     'var CODEMIRROR_CSS = ' + JSON.stringify(css) + ';',
     'var CodeMirror = null;',
@@ -85,8 +86,8 @@ function buildCodeMirrorRuntime() {
     '  var exports = module.exports;',
     lib,
     '  CodeMirror = module.exports;',
-    transformMode('mode/yaml/yaml.js'),
-    transformMode('mode/sql/sql.js'),
+    modeRuntime('mode/yaml/yaml.js'),
+    modeRuntime('mode/sql/sql.js'),
     '  return CodeMirror;',
     '}'
   ].join('\n')
