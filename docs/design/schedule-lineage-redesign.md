@@ -1,7 +1,7 @@
 # 血缘卡：三视图合并
 
 > 状态：已实现第一版。右栏血缘入口使用嵌入式三视图卡。  
-> 相关原型：[schedule-lineage-redesign.html](../../prototype/schedule-lineage-redesign.html)
+> 卡内三视图截图：[lineage-surface-card.png](../../prototype/shots/lineage-surface-card.png)
 
 ## 1. 目标
 
@@ -58,6 +58,10 @@ LineageSurface
 `task.yaml` 仍保留左右分栏：左侧血缘卡，右侧 CodeMirror 源码。
 
 右侧源码分栏是文件预览的能力，不塞进右栏三视图卡。
+
+## 4.1 样式边界
+
+嵌入式 surface 复用原工作台的节点和图标样式，因此 surface body 需要带 `do-workbench-overlay` scope；否则 `.rf-icon img` 等规则不会命中，节点图标会失控。
 
 ## 5. 边界
 

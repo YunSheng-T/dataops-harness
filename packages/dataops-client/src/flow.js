@@ -694,7 +694,7 @@ function content(info, tab) {
               return h('button', { key: key, type: 'button', className: 'do-surface-tab', 'data-active': String(view === key), onClick: function () { viewState[1](key); selectedState[1](null) } }, VIEWS[key].tabs)
             })),
           h('button', { type: 'button', className: 'do-surface-focus', onClick: function () { densityState[1](density === 'focus' ? 'compact' : 'focus') } }, density === 'focus' ? '退出聚焦' : '聚焦'))),
-      h('div', { className: 'do-surface-body' },
+      h('div', { className: 'do-surface-body do-workbench-overlay' },
         h('div', { className: 'do-surface-canvas' },
           h('div', { className: 'do-surface-canvas-note' }, h('span', null, VIEWS[view].tag), h('span', null, '点击节点查看详情 · 滚轮缩放')),
           h(ReactFlow, {
