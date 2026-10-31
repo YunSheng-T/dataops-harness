@@ -72,7 +72,9 @@ export function normalizeConfig(config) {
     maxNodes: positiveInt(input.maxNodes, DEFAULTS.maxNodes, 1, 1000),
     mockDelayMs: positiveInt(input.mockDelayMs, DEFAULTS.mockDelayMs, 0, 10000),
     workitemsDir: typeof input.workitemsDir === 'string' && input.workitemsDir.trim() !== '' ? input.workitemsDir.trim() : DEFAULTS.workitemsDir,
-    repoRoot: typeof input.repoRoot === 'string' && input.repoRoot.trim() !== '' ? input.repoRoot.trim() : null,
+    repoRoot: typeof input.repoRoot === 'string' && input.repoRoot.trim() !== ''
+      ? input.repoRoot.trim()
+      : (typeof process !== 'undefined' && process.env && typeof process.env.DATAOPS_REPO_ROOT === 'string' && process.env.DATAOPS_REPO_ROOT.trim() !== '' ? process.env.DATAOPS_REPO_ROOT.trim() : null),
     repoManifestPath: typeof input.repoManifestPath === 'string' && input.repoManifestPath.trim() !== '' ? input.repoManifestPath.trim() : '.dataops/manifest.yaml',
     repoBuildPath: typeof input.repoBuildPath === 'string' && input.repoBuildPath.trim() !== '' ? input.repoBuildPath.trim() : '.dataops/build.yaml',
     disabledTools: Array.isArray(input.disabledTools) ? input.disabledTools.filter(item => typeof item === 'string') : [],

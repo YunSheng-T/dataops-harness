@@ -830,6 +830,53 @@ async function runIncident() {
   }
 }
 
+async function runRepoUi() {
+  const repo = join(root, '.tmp-repo-ui-' + runId)
+  const previousRepo = process.env.DATAOPS_REPO_ROOT
+  safeRemove(repo)
+  mkdirSync(join(repo, '.dataops'), { recursive: true })
+  mkdirSync(join(repo, 'lts_code', 'demo'), { recursive: true })
+  writeFileSync(join(repo, 'lts_code', 'demo', 'task.yaml'), readFileSync(join(root, 'packages/dataops-tools/test/fixtures/lts/task.yaml')))
+  writeFileSync(join(repo, 'lts_code', 'demo', 'parameters.properties'), readFileSync(join(root, 'packages/dataops-tools/test/fixtures/lts/parameters.properties')))
+  writeFileSync(join(repo, '.dataops', 'manifest.yaml'), 'version: "1.2"\nstructure:\n  ref:\n    data-schedule:\n      lts: lts_code\n')
+  writeFileSync(join(repo, '.dataops', 'build.yaml'), 'version: "1.2"\npackages:\n  - packageName: lts_demo\n    toolChain: data_schedule\n    serviceType: data_schedule_service\n    pipelineType: his_data_schedule\n    operationType: develop\n    files:\n      - path: lts_code/demo/*\n')
+  process.env.DATAOPS_REPO_ROOT = repo
+  const serverPort = await freePort()
+  const chromePort = await freePort()
+  const server = await startServer(serverPort, 'workspace-write')
+  const page = await startChrome(chromePort, server.url, join(root, '.tmp-p14-chrome-repo-' + runId))
+  try {
+    await ensureComposer(page.evaluate)
+    await dismissPreview(page.evaluate)
+    await ensureComposer(page.evaluate)
+    await sendPrompt(page, '只读展示待处理 US，只列出，不要接单、不要创建或推进工作项。')
+    await waitFor(async () => (await bodyText(page)).includes('US-3821'), 240000, 'repo session ready')
+    await page.evaluate(`document.querySelector('button[aria-label="打开右侧边栏"]')?.click()`)
+    await sleep(600)
+    const clicked = await page.evaluate(`(() => { const b = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === '代码仓'); if (!b) return false; b.click(); return true })()`)
+    check(clicked, 'repo tab is visible from right sidebar')
+    if (clicked) {
+      await waitFor(async () => (await bodyText(page)).includes('LTS 源检查'), 15000, 'repo tab data')
+      const text = await bodyText(page)
+      check(text.includes('lts_demo'), 'repo package visible')
+      check(text.includes('1 个任务') && text.includes('2 个作业'), 'repo LTS summary visible')
+      check(text.includes('LTS 源检查'), 'repo LTS section visible')
+      await page.send('Page.captureScreenshot', { format: 'png' }).then(r => { if (r.result?.data) writeFileSync(join(root, 'prototype/shots/repo-ui.png'), Buffer.from(r.result.data, 'base64')) })
+      check(page.errors.length === 0, 'repo UI no console exceptions: ' + page.errors.slice(-2).join(' | '))
+    }
+    notes.push({ scenario: 'repo-ui' })
+  } finally {
+    page.ws.close()
+    page.child.kill('SIGTERM')
+    server.child.kill('SIGTERM')
+    await sleep(800)
+    if (previousRepo === undefined) delete process.env.DATAOPS_REPO_ROOT
+    else process.env.DATAOPS_REPO_ROOT = previousRepo
+    safeRemove(repo)
+    safeRemove(join(root, '.tmp-p14-chrome-repo-' + runId))
+  }
+}
+
 async function main() {
   if (!existsSync(chromePath)) throw new Error('Chrome not found: ' + chromePath)
   if (scenario === 'full-allow') await runFull('allow')
@@ -844,6 +891,7 @@ async function main() {
   else if (scenario === 'stage4-ui') await runStage4Ui()
   else if (scenario === 'stage45-ui') await runStage45Ui()
   else if (scenario === 'stage5-ui') await runStage5Ui()
+  else if (scenario === 'repo-ui') await runRepoUi()
   else if (scenario === 'ui-dock') await runUiDock()
   else throw new Error('unknown scenario: ' + scenario)
   const report = { scenario, runId, at: new Date().toISOString(), failures, notes }

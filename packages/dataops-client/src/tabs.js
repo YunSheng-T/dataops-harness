@@ -326,6 +326,70 @@ export function createDataopsTabs(React, contextStore, LineageFlow) {
     var platforms = (data.manifest && data.manifest.platforms) || []
     var totalFiles = packages.reduce(function (sum, item) { return sum + (item.files || []).length }, 0)
     var issues = packages.reduce(function (sum, item) { return sum + (item.missing || []).length + (item.unresolved || []).length }, 0)
+    function renderTree(files) {
+      var groups = {}
+      files.forEach(function (file) {
+        var parts = String(file).split('/')
+        var dir = parts.slice(0, -1).join('/') || '.'
+        if (!groups[dir]) groups[dir] = []
+        groups[dir].push(parts[parts.length - 1])
+      })
+      return h('div', { className: 'do-repo-tree' }, Object.keys(groups).sort().map(function (dir) {
+        return h('div', { key: dir, className: 'do-repo-tree-dir' },
+          h('div', { className: 'do-repo-tree-dirname' }, dir + '/'),
+          groups[dir].map(function (name) { return h('div', { key: name, className: 'do-repo-tree-file' }, name) }))
+      }))
+    }
+    function renderDag(task) {
+      var jobs = task.jobs || []
+      if (!jobs.length) return null
+      function isJob(name) { return jobs.some(function (job) { return job.name === name }) }
+      var levels = {}
+      jobs.forEach(function (job) { levels[job.name] = 0 })
+      for (var pass = 0; pass < jobs.length; pass++) {
+        jobs.forEach(function (job) {
+          (job.parents || []).forEach(function (parent) {
+            if (isJob(parent)) levels[job.name] = Math.max(levels[job.name], (levels[parent] || 0) + 1)
+          })
+        })
+      }
+      var byLevel = {}
+      jobs.forEach(function (job) {
+        var level = levels[job.name] || 0
+        if (!byLevel[level]) byLevel[level] = []
+        byLevel[level].push(job)
+      })
+      var levelKeys = Object.keys(byLevel).map(Number).sort(function (a, b) { return a - b })
+      var nodeW = 92, nodeH = 22, gapX = 32, gapY = 12, left = 10, top = 8
+      var maxRows = Math.max.apply(null, levelKeys.map(function (key) { return byLevel[String(key)].length }))
+      var width = Math.max(240, levelKeys.length * (nodeW + gapX) + left * 2)
+      var height = Math.max(54, maxRows * (nodeH + gapY) + top * 2)
+      var positions = {}
+      levelKeys.forEach(function (key, col) {
+        byLevel[String(key)].forEach(function (job, row) {
+          positions[job.name] = { x: left + col * (nodeW + gapX), y: top + row * (nodeH + gapY) }
+        })
+      })
+      var edges = []
+      jobs.forEach(function (job) {
+        (job.parents || []).forEach(function (parent) {
+          if (positions[parent] && positions[job.name]) edges.push({ from: parent, to: job.name })
+        })
+      })
+      return h('div', { className: 'do-repo-dag-scroll' },
+        h('svg', { className: 'do-repo-dag', viewBox: '0 0 ' + width + ' ' + height, width: width, height: height, role: 'img', 'aria-label': 'LTS DAG' },
+          edges.map(function (edge, index) {
+            var a = positions[edge.from], b = positions[edge.to]
+            return h('path', { key: 'e' + index, className: 'do-repo-dag-edge', d: 'M' + (a.x + nodeW) + ' ' + (a.y + nodeH / 2) + ' H' + (b.x - 8) + ' V' + (b.y + nodeH / 2) + ' H' + b.x })
+          }),
+          jobs.map(function (job) {
+            var p = positions[job.name]
+            return h('g', { key: job.name, className: 'do-repo-dag-node', transform: 'translate(' + p.x + ',' + p.y + ')' },
+              h('rect', { width: nodeW, height: nodeH, rx: 5 }),
+              h('text', { x: 7, y: 15, className: 'do-repo-dag-name' }, String(job.name || '—').slice(0, 14)),
+              h('title', null, (job.name || '') + ' · ' + (job.type || '')))
+          })))
+    }
     function renderLts(item) {
       var meta = []
       if (item.taskCount) meta.push(item.taskCount + ' 个任务')
@@ -334,6 +398,11 @@ export function createDataopsTabs(React, contextStore, LineageFlow) {
       return h('div', { key: item.file, className: 'do-repo-lts-item', 'data-ok': item.ok ? 'true' : 'false' },
         h('div', { className: 'do-repo-lts-head' }, h('span', { className: 'do-dot', 'data-tone': item.ok ? 'pass' : 'fail' }), h('b', null, item.file), h('span', null, item.ok ? '通过' : '有问题')),
         meta.length ? h('div', { className: 'do-repo-muted' }, meta.join(' · ')) : null,
+        (item.tasks || []).map(function (task) {
+          return h('div', { key: task.name, className: 'do-repo-dag-task' },
+            h('div', { className: 'do-repo-dag-taskhead' }, h('b', null, task.name), h('span', null, task.cronExp || task.type || '')),
+            renderDag(task))
+        }),
         (item.findings || []).slice(0, 4).map(function (finding, index) {
           return h('div', { key: index, className: 'do-repo-finding', 'data-severity': finding.severity }, (finding.severity === 'error' ? '错误 · ' : '提示 · ') + finding.message)
         }))
@@ -347,8 +416,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow) {
           h('span', { className: 'do-repo-state' }, bad ? '需处理' : '就绪')),
         h('div', { className: 'do-repo-file-block' },
           h('div', { className: 'do-label' }, '文件 · ' + files.length),
-          files.slice(0, 12).map(function (file) { return h('div', { key: file, className: 'do-repo-file' }, file) }),
-          files.length > 12 ? h('div', { className: 'do-repo-muted' }, '还有 ' + (files.length - 12) + ' 个文件') : null,
+          files.length ? renderTree(files) : h('div', { className: 'do-repo-muted' }, '没有匹配文件'),
           (item.missing || []).length ? h('div', { className: 'do-repo-warn' }, '缺失：' + item.missing.join('、')) : null,
           (item.unresolved || []).length ? h('div', { className: 'do-repo-warn' }, '未解析：' + item.unresolved.join('、')) : null),
         (item.lts || []).length
