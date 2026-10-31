@@ -31,20 +31,27 @@ export function createDataopsDocumentPreview(React) {
 
   function parseLts(text) {
     var jobsStart = text.search(/^    jobs:\s*$/mu)
-    var taskText = jobsStart >= 0 ? text.slice(jobsStart) : text
+    var taskHeader = jobsStart >= 0 ? text.slice(0, jobsStart) : text
+    var jobText = jobsStart >= 0 ? text.slice(jobsStart) : ''
     var jobMatches = []
     var jobRe = /^(\s*)-\s+name:\s*["']?([^"'\n]+)["']?\s*$/gmu
     var match
-    while ((match = jobRe.exec(taskText))) jobMatches.push({ index: match.index, name: match[2].trim() })
+    while ((match = jobRe.exec(jobText))) jobMatches.push({ index: match.index, name: match[2].trim() })
     var jobs = jobMatches.map(function (entry, index) {
-      var next = jobMatches[index + 1] ? jobMatches[index + 1].index : taskText.length
-      var block = taskText.slice(entry.index, next)
+      var next = jobMatches[index + 1] ? jobMatches[index + 1].index : jobText.length
+      var block = jobText.slice(entry.index, next)
       var type = (block.match(/^\s*jobType:\s*([A-Za-z0-9_]+)\s*$/mu) || [])[1] || 'unknown'
       var parentText = (block.match(/^\s*parentJobName:\s*\[([^\]]*)\]/mu) || [])[1] || ''
       var parents = parentText.split(',').map(function (value) { return value.trim().replace(/^["']|["']$/gu, '') }).filter(Boolean)
-      return { name: entry.name, type: type, parents: parents }
+      return { name: entry.name, type: type, parents: parents, paramKind: type === 'tskdep' ? 'dependency' : type === 'group' ? 'group' : type === 'open_gauss' || type === 'libra' ? 'database' : type === 'url' ? 'http' : 'script' }
     })
-    var taskMatch = text.match(/^    name:\s*["']?([^"'\n]+)["']?\s*$/mu)
+    var typeCounts = {}
+    jobs.forEach(function (job) { typeCounts[job.type] = (typeCounts[job.type] || 0) + 1 })
+    var taskName = (taskHeader.match(/^    name:\s*["']?([^"'\n]+)["']?\s*$/mu) || [])[1]
+    var taskType = (taskHeader.match(/^    type:\s*["']?([^"'\n]+)["']?\s*$/mu) || [])[1]
+    var taskParamNames = []
+    var taskParamRe = /^\s{6}-\s+name:\s*["']?([^"'\n]+)["']?\s*$/gmu
+    while ((match = taskParamRe.exec(taskHeader))) taskParamNames.push(match[1].trim())
     var taskCount = countMatches(text, /^\s*-\s+itemName:/gmu)
     var taskNames = []
     var itemRe = /^\s*itemName:\s*["']?([^"'\n]+)["']?\s*$/gmu
@@ -56,9 +63,12 @@ export function createDataopsDocumentPreview(React) {
       type: 'lts',
       taskCount: taskCount,
       jobCount: jobs.length,
-      taskName: taskMatch ? taskMatch[1].trim() : null,
+      taskName: taskName ? taskName.trim() : null,
+      taskType: taskType ? taskType.trim() : null,
+      taskParamNames: taskParamNames.slice(0, 8),
       taskNames: taskNames.slice(0, 5),
       jobs: jobs.slice(0, 20),
+      typeCounts: typeCounts,
       crons: crons.slice(0, 3),
       placeholders: Array.from(new Set((text.match(/\$\$([A-Za-z_][A-Za-z0-9_]*)\$\$/gu) || []).map(value => value.slice(2, -2)))).slice(0, 12)
     }
@@ -122,6 +132,57 @@ export function createDataopsDocumentPreview(React) {
     return 'YAML'
   }
 
+  function Dag(props) {
+    var jobs = props.jobs || []
+    var levels = {}
+    var names = {}
+    jobs.forEach(function (job) { names[job.name] = true; levels[job.name] = 0 })
+    for (var pass = 0; pass < jobs.length; pass++) {
+      jobs.forEach(function (job) {
+        (job.parents || []).forEach(function (parent) {
+          if (names[parent]) levels[job.name] = Math.max(levels[job.name], (levels[parent] || 0) + 1)
+        })
+      })
+    }
+    var groups = {}
+    jobs.forEach(function (job) {
+      var level = levels[job.name] || 0
+      if (!groups[level]) groups[level] = []
+      groups[level].push(job)
+    })
+    var levelKeys = Object.keys(groups).map(Number).sort(function (a, b) { return a - b })
+    var nodeW = 104, nodeH = 24, gapX = 30, gapY = 10, left = 8, top = 8
+    var maxRows = Math.max.apply(null, levelKeys.map(function (key) { return groups[String(key)].length }))
+    var width = Math.max(260, levelKeys.length * (nodeW + gapX) + left * 2)
+    var height = Math.max(50, maxRows * (nodeH + gapY) + top * 2)
+    var positions = {}
+    levelKeys.forEach(function (key, col) {
+      groups[String(key)].forEach(function (job, row) {
+        positions[job.name] = { x: left + col * (nodeW + gapX), y: top + row * (nodeH + gapY) }
+      })
+    })
+    var edges = []
+    jobs.forEach(function (job) {
+      (job.parents || []).forEach(function (parent) {
+        if (positions[parent] && positions[job.name]) edges.push({ from: parent, to: job.name })
+      })
+    })
+    return h('div', { className: 'do-doc-dag-scroll' },
+      h('div', { className: 'do-doc-muted' }, '拓扑 · ' + jobs.length + ' 作业 · ' + edges.length + ' 依赖'),
+      h('svg', { className: 'do-doc-dag', viewBox: '0 0 ' + width + ' ' + height, width: width, height: height, role: 'img', 'aria-label': 'LTS job DAG' },
+        edges.map(function (edge, index) {
+          var a = positions[edge.from], b = positions[edge.to]
+          return h('path', { key: 'e' + index, className: 'do-doc-dag-edge', d: 'M' + (a.x + nodeW) + ' ' + (a.y + nodeH / 2) + ' H' + (b.x - 6) + ' V' + (b.y + nodeH / 2) + ' H' + b.x })
+        }),
+        jobs.map(function (job) {
+          var point = positions[job.name]
+          return h('g', { key: job.name, className: 'do-doc-dag-node', transform: 'translate(' + point.x + ',' + point.y + ')', 'data-type': job.type },
+            h('rect', { width: nodeW, height: nodeH, rx: 5 }),
+            h('text', { x: 7, y: 10, className: 'do-doc-dag-name' }, String(job.name).slice(0, 16)),
+            h('text', { x: 7, y: 19, className: 'do-doc-dag-type' }, job.type))
+        })))
+  }
+
   function Summary(props) {
     var summary = props.summary
     if (summary.type === 'lts') {
@@ -129,14 +190,13 @@ export function createDataopsDocumentPreview(React) {
         h('div', null, h('b', null, summary.taskCount), h('span', null, '任务')),
         h('div', null, h('b', null, summary.jobCount), h('span', null, '作业')),
         h('div', null, h('b', null, summary.placeholders.length), h('span', null, '占位符')),
-        summary.taskName ? h('div', { className: 'do-doc-line' }, '任务名：' + summary.taskName) : null,
+        summary.taskName ? h('div', { className: 'do-doc-line' }, '任务名：' + summary.taskName + (summary.taskType ? ' · ' + summary.taskType : '')) : null,
         summary.crons.length ? h('div', { className: 'do-doc-line' }, 'cron：' + summary.crons.join('、')) : null,
-        summary.jobs.length ? h('div', { className: 'do-doc-jobs' }, summary.jobs.map(function (job) {
-          return h('div', { key: job.name, className: 'do-doc-job' },
-            h('span', { className: 'do-doc-jobtype' }, job.type),
-            h('b', null, job.name),
-            job.parents.length ? h('span', { className: 'do-doc-jobparent' }, '← ' + job.parents.join(' / ')) : null)
-        })) : null)
+        summary.taskParamNames.length ? h('div', { className: 'do-doc-line' }, '参数：' + summary.taskParamNames.join('、')) : null,
+        h('div', { className: 'do-doc-types' }, Object.keys(summary.typeCounts || {}).map(function (type) {
+          return h('span', { key: type, className: 'do-doc-type' }, type + ' × ' + summary.typeCounts[type])
+        })),
+        summary.jobs.length ? h(Dag, { jobs: summary.jobs }) : null)
     }
     if (summary.type === 'build') {
       return h('div', { className: 'do-doc-facts' },

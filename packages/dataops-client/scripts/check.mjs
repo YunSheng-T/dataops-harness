@@ -6,6 +6,7 @@ import { createContextStore } from '../src/context-store.js'
 import { createDataopsTabs } from '../src/tabs.js'
 import { createStageBrief } from '../src/brief.js'
 import { createDataopsDocumentPreview } from '../src/document-preview.js'
+import { readFileSync } from 'node:fs'
 
 const React = {
   createElement(type, props, ...children) {
@@ -238,6 +239,16 @@ check('card renderers tolerate common string/object schema variants', () => {
     try { text(Component({ block: block(payload) })) } catch (error) { threw = error }
     assert(!threw, name + ' renderer threw: ' + (threw && threw.message))
   }
+})
+
+check('DataOps document preview renders the rich LTS sample DAG and params', () => {
+  const Preview = createDataopsDocumentPreview(React)
+  const source = readFileSync(new URL('../../../samples/internal-code-repo/lts_code/channel_daily/task.yaml', import.meta.url), 'utf8')
+  const body = text2(Preview.Body({ resourceAddress: 'dsh-resource://file/session/s/lts_code/channel_daily/task.yaml', content: { kind: 'text', text: source, eof: true }, wrap: false }))
+  assert(body.includes('6作业') && body.includes('拓扑 · 6 作业'), 'rich LTS DAG')
+  assert(body.includes('参数：bizdate、env'), 'task params')
+  assert(body.includes('url × 2') && body.includes('tskdep × 1'), 'job type counts')
+  assert(body.includes('wait_upstream'), 'tskdep job')
 })
 
 check('DataOps document preview renders LTS, build, SQL and properties', () => {

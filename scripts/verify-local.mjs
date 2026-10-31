@@ -17,6 +17,7 @@ const checks = [
   ['preset check', 'scripts/check-dataops-preset.mjs'],
   ['workitem check', 'scripts/check-dataops-workitem.mjs'],
   ['repo components', 'packages/dataops-tools/scripts/repo-check.mjs'],
+  ['internal code repo', 'scripts/check-internal-code-repo.mjs'],
   ['provider config', 'scripts/check-provider-config.mjs', '--config', 'docs/ops/provider-config.example.json'],
   ['provider health', 'scripts/check-dataops-health.mjs'],
   ['offline surface', 'scripts/check-offline-surface.mjs'],

@@ -9,6 +9,8 @@ packages:
     files:
       - path: lts_code/channel_daily/*
       - path: lts_code/channel_alert/*
+      - path: lts_code/order_daily/*
+      - path: lts_code/channel_backfill/*
 
   - packageName: sql_channel_models
     toolChain: data_models

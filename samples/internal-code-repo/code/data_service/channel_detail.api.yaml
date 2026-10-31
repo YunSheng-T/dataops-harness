@@ -1,0 +1,20 @@
+kind: data_api
+name: channel_detail_demo
+version: 1
+method: GET
+path: /demo/channel/detail
+params:
+  - name: dt
+    type: date
+    required: true
+  - name: channel_id
+    type: string
+    required: true
+response:
+  - name: order_cnt
+    type: bigint
+  - name: paid_cnt
+    type: bigint
+  - name: gmv
+    type: decimal
+mock: true

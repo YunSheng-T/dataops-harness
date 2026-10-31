@@ -198,6 +198,36 @@ LTS 文件显示任务/作业/占位符摘要；build.yaml 显示包和 toolChai
 
 这样文件管理完全复用 DSH 的工作区 Files tab，DataOps 只提供自己的文件渲染能力。
 
+## 6.2 内部样例 workspace
+
+canonical 样例：
+
+```text
+samples/internal-code-repo/
+```
+
+物化独立 workspace：
+
+```sh
+node scripts/create-internal-code-repo-workspace.mjs
+```
+
+- 默认目标：`~/code/internal-code-repo`
+- `--force` 才会替换已有目录
+- `--no-git` 跳过 git init
+- 脚本不改 DSH workspace store；DSH 里用“添加工作区”添加
+
+样例包含 4 个 LTS 任务：
+
+```text
+channel_daily       6 jobs（group/open_gauss/shell/tskdep/url）
+channel_alert       2 jobs（触发型）
+order_daily         3 jobs（串行 url）
+channel_backfill    2 jobs（回填/重试）
+```
+
+预览使用上游 Files tab + DataOps document preview，不再注册自定义代码仓 tab。
+
 ## 7. 后续
 
 ```text

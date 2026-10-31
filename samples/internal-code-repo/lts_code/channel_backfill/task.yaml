@@ -1,0 +1,71 @@
+formatVersion: 2
+
+tasks:
+  - itemName: "<PROJECT_NAME>"
+    groupName: "<GROUP_NAME>"
+    name: "channel_backfill"
+    type: "周期任务"
+    startTime: "2026/10/01 00:00:00"
+    endTime: null
+    cronExp: "0 30 4 * * ?"
+    depPrevious: "否"
+    isCleanTask: "否"
+    isMultitonal: "否"
+    isParallel: "否"
+    isCleanExceptionTask: "是"
+    isFullJob: "是"
+    scheduleHistory: "否"
+    owner: "<OWNER>"
+    taskParams:
+      - name: "start_date"
+        value: "$getTaskPlanTime(yyyyMMdd,-7)"
+      - name: "end_date"
+        value: "$getTaskPlanTime(yyyyMMdd,-1)"
+    taskResource: null
+    freqConfigName: null
+    calendarData: null
+    taskExtension: null
+    rsyncMark: null
+    jobs:
+      - name: "backfill_sql"
+        path: "backfill_sql"
+        jobType: open_gauss
+        parentJobName: ["start"]
+        jobExecPath: "$$BACKFILL_EXEC$$"
+        jobCallMethod: sql
+        jobTimeout: 180
+        jobRetryTimes: 1
+        jobRetryInterval: 60
+        jobExecNode: "<EXEC_NODE>"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "是"
+        componentResources: "未设置"
+        jobParam:
+          dbsource: "$$BACKFILL_SOURCE$$"
+          exec: "$$BACKFILL_EXEC$$"
+          method: sql
+          dbsourceType: open_gauss
+          extends: ""
+          output: ""
+          outputType: ""
+          userVariables: []
+      - name: "archive_partition"
+        path: "archive_partition"
+        jobType: shell
+        parentJobName: ["backfill_sql"]
+        jobExecPath: "$$BACKFILL_ARCHIVE$$"
+        jobCallMethod: ""
+        jobTimeout: 30
+        jobRetryTimes: 1
+        jobRetryInterval: 30
+        jobExecNode: "<EXEC_NODE>"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: ""
+        jobMailNotice: "不提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam: null
