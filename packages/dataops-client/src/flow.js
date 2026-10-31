@@ -372,7 +372,50 @@ function validateLayout(nodes) {
   return overlaps.length;
 }
 
-function buildFlow(view) {
+function buildScheduleFlow(schedule) {
+  const jobs = schedule.jobs || [];
+  const taskName = schedule.taskName || '调度任务';
+  const groupId = 'task:current';
+  const rowH = 78;
+  const groupH = Math.max(180, 60 + jobs.length * rowH + 20);
+  const group = {
+    id: groupId,
+    type: 'taskGroup',
+    position: { x: 30, y: 70 },
+    style: { width: 300, height: groupH },
+    data: { label: taskName, icon: ICON.airflow, w: 300, h: groupH },
+    selectable: true, draggable: false, zIndex: 0
+  };
+  const nodes = jobs.map((job, index) => {
+    const type = String(job.type || 'job').toLowerCase();
+    const icon = type === 'url' ? ICON.api : type === 'open_gauss' || type === 'libra' ? ICON.db : type === 'group' || type === 'tskdep' ? ICON.schedule : ICON.spark;
+    const bg = type === 'url' ? palette.api : type === 'group' || type === 'tskdep' ? palette.job : palette.job;
+    return {
+      id: 'job:' + job.name,
+      type: 'rich',
+      parentId: groupId,
+      extent: 'parent',
+      position: { x: 24, y: 60 + index * rowH },
+      data: { name: job.name, kind: String(job.type || 'JOB').toUpperCase(), meta: [job.type, (job.parents || []).join(' / ')].filter(Boolean).join(' · '), icon: icon, iconBg: bg, target: false },
+      width: 240, height: 62, zIndex: 2
+    };
+  });
+  const byName = {};
+  nodes.forEach(node => { byName[node.id] = node; node.parentId = node.id === groupId ? undefined : node.parentId; });
+  const edges = [];
+  jobs.forEach(job => {
+    (job.parents || []).forEach(parent => {
+      const source = 'job:' + parent;
+      if (byName[source]) edges.push(E(source, 'job:' + job.name, 'control', '依赖'));
+    });
+  });
+  const all = [group].concat(nodes);
+  return { nodes: all, edges: routeEdges(all, edges), lanes: [] };
+}
+
+function buildFlow(view, scheduleData) {
+  if (view === 'schedule' && scheduleData) return buildScheduleFlow(scheduleData);
+
   const def = VIEWS[view];
   const edges = def.edges.map(e => ({
     id: e.id, source: e.source, target: e.target, type: 'smoothstep',
@@ -415,8 +458,8 @@ function buildFlow(view) {
   return { nodes: laid.nodes, edges: routeEdges(laid.nodes, edges), lanes: laid.lanes };
 }
 
-function App() {
-  const [view, setView] = React.useState(new URLSearchParams(location.search).get('view') || 'design');
+function App(props) {
+  const [view, setView] = React.useState(props.initialView || new URLSearchParams(location.search).get('view') || 'design');
   const [nodes, setNodes] = React.useState([]);
   const [edges, setEdges] = React.useState([]);
   const [lanes, setLanes] = React.useState([]);
@@ -426,7 +469,7 @@ function App() {
   const { setViewport } = useReactFlow();
 
   React.useEffect(() => {
-    const flow = buildFlow(view);
+    const flow = buildFlow(view, props.schedule);
     setNodes(flow.nodes);
     setEdges(flow.edges);
     setLanes(flow.lanes || []);
@@ -436,7 +479,7 @@ function App() {
     setSelectedId(primary ? primary.id : null);
     setTab(primary ? (view === 'schedule' ? 'schedule' : defaultTab(primary.id)) : 'overview');
     setTimeout(() => { fitAll(flow.nodes); validateLayout(flow.nodes); }, 80);
-  }, [view, setViewport]);
+  }, [view, props.schedule, setViewport]);
 
   React.useEffect(() => {
     setNodes(nds => nds.map(n => ({ ...n, selected: n.id === selectedId })));
@@ -489,7 +532,9 @@ function App() {
   const info = selected
     ? (INFO[selectedId] || { kind: selected.data.kind || '节点', subtitle: selected.data.meta || '', badges: [], rows: [['名称', selected.data.name || selectedId], ['类型', selected.data.kind || '—']] })
     : null;
-  const viewDef = VIEWS[view] || VIEWS.design;
+  const viewDef = view === 'schedule' && props.schedule
+    ? { title: props.schedule.taskName || '调度视图', tabs: '调度视图', tag: '调度链路', summary: '来自 task.yaml 的调度血缘' }
+    : (VIEWS[view] || VIEWS.design);
   const nodeTypes = React.useMemo(() => ({ rich: RichNode, taskGroup: GroupNode }), []);
 
   return h('div', { className: 'app' },
@@ -517,14 +562,12 @@ function App() {
     h('main', { className: 'body' },
       h('section', { className: 'canvas-wrap' },
         view === 'schedule' ? h('div', { className: 'schedule-deps' },
-          h('span', null, '依赖窗口'),
-          h('b', null, 'dwd.orders@T-1'),
-          h('em', null, '·'),
-          h('b', null, 'dim.channel'),
-          h('em', null, '→'),
-          h('b', null, 'task 渠道日报'),
-          h('em', null, '→'),
-          h('b', null, 'task 缓存刷新'), h('span', { style: { color: '#a8a094' } }, '· 虚线 = 调度/产出依赖')) : null,
+          h('span', null, props.schedule ? '任务参数' : '依赖窗口'),
+          props.schedule
+            ? h('b', null, (props.schedule.taskParams || []).join('、') || '无')
+            : h(React.Fragment, null,
+              h('b', null, 'dwd.orders@T-1'), h('em', null, '·'), h('b', null, 'dim.channel'), h('em', null, '→'), h('b', null, 'task 渠道日报'), h('em', null, '→'), h('b', null, 'task 缓存刷新')),
+          h('span', { style: { color: '#a8a094' } }, props.schedule ? '· 来自 task.yaml · ' + (props.schedule.placeholders || []).length + ' 个占位符' : '· 虚线 = 调度/产出依赖')) : null,
         h('div', { id: 'flow' },
           h(ReactFlow, {
             nodes, edges, nodeTypes,
@@ -623,7 +666,7 @@ function content(info, tab) {
     return ReactDOM.createPortal(
       h('div', { className: 'do-workbench-overlay', role: 'dialog', 'aria-label': '血缘工作台' },
         h('button', { type: 'button', className: 'do-workbench-close-native', onClick: props.onClose }, '关闭工作台'),
-        h(ReactFlowProvider, null, h(App))),
+        h(ReactFlowProvider, null, h(App, { initialView: props.initialView, schedule: props.schedule }))),
       document.body
     );
   }

@@ -733,6 +733,14 @@ export function createDataopsCards(React) {
     return [artifact || deliverablePath(m), m.source, m.asOf].filter(Boolean).join(' · ')
   }
 
+  function openScheduleView(schedule) {
+    if (typeof window === 'undefined') return
+    var request = { view: 'schedule', schedule: schedule }
+    try { window.__dataopsLineageRequest = request } catch (error) { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('dataops:open-schedule', { detail: request })) } catch (error) { /* ignore */ }
+    openTab('dataops-lineage')
+  }
+
   function openTab(kind) {
     if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return
     window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: kind } }))
@@ -1141,7 +1149,7 @@ export function createDataopsCards(React) {
         ],
       footer: [
         h('span', { key: 'meta', className: 'do-muted do-meta' }, schedule ? (schedule.taskName || '') + ' · ' + (schedule.jobCount || 0) + ' 作业' : metaLine(m, 'lineage')),
-        h(Btn, { key: 'tab', variant: 'ghost', onClick: function () { openTab('dataops-lineage') } }, '打开血缘工作台')
+        h(Btn, { key: 'tab', variant: 'ghost', onClick: function () { schedule ? openScheduleView(schedule) : openTab('dataops-lineage') } }, schedule ? '打开调度视图' : '打开血缘工作台')
       ]
     },
       schedule ? h('div', null,

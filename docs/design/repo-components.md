@@ -198,6 +198,10 @@ LTS 文件显示任务/作业/占位符摘要；build.yaml 显示包和 toolChai
 
 这样文件管理完全复用 DSH 的工作区 Files tab，DataOps 只提供自己的文件渲染能力。
 
+`task.yaml` 的「打开调度视图」会把解析出的 task/job/edge/taskParams/placeholders 传给全宽血缘工作台；工作台以 `initialView=schedule` 打开，并用文件数据替换默认 mock 调度图。
+
+
+
 ## 6.2 内部样例 workspace
 
 canonical 样例：

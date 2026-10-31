@@ -241,6 +241,15 @@ export function createDataopsTabs(React, contextStore, LineageFlow) {
     var lineage = context.lineage
     var design = context.design
     var open = React.useState(false)
+    var requestState = React.useState((typeof window !== 'undefined' && window.__dataopsLineageRequest) || null)
+    React.useEffect(function () {
+      if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
+      var onSchedule = function (event) { requestState[1]((event && event.detail) || null) }
+      window.addEventListener('dataops:open-schedule', onSchedule)
+      return function () { window.removeEventListener('dataops:open-schedule', onSchedule) }
+    }, [])
+    var request = requestState[0]
+    var schedule = request && request.view === 'schedule' ? request.schedule : null
     var graph = (lineage || (design && design.target)) ? buildGraph(lineage, design) : null
     var target = graph ? graph.target : ''
     var view = lineage
@@ -262,7 +271,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow) {
           h('div', { className: 'do-workbench-line' }, h('span', null, '节点'), h('b', null, '类型徽标 · 图标 · 点击详情')),
           h('button', { type: 'button', className: 'do-btn do-workbench-open', onClick: function () { open[1](true) } }, '打开全宽血缘工作台'))
       ),
-      h(Flow.LineageWorkbench, { open: open[0], onClose: function () { open[1](false) } })
+      h(Flow.LineageWorkbench, { open: open[0], onClose: function () { open[1](false) }, initialView: schedule ? 'schedule' : null, schedule: schedule })
     )
   }
 
