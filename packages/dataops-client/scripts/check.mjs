@@ -242,20 +242,20 @@ check('card renderers tolerate common string/object schema variants', () => {
 })
 
 check('DataOps document preview renders the rich LTS sample DAG and params', () => {
-  const Preview = createDataopsDocumentPreview(React)
+  const Preview = createDataopsDocumentPreview(React, Cards)
   const source = readFileSync(new URL('../../../samples/internal-code-repo/lts_code/channel_daily/task.yaml', import.meta.url), 'utf8')
   const body = text2(Preview.Body({ resourceAddress: 'dsh-resource://file/session/s/lts_code/channel_daily/task.yaml', content: { kind: 'text', text: source, eof: true }, wrap: false }))
-  assert(body.includes('6作业') && body.includes('调度血缘') && body.includes('7 节点 · 7 依赖'), 'rich LTS DAG')
+  assert(body.includes('6 作业') && body.includes('调度血缘') && body.includes('7 节点 · 7 依赖'), 'rich LTS DAG')
   assert(body.includes('参数：bizdate、env'), 'task params')
   assert(body.includes('url × 2') && body.includes('tskdep × 1'), 'job type counts')
   assert(body.includes('wait_upstream'), 'tskdep job')
 })
 
 check('DataOps document preview renders LTS, build, SQL and properties', () => {
-  const Preview = createDataopsDocumentPreview(React)
+  const Preview = createDataopsDocumentPreview(React, Cards)
   const body = (name, text) => text2(Preview.Body({ resourceAddress: 'dsh-resource://file/session/s/' + name, content: { kind: 'text', text, eof: true }, wrap: false }))
   const lts = body('task.yaml', 'formatVersion: 2\ntasks:\n  - itemName: PROJ\n    name: demo\n    cronExp: "0 0 2 * * ?"\n    jobs:\n      - name: job_1\n        jobType: url\n        jobExecPath: "$$JOB_1_URL$$"')
-  assert(lts.includes('LTS 调度') && lts.includes('1任务'), 'LTS preview: ' + lts.slice(0, 200))
+  assert(lts.includes('LTS 调度') && lts.includes('1 任务'), 'LTS preview: ' + lts.slice(0, 200))
   const build = body('build.yaml', 'version: "1.2"\npackages:\n  - packageName: lts_demo\n    toolChain: data_schedule\n')
   assert(build.includes('构建配置') && build.includes('1包') && build.includes('lts_demo'), 'build preview')
   const sql = body('change.sql', 'CREATE TABLE x (id int);\nINSERT INTO x VALUES (1);\n')

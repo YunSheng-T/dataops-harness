@@ -222,6 +222,8 @@ export function createDataopsCards(React) {
     '.do-doc-muted{font-size:10px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.do-doc-types{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}',
     '.do-doc-type{font-size:8px;line-height:15px;padding:0 5px;border-radius:3px;background:var(--dsw-alias-bg-overlay,#eef0f5);color:var(--dsw-alias-label-secondary,#61666b);font-family:ui-monospace,Menlo,monospace}',
+    '.do-doc-lts-meta{display:flex;flex-wrap:wrap;gap:3px 8px;margin:4px 0 2px;font-size:9px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-doc-types-inline{font-family:ui-monospace,Menlo,monospace;color:var(--dsw-alias-label-secondary,#61666b)}',
     '.do-doc-graph{margin-top:8px;padding:8px 9px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));border-radius:9px;background:var(--dsw-alias-bg-layer-1,#fff)}',
     '.do-doc-graph-head{display:flex;align-items:center;gap:7px;min-width:0;margin-bottom:2px}',
     '.do-doc-graph-title{font-size:10px;font-weight:700;color:var(--dsw-alias-label-primary,#171a20);flex:none}',
@@ -1040,24 +1042,114 @@ export function createDataopsCards(React) {
     )
   }
 
+  function ScheduleDag(props) {
+    var schedule = props.schedule || {}
+    var jobs = schedule.jobs || []
+    var taskName = schedule.taskName || 'task'
+    if (!jobs.length) return h('div', { className: 'do-empty' }, '暂无调度作业')
+    var nodes = [{ id: '__start', label: '开始', type: 'start', parents: [] }].concat(jobs.map(function (job) {
+      return { id: job.name, label: job.name, type: job.type, parents: job.parents || [] }
+    }))
+    var names = {}
+    nodes.forEach(function (node) { names[node.id] = node })
+    var levels = {}
+    nodes.forEach(function (node) { levels[node.id] = 0 })
+    for (var pass = 0; pass < nodes.length; pass++) {
+      nodes.forEach(function (node) {
+        (node.parents || []).forEach(function (parent) {
+          if (names[parent]) levels[node.id] = Math.max(levels[node.id], (levels[parent] || 0) + 1)
+        })
+      })
+    }
+    var groups = {}
+    nodes.forEach(function (node) {
+      var level = levels[node.id] || 0
+      if (!groups[level]) groups[level] = []
+      groups[level].push(node)
+    })
+    var levelKeys = Object.keys(groups).map(Number).sort(function (a, b) { return a - b })
+    var labels = ['开始', '前置', '并行', '加工', '汇聚', '通知']
+    var NODE_W = 148, NODE_H = 42, COL_GAP = 18, ROW_GAP = 18, LEFT = 18, TOP = 34
+    var positions = {}
+    var maxRows = 1
+    nodes.forEach(function (node) {
+      var level = levels[node.id] || 0
+      var same = groups[String(level)] || []
+      positions[node.id] = { x: LEFT + level * (NODE_W + COL_GAP), y: TOP + same.indexOf(node) * (NODE_H + ROW_GAP) }
+      maxRows = Math.max(maxRows, same.length)
+    })
+    var height = Math.max(220, TOP + maxRows * (NODE_H + ROW_GAP) + 18)
+    var marker = 'do-schedule-arrow'
+    function truncate(value, n) { var text = String(value || ''); return text.length > n ? text.slice(0, n - 1) + '…' : text }
+    function nodeView(node) {
+      var point = positions[node.id]
+      return h('g', { key: node.id, className: 'do-graph-v2-node do-doc-dag-node', transform: 'translate(' + point.x + ',' + point.y + ')', 'data-kind': node.type },
+        h('rect', { width: NODE_W, height: NODE_H, rx: 8 }),
+        h('text', { x: 10, y: 17, className: 'do-graph-v2-label' }, truncate(node.label, 21)),
+        h('text', { x: 10, y: 31, className: 'do-graph-v2-meta' }, truncate(node.type === 'start' ? 'task start' : node.type, 26)))
+    }
+    var edges = []
+    nodes.forEach(function (node) {
+      if (node.id === '__start') return
+      var parents = (node.parents || []).filter(function (parent) { return names[parent] })
+      if (!parents.length) parents = ['__start']
+      parents.forEach(function (parent) { edges.push({ from: parent, to: node.id }) })
+    })
+    function edgeView(edge) {
+      var a = positions[edge.from], b = positions[edge.to]
+      if (!a || !b) return null
+      var x1 = a.x + NODE_W, y1 = a.y + NODE_H / 2, x2 = b.x, y2 = b.y + NODE_H / 2
+      var mid = (x1 + x2) / 2
+      return h('path', { key: edge.from + '>' + edge.to, className: 'do-graph-v2-edge', 'marker-end': 'url(#' + marker + ')', d: 'M ' + x1 + ' ' + y1 + ' C ' + mid + ' ' + y1 + ' ' + mid + ' ' + y2 + ' ' + x2 + ' ' + y2 })
+    }
+    var width = Math.max(900, levelKeys.length * (NODE_W + COL_GAP) + LEFT * 2)
+    return h('div', null,
+      h('div', { className: 'do-doc-graph-head' },
+        h('span', { className: 'do-doc-graph-title' }, '调度血缘'),
+        h('span', { className: 'do-doc-graph-task' }, taskName),
+        h('span', { className: 'do-doc-graph-meta' }, nodes.length + ' 节点 · ' + edges.length + ' 依赖')),
+      h('div', { className: 'do-graph-v2-scroll' },
+        h('svg', { viewBox: '0 0 ' + width + ' ' + height, className: 'do-graph-v2-svg', role: 'img', 'aria-label': '调度血缘图' },
+          h('defs', null, h('marker', { id: marker, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, h('path', { d: 'M 0 0 L 10 5 L 0 10 z', className: 'do-graph-v2-arrow' }))),
+          labels.slice(0, levelKeys.length).map(function (label, index) { return h('text', { key: label, x: LEFT + index * (NODE_W + COL_GAP), y: 17, className: 'do-graph-v2-col-label' }, label) }),
+          edges.map(edgeView),
+          nodes.map(nodeView))),
+      h('div', { className: 'do-graph-v2-legend' },
+        h('span', null, h('i', { className: 'do-legend-line' }), '实线 = 依赖'),
+        h('span', null, h('i', { className: 'do-legend-dot' }), '节点 = 作业')))
+  }
+
   function LineageV2Card(props) {
     var m = parseModel(props.block, 'lineage')
     if (!m) return h(Fallback, props)
+    var schedule = m.view === 'schedule' && m.schedule ? m.schedule : null
     return h(Frame, {
-      title: '设计血缘 · ' + (m.table || ''),
+      title: (schedule ? '调度血缘 · ' : '设计血缘 · ') + (m.table || ''),
       state: 'done',
       tone: m.partial ? 'warn' : 'pass',
-      pills: [
-        h(Pill, { key: 'view', tone: 'brand' }, m.view || 'design'),
-        h(Pill, { key: 'mode' }, m.mode || 'planned'),
-        h(Pill, { key: 'depth' }, '一层上游')
-      ],
+      pills: schedule
+        ? [
+          h(Pill, { key: 'view', tone: 'brand' }, '调度视图'),
+          h(Pill, { key: 'taskCount' }, (schedule.taskCount || 1) + ' 任务'),
+          h(Pill, { key: 'type' }, schedule.taskType || '任务'),
+          h(Pill, { key: 'cron' }, schedule.cron || '—')
+        ]
+        : [
+          h(Pill, { key: 'view', tone: 'brand' }, m.view || 'design'),
+          h(Pill, { key: 'mode' }, m.mode || 'planned'),
+          h(Pill, { key: 'depth' }, '一层上游')
+        ],
       footer: [
-        h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'lineage')),
+        h('span', { key: 'meta', className: 'do-muted do-meta' }, schedule ? (schedule.taskName || '') + ' · ' + (schedule.jobCount || 0) + ' 作业' : metaLine(m, 'lineage')),
         h(Btn, { key: 'tab', variant: 'ghost', onClick: function () { openTab('dataops-lineage') } }, '打开血缘工作台')
       ]
     },
-      h(LineageV2Preview, { lineage: m }),
+      schedule ? h('div', null,
+        h('div', { className: 'do-doc-lts-meta' },
+          schedule.typeCounts ? h('span', { className: 'do-doc-types-inline' }, Object.keys(schedule.typeCounts).map(function (type) { return type + ' × ' + schedule.typeCounts[type] }).join(' · ')) : null,
+          schedule.taskParams && schedule.taskParams.length ? h('span', null, '参数：' + schedule.taskParams.join('、')) : null,
+          schedule.placeholders && schedule.placeholders.length ? h('span', null, '占位符：' + schedule.placeholders.join('、')) : null),
+        h(ScheduleDag, { schedule: schedule })) : h(LineageV2Preview, { lineage: m }),
       (m.downstream || []).length ? h('div', null, h('div', { className: 'do-label' }, '下游影响'), h('div', { className: 'do-kv' }, m.downstream.map(function (d, i) { return h(Pill, { key: i }, (d.id || d.asset) + ' · ' + (d.owner || d.type || '')) }))) : null,
       h(Gaps, { gaps: m.gaps })
     )
@@ -1701,6 +1793,7 @@ export function createDataopsCards(React) {
     DesignCard: DesignCard,
     TableCard: TableCard,
     LineageCard: LineageCard,
+    LineageV2Card: LineageV2Card,
     TechPlanCard: TechPlanCard,
     EvidenceCard: EvidenceCard,
     ProfileCard: ProfileCard,
