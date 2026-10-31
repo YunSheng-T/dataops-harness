@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataOps · 调度血缘与代码预览重设计</title>
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#f2f4f7; --panel:#fff; --panel2:#f8f9fb; --panel3:#f1f3f7;
+    --text:#1b1f27; --muted:#646c7a; --faint:#9199a7;
+    --line:#e2e6ed; --line2:#ced5e0;
+    --brand:#3f63d9; --brand-bg:#eef2ff; --brand-line:#d8e1ff;
+    --green:#187f5d; --green-bg:#eaf7f1; --green-line:#c5e8d9;
+    --amber:#93620e; --amber-bg:#fff6e6; --amber-line:#f0d6a6;
+    --red:#b33737; --red-bg:#fff0ef; --red-line:#f0c9c5;
+    --code:#f6f8fb; --shadow:0 1px 2px rgba(15,23,42,.04),0 12px 30px rgba(15,23,42,.05);
+    --r:10px;
+  }
+  [data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#11151c; --panel:#1a2029; --panel2:#202733; --panel3:#252d3a;
+    --text:#edf1f7; --muted:#a8b2c2; --faint:#778396;
+    --line:#2b3442; --line2:#3c4758;
+    --brand:#8ea7ff; --brand-bg:#202b4a; --brand-line:#34446c;
+    --green:#68d3a8; --green-bg:#18382e; --green-line:#285a49;
+    --amber:#e3b761; --amber-bg:#3a2e18; --amber-line:#58452a;
+    --red:#f39a93; --red-bg:#3b2223; --red-line:#643334;
+    --code:#151b24; --shadow:0 1px 2px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.2);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text)}
+  body{font:13px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh}
+  button{font:inherit;color:inherit}
+  button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .app{min-height:100vh;display:flex;flex-direction:column}
+  .topbar{height:56px;flex:none;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:20}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+  .brand-mark{width:24px;height:24px;border-radius:7px;background:var(--text);color:var(--bg);display:grid;place-items:center;font-size:16px;line-height:1}
+  .crumb{display:flex;align-items:center;gap:6px;color:var(--faint);font-size:11px;white-space:nowrap;min-width:0}
+  .crumb b{color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis}
+  .crumb .path{overflow:hidden;text-overflow:ellipsis}
+  .spacer{flex:1}
+  .mode-switch{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px;gap:2px}
+  .mode-switch button{border:0;background:transparent;color:var(--muted);font-size:11px;padding:4px 9px;border-radius:5px;cursor:pointer;white-space:nowrap}
+  .mode-switch button[data-active="true"]{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  .theme{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer;white-space:nowrap}
+  .theme:hover{color:var(--text);border-color:var(--line2)}
+  .shell{flex:1;display:flex;min-height:0}
+  .rail{width:218px;flex:none;border-right:1px solid var(--line);background:var(--panel);padding:12px 8px;overflow:auto}
+  .rail-title{display:flex;align-items:center;justify-content:space-between;padding:0 6px 8px;font-size:10px;font-weight:700;color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
+  .tree{display:flex;flex-direction:column;gap:1px}
+  .tree-row{display:flex;align-items:center;gap:6px;min-height:27px;border:0;background:transparent;border-radius:6px;padding:3px 6px;text-align:left;color:var(--muted);font-size:11px;cursor:pointer;width:100%;min-width:0}
+  .tree-row:hover{background:var(--panel2);color:var(--text)}
+  .tree-row[data-active="true"]{background:var(--brand-bg);color:var(--brand);font-weight:600}
+  .tree-row .tree-mark{width:13px;flex:none;text-align:center;color:var(--faint);font-size:10px}
+  .tree-row[data-active="true"] .tree-mark{color:var(--brand)}
+  .tree-row .tree-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rail-sep{height:1px;background:var(--line);margin:9px 6px}
+  .rail-note{padding:8px 6px;color:var(--faint);font-size:10px;line-height:1.55}
+  .main{min-width:0;flex:1;overflow:auto}
+  .view{padding:18px 22px 110px;max-width:1500px;margin:0 auto}
+  .view[hidden]{display:none}
+  .file-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+  .file-title{font-size:18px;line-height:1.25;font-weight:700;margin:0;letter-spacing:-.2px}
+  .file-sub{margin:4px 0 0;color:var(--muted);font-size:11.5px}
+  .file-tabs{display:flex;align-items:center;gap:2px;margin-left:auto;background:var(--panel2);border:1px solid var(--line);padding:2px;border-radius:7px}
+  .file-tabs button{border:0;background:transparent;color:var(--muted);font-size:11px;padding:4px 9px;border-radius:5px;cursor:pointer}
+  .file-tabs button[data-active="true"]{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  .source-hint{color:var(--faint);font-size:10.5px;margin-top:8px}
+  .schedule-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .card-head{display:flex;align-items:flex-start;gap:12px;padding:15px 16px 12px}
+  .card-kicker{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+  .card-title{font-size:16px;font-weight:700;line-height:1.25;margin:2px 0 0;letter-spacing:-.15px}
+  .card-sub{font-size:11px;color:var(--muted);margin:3px 0 0}
+  .card-actions{display:flex;gap:6px;margin-left:auto;align-items:center;flex:none}
+  .btn{border:1px solid var(--line2);background:var(--panel);color:var(--text);border-radius:7px;padding:5px 9px;font-size:11px;line-height:18px;cursor:pointer;white-space:nowrap}
+  .btn:hover{background:var(--panel2)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{filter:brightness(1.03)}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+  .btn.ghost:hover{background:var(--panel2);color:var(--text)}
+  .meta-row{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 12px}
+  .pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;line-height:19px;padding:0 7px;border:1px solid var(--line);border-radius:5px;background:var(--panel2);color:var(--muted);white-space:nowrap}
+  .pill.brand{color:var(--brand);background:var(--brand-bg);border-color:var(--brand-line)}
+  .pill.green{color:var(--green);background:var(--green-bg);border-color:var(--green-line)}
+  .pill.amber{color:var(--amber);background:var(--amber-bg);border-color:var(--amber-line)}
+  .card-body{display:grid;grid-template-columns:minmax(0,1fr) 236px;border-top:1px solid var(--line);min-height:386px}
+  .graph-panel{min-width:0;padding:10px 12px 12px;background:var(--panel2);overflow:auto}
+  .graph-note{display:flex;align-items:center;gap:7px;margin-bottom:6px;color:var(--faint);font-size:10px}
+  .graph-note b{color:var(--muted);font-weight:600}
+  .graph-scroll{overflow:auto;border:1px solid var(--line);background:var(--panel);border-radius:8px}
+  .graph-canvas{position:relative;width:820px;height:420px}
+  .graph-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .edge{fill:none;stroke:var(--line2);stroke-width:1.2}
+  .edge.control{stroke:var(--amber);stroke-dasharray:4 3}
+  .edge.hot{stroke:var(--brand);stroke-width:1.5}
+  .arrow{fill:var(--line2)}
+  .node{position:absolute;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:7px 9px;cursor:pointer;text-align:left;box-shadow:0 1px 1px rgba(15,23,42,.03);min-width:0}
+  .node:hover{border-color:var(--brand);box-shadow:0 2px 8px rgba(63,99,217,.1)}
+  .node[data-selected="true"]{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-bg)}
+  .node[data-type="group"]{border-color:var(--green-line);background:var(--green-bg)}
+  .node[data-type="tskdep"]{border-color:var(--amber-line);background:var(--amber-bg)}
+  .node[data-type="start"]{border-style:dashed;background:var(--panel2);cursor:default}
+  .node-name{font-size:11px;font-weight:650;line-height:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .node-type{font-family:ui-monospace,Menlo,monospace;font-size:8.5px;line-height:12px;color:var(--faint);text-transform:uppercase}
+  .node-parent{font-size:8.5px;color:var(--faint);line-height:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .group-box{position:absolute;border:1px dashed var(--green-line);border-radius:9px;background:color-mix(in srgb,var(--green-bg) 48%,transparent);pointer-events:none}
+  .group-label{position:absolute;left:10px;top:7px;font-size:9px;font-weight:700;color:var(--green);letter-spacing:.03em}
+  .inspector{border-left:1px solid var(--line);padding:13px 14px;min-width:0;background:var(--panel)}
+  .eyebrow{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .inspector h3{font-size:13px;line-height:1.35;margin:3px 0 3px;font-weight:700;overflow-wrap:anywhere}
+  .inspector-sub{font-size:10.5px;color:var(--muted);line-height:1.5}
+  .kv{margin:11px 0 0;padding:0;display:grid;grid-template-columns:64px minmax(0,1fr);gap:5px 8px;font-size:10px}
+  .kv dt{color:var(--faint)}
+  .kv dd{margin:0;color:var(--text);overflow-wrap:anywhere}
+  .inspector .section-label{font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--faint);text-transform:uppercase;margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+  .placeholder-list{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px}
+  .placeholder{font-family:ui-monospace,Menlo,monospace;font-size:8.5px;line-height:17px;padding:0 4px;border-radius:3px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+  .card-foot{display:flex;align-items:center;gap:8px;padding:9px 16px;border-top:1px solid var(--line);background:var(--panel2)}
+  .card-foot .muted{font-size:10px;color:var(--faint)}
+  .card-foot .spacer{flex:1}
+  .card-foot .btn{font-size:10.5px;padding:4px 8px}
+  .wb{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;min-height:calc(100vh - 110px);display:flex;flex-direction:column}
+  .wb-top{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .wb-crumb{font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wb-crumb b{color:var(--text);font-weight:600}
+  .wb-tabs{display:flex;gap:2px;margin-left:10px;background:var(--panel2);border:1px solid var(--line);padding:2px;border-radius:6px;flex:none}
+  .wb-tabs button{border:0;background:transparent;color:var(--muted);font-size:10px;padding:3px 7px;border-radius:4px;cursor:pointer}
+  .wb-tabs button[data-active="true"]{background:var(--panel);color:var(--text)}
+  .wb-body{display:grid;grid-template-columns:186px minmax(0,1fr) 278px;min-height:600px;flex:1}
+  .wb-left{border-right:1px solid var(--line);padding:11px 8px;background:var(--panel)}
+  .wb-left .section-label{font-size:9px;font-weight:700;letter-spacing:.07em;color:var(--faint);text-transform:uppercase;padding:0 6px 7px}
+  .wb-canvas{background:var(--panel2);min-width:0;padding:12px;overflow:auto;position:relative}
+  .wb-canvas .graph-scroll{min-height:420px;background:var(--panel2);border:0}
+  .wb-canvas .graph-canvas{width:760px;height:440px}
+  .wb-canvas .node{width:158px;min-height:56px;padding:8px 10px}
+  .wb-canvas .node-name{font-size:12px}
+  .wb-canvas .node-type{font-size:9px}
+  .wb-right{border-left:1px solid var(--line);padding:13px 14px;background:var(--panel);min-width:0}
+  .wb-right .inspector{border:0;padding:0}
+  .wb-foot{padding:8px 13px;border-top:1px solid var(--line);color:var(--faint);font-size:10px;display:flex;gap:8px;align-items:center;background:var(--panel)}
+  .hint{color:var(--faint);font-size:10px}
+  .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--text);color:var(--bg);font-size:11px;padding:7px 11px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .16s;z-index:50}
+  .toast.show{opacity:1}
+  .drawer-mask{position:fixed;inset:0;background:rgba(15,23,42,.28);z-index:40;display:none}
+  .drawer-mask.open{display:block}
+  .drawer{position:absolute;right:0;top:0;bottom:0;width:min(620px,92vw);background:var(--panel);border-left:1px solid var(--line);box-shadow:-12px 0 30px rgba(15,23,42,.12);display:flex;flex-direction:column}
+  .drawer-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600}
+  .drawer-head .mono{font-size:10px;font-weight:400;color:var(--faint)}
+  .drawer-head .btn{margin-left:auto}
+  .source{flex:1;overflow:auto;margin:0;padding:14px 16px;background:var(--code);font-family:ui-monospace,Menlo,monospace;font-size:10.5px;line-height:1.7;color:var(--text);white-space:pre}
+  .design-notes{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 18px}
+  .notes-head{display:flex;align-items:flex-start;gap:12px}
+  .notes-head h2{font-size:16px;line-height:1.35;margin:1px 0 0;letter-spacing:-.15px}
+  .notes-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:14px}
+  .notes-grid article{padding-top:10px;border-top:1px solid var(--line);min-width:0}
+  .notes-grid b{font-size:11px;display:block;margin-bottom:4px}
+  .notes-grid p{margin:0;color:var(--muted);font-size:10.5px;line-height:1.6}
+  @media(max-width:1100px){
+    .rail{width:188px}.view{padding:16px}
+    .card-body{grid-template-columns:minmax(0,1fr) 220px}
+    .wb-body{grid-template-columns:166px minmax(0,1fr) 240px}
+  }
+  @media(max-width:820px){.notes-grid{grid-template-columns:1fr}.notes-head{display:block}.notes-head h2{margin-top:3px}
+    .rail{display:none}.card-body{grid-template-columns:1fr}.inspector{border-left:0;border-top:1px solid var(--line)}
+    .wb-body{grid-template-columns:1fr}.wb-left,.wb-right{display:none}.wb-canvas{min-height:500px}
+    .crumb .path{display:none}.mode-switch{order:2}.theme{order:3}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">∞</span><span>DataOps</span></div>
+    <div class="crumb"><span>internal-code-repo</span><span>/</span><span class="path">lts_code / channel_daily / task.yaml</span></div>
+    <div class="spacer"></div>
+    <div class="mode-switch" role="group" aria-label="预览模式">
+      <button id="modeFile" data-active="true">文件预览</button>
+      <button id="modeWork" data-active="false">全宽调度</button>
+    </div>
+    <button class="theme" id="theme">深色</button>
+  </header>
+  <div class="shell">
+    <aside class="rail" aria-label="工作区文件">
+      <div class="rail-title"><span>internal-code-repo</span><span>FILES</span></div>
+      <div class="tree">
+        <button class="tree-row"><span class="tree-mark">▾</span><span class="tree-label">lts_code</span></button>
+        <button class="tree-row" data-active="true"><span class="tree-mark">Y</span><span class="tree-label">channel_daily / task.yaml</span></button>
+        <button class="tree-row"><span class="tree-mark">Y</span><span class="tree-label">channel_alert / task.yaml</span></button>
+        <button class="tree-row"><span class="tree-mark">Y</span><span class="tree-label">order_daily / task.yaml</span></button>
+        <button class="tree-row"><span class="tree-mark">Y</span><span class="tree-label">channel_backfill / task.yaml</span></button>
+        <button class="tree-row"><span class="tree-mark">P</span><span class="tree-label">channel_daily / parameters.properties</span></button>
+        <div class="rail-sep"></div>
+        <button class="tree-row"><span class="tree-mark">▾</span><span class="tree-label">.dataops</span></button>
+        <button class="tree-row"><span class="tree-mark">Y</span><span class="tree-label">build.yaml</span></button>
+        <button class="tree-row"><span class="tree-mark">Y</span><span class="tree-label">manifest.yaml</span></button>
+        <div class="rail-sep"></div>
+        <button class="tree-row"><span class="tree-mark">▾</span><span class="tree-label">code / sql</span></button>
+        <button class="tree-row"><span class="tree-mark">S</span><span class="tree-label">channel_report / dws_channel_daily.sql</span></button>
+      </div>
+      <div class="rail-note">脱敏样例 · 只读预览<br>不是生产数据</div>
+    </aside>
+    <main class="main">
+      <section class="view" id="fileView">
+        <div class="file-head">
+          <div>
+            <div class="eyebrow">LTS / CHANNEL_DAILY</div>
+            <h1 class="file-title">task.yaml</h1>
+            <p class="file-sub">lts_code/channel_daily/task.yaml · <span class="mono">formatVersion: 2</span> · 173 行</p>
+          </div>
+          <div class="file-tabs" role="tablist" aria-label="文件预览">
+            <button data-active="true">结构</button>
+            <button id="openSourceTop">源码</button>
+          </div>
+        </div>
+        <div class="schedule-card">
+          <div class="card-head">
+            <div>
+              <div class="card-kicker">调度血缘 / 调度视图</div>
+              <h2 class="card-title">channel_daily_mixed</h2>
+              <p class="card-sub">周期任务 · 02:10 每日 · 提交前检查</p>
+            </div>
+            <div class="card-actions">
+              <button class="btn primary" id="openWork">打开调度视图</button>
+              <button class="btn ghost" id="openSource">源码</button>
+            </div>
+          </div>
+          <div class="meta-row">
+            <span class="pill brand">调度视图</span>
+            <span class="pill">1 任务</span>
+            <span class="pill">6 作业</span>
+            <span class="pill">7 依赖</span>
+            <span class="pill green">未发现阻断</span>
+            <span class="pill amber">6 个占位符</span>
+          </div>
+          <div class="card-body">
+            <div class="graph-panel">
+              <div class="graph-note"><b>关键路径</b><span>load_check → calc_sql → notify</span><span>·</span><span>虚线 = tskdep</span></div>
+              <div class="graph-scroll"><div class="graph-canvas" id="cardGraph"></div></div>
+            </div>
+            <aside class="inspector" id="cardInspector" aria-live="polite"></aside>
+          </div>
+          <div class="card-foot">
+            <span class="muted">任务参数 bizdate / env · 占位符在部署时替换</span>
+            <span class="spacer"></span>
+            <button class="btn ghost" id="openSourceFoot">查看源码</button>
+            <button class="btn" id="focusWork">聚焦 calc_sql</button>
+          </div>
+        </div>
+        <div class="source-hint">点击作业节点查看参数、依赖和风险；源码在独立抽屉中打开。</div>
+        <section class="design-notes" aria-label="设计说明">
+          <div class="notes-head"><span class="eyebrow">DESIGN DIRECTION</span><h2>把文件预览做成调度检查器，而不是第二套文档 UI</h2></div>
+          <div class="notes-grid">
+            <article><b>文件预览</b><p>一眼看懂任务、cron、作业拓扑和关键路径。默认不展开源码。</p></article>
+            <article><b>全宽工作台</b><p>同一个 task.yaml 的展开视图，左边任务，中间 DAG，右边作业参数。</p></article>
+            <article><b>交互原则</b><p>点击作业只更新 inspector；源码独立抽屉；打开全宽不丢失文件上下文。</p></article>
+          </div>
+        </section>
+      </section>
+
+      <section class="view" id="workView" hidden>
+        <div class="wb">
+          <div class="wb-top">
+            <div class="wb-crumb"><b>internal-code-repo</b> / lts_code / channel_daily / <b>task.yaml</b></div>
+            <div class="wb-tabs" role="tablist">
+              <button>设计视图</button>
+              <button>生产视图</button>
+              <button data-active="true">调度视图</button>
+            </div>
+            <div class="spacer"></div>
+            <button class="btn ghost" id="backToFile">返回文件</button>
+            <button class="btn ghost" id="openSourceWork">源码</button>
+          </div>
+          <div class="wb-body">
+            <aside class="wb-left">
+              <div class="section-label">任务</div>
+              <button class="tree-row" data-active="true"><span class="tree-mark">●</span><span class="tree-label">channel_daily_mixed</span></button>
+              <button class="tree-row"><span class="tree-mark">○</span><span class="tree-label">order_daily_serial</span></button>
+              <button class="tree-row"><span class="tree-mark">○</span><span class="tree-label">channel_backfill</span></button>
+              <button class="tree-row"><span class="tree-mark">○</span><span class="tree-label">channel_alert_trigger</span></button>
+              <div class="rail-sep"></div>
+              <div class="section-label">概览</div>
+              <div class="rail-note">6 个作业<br>7 条依赖<br>6 个占位符<br><br>cron 0 10 2 * * ?</div>
+            </aside>
+            <section class="wb-canvas">
+              <div class="graph-note"><b>调度血缘</b><span>channel_daily_mixed</span><span>·</span><span>点击作业查看右侧详情</span></div>
+              <div class="graph-scroll"><div class="graph-canvas" id="workGraph"></div></div>
+            </section>
+            <aside class="wb-right"><aside class="inspector" id="workInspector" aria-live="polite"></aside></aside>
+          </div>
+          <div class="wb-foot"><span>只读视图 · 来自 task.yaml</span><span>·</span><span>参数在 deploy 阶段替换</span><span class="spacer"></span><span class="hint">React Flow 原型示意</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="drawer-mask" id="drawerMask">
+  <aside class="drawer" role="dialog" aria-modal="true" aria-label="源码">
+    <div class="drawer-head"><span>源码</span><span class="mono">lts_code/channel_daily/task.yaml</span><button class="btn ghost" id="closeDrawer">关闭</button></div>
+    <pre class="source" id="sourceBody"></pre>
+  </aside>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const jobs = [
+  { id:'start', name:'开始', type:'start', parents:[], x:18, y:156, w:92, h:44, start:true },
+  { id:'load_check', name:'load_check', type:'url', parents:['start'], x:150, y:44, w:168, h:54, exec:'$$JOB_LOAD_CHECK_URL$$', method:'GET', timeout:30, retry:'2 次 / 60s', detail:'检查上游数据是否就绪，失败阻断后续作业。' },
+  { id:'G_1006', name:'G_1006', type:'group', parents:['start'], x:150, y:148, w:178, h:54, detail:'组内并行门控，成功后才进入汇聚。' },
+  { id:'calc_sql', name:'calc_sql', type:'open_gauss', parents:['G_1006'], x:174, y:252, w:168, h:54, exec:'$$DB_EXEC$$', method:'SQL', timeout:120, retry:'1 次 / 30s', detail:'执行数据库 SQL，taskParams 注入 bizdate。' },
+  { id:'export_shell', name:'export_shell', type:'shell', parents:['G_1006'], x:174, y:328, w:168, h:54, exec:'$$SHELL_SCRIPT_PATH$$', method:'SCRIPT', timeout:30, retry:'1 次 / 30s', detail:'导出结果并落盘，失败可重试。' },
+  { id:'wait_upstream', name:'wait_upstream', type:'tskdep', parents:['load_check'], x:406, y:44, w:176, h:54, detail:'跨任务依赖，等待上游 end 节点。', dep:'<UPSTREAM_TASK> / end' },
+  { id:'notify', name:'notify', type:'url', parents:['load_check','G_1006'], x:406, y:148, w:176, h:54, exec:'$$JOB_NOTIFY_URL$$', method:'POST', timeout:30, retry:'2 次 / 30s', detail:'多父汇聚后发送通知，通知失败不阻塞主链路。' }
+];
+const edges = [
+  ['start','load_check','control'], ['start','G_1006','control'],
+  ['G_1006','calc_sql','control'], ['G_1006','export_shell','control'],
+  ['load_check','wait_upstream','tskdep'],
+  ['load_check','notify','control'], ['G_1006','notify','control']
+];
+const selected = { id:'calc_sql' };
+const sourceText = `formatVersion: 2
+
+tasks:
+  - itemName: "<PROJECT_NAME>"
+    groupName: "<GROUP_NAME>"
+    name: "channel_daily_mixed"
+    type: "周期任务"
+    cronExp: "0 10 2 * * ?"
+    owner: "<OWNER>"
+    taskParams:
+      - name: "bizdate"
+        value: "$getTaskPlanTime(yyyyMMdd)"
+      - name: "env"
+        value: "sit"
+
+    jobs:
+      - name: "load_check"
+        jobType: url
+        parentJobName: ["start"]
+        jobExecPath: "$$JOB_LOAD_CHECK_URL$$"
+      - name: "G_1006"
+        jobType: group
+        parentJobName: ["start"]
+      - name: "calc_sql"
+        jobType: open_gauss
+        parentJobName: ["G_1006"]
+        jobExecPath: "$$DB_EXEC$$"
+      - name: "export_shell"
+        jobType: shell
+        parentJobName: ["G_1006"]
+      - name: "wait_upstream"
+        jobType: tskdep
+        parentJobName: ["load_check"]
+      - name: "notify"
+        jobType: url
+        parentJobName: ["load_check", "G_1006"]
+        jobExecPath: "$$JOB_NOTIFY_URL$$"
+`;
+const placeholders = ['JOB_LOAD_CHECK_URL','JOB_NOTIFY_URL','INTERRUPT_URL','SHELL_SCRIPT_PATH','DB_SOURCE','DB_EXEC'];
+const $ = (id) => document.getElementById(id);
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function edgePath(a,b){
+  const x1=a.x+a.w, y1=a.y+a.h/2, x2=b.x, y2=b.y+b.h/2;
+  const mid=(x1+x2)/2;
+  return `M ${x1} ${y1} C ${mid} ${y1} ${mid} ${y2} ${x2} ${y2}`;
+}
+function renderGraph(el){
+  const byId=Object.fromEntries(jobs.map(j=>[j.id,j]));
+  const svg = edges.map(([a,b,kind],i)=>{const A=byId[a],B=byId[b];const hot=(a==='calc_sql'||b==='calc_sql'||a==='G_1006'||b==='G_1006');return `<path class="edge ${kind==='tskdep'?'control':''} ${hot?'hot':''}" marker-end="url(#arrow)" d="${edgePath(A,B)}"/>`}).join('');
+  const group = jobs.find(j=>j.id==='G_1006');
+  const groupBox = `<div class="group-box" style="left:${group.x-12}px;top:${group.y+70}px;width:${group.w+24}px;height:${190}px"></div><div class="group-label" style="left:${group.x-2}px;top:${group.y+78}px">G_1006 · 组内并行</div>`;
+  const nodes = jobs.filter(j=>j.type!=='start').map(j=>`<button class="node" data-id="${j.id}" data-type="${j.type}" data-selected="${selected.id===j.id}" style="left:${j.x}px;top:${j.y}px;width:${j.w}px;height:${j.h}px" aria-label="${esc(j.name)} ${esc(j.type)}"><span class="node-name">${esc(j.name)}</span><span class="node-type">${esc(j.type)}</span><span class="node-parent">${j.parents.length?'← '+esc(j.parents.join(' / ')):'入口'}</span></button>`).join('');
+  const start = `<div class="node" data-type="start" style="left:${jobs[0].x}px;top:${jobs[0].y}px;width:${jobs[0].w}px;height:${jobs[0].h}px"><span class="node-name">开始</span><span class="node-type">task start</span></div>`;
+  el.innerHTML = `<svg class="graph-svg" viewBox="0 0 620 380" preserveAspectRatio="none"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="arrow"/></marker></defs>${svg}</svg>${groupBox}${start}${nodes}`;
+  el.querySelectorAll('.node[data-id]').forEach(node=>node.addEventListener('click',()=>{selected.id=node.dataset.id;renderAll()}));
+}
+function inspectorHtml(){
+  const job = jobs.find(j=>j.id===selected.id) || jobs[1];
+  const meta = job.type==='url'?'HTTP 作业':job.type==='group'?'组作业':job.type==='tskdep'?'跨任务依赖':job.type==='open_gauss'?'数据库作业':'脚本作业';
+  return `<div class="eyebrow">${esc(meta)}</div><h3>${esc(job.name)}</h3><div class="inspector-sub">${esc(job.detail||'')}</div>
+    <dl class="kv">
+      <dt>类型</dt><dd class="mono">${esc(job.type)}</dd>
+      <dt>父依赖</dt><dd class="mono">${esc(job.parents.join(' / ')||'入口')}</dd>
+      ${job.exec?`<dt>执行</dt><dd class="mono">${esc(job.exec)}</dd>`:''}
+      ${job.method?`<dt>方法</dt><dd class="mono">${esc(job.method)}</dd>`:''}
+      ${job.timeout?`<dt>超时</dt><dd>${job.timeout}s · 重试 ${esc(job.retry)}</dd>`:''}
+      ${job.dep?`<dt>依赖</dt><dd class="mono">${esc(job.dep)}</dd>`:''}
+    </dl>
+    ${job.exec?`<div class="section-label">占位符</div><div class="placeholder-list"><span class="placeholder">${esc(job.exec.replace(/\\$\\$/g,''))}</span></div>`:''}
+    <div class="section-label">任务参数</div><div class="placeholder-list"><span class="placeholder">bizdate</span><span class="placeholder">env</span></div>`;
+}
+function renderAll(){
+  renderGraph($('cardGraph'));
+  renderGraph($('workGraph'));
+  $('cardInspector').innerHTML=inspectorHtml();
+  $('workInspector').innerHTML=inspectorHtml();
+}
+function setMode(mode){
+  $('fileView').hidden=mode!=='file';
+  $('workView').hidden=mode!=='work';
+  $('modeFile').dataset.active=String(mode==='file');
+  $('modeWork').dataset.active=String(mode==='work');
+}
+function openSource(){
+  $('sourceBody').textContent=sourceText;
+  $('drawerMask').classList.add('open');
+}
+function closeSource(){ $('drawerMask').classList.remove('open') }
+function toast(text){const el=$('toast');el.textContent=text;el.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove('show'),1500)}
+$('modeFile').onclick=()=>setMode('file');
+$('modeWork').onclick=()=>setMode('work');
+$('openWork').onclick=()=>setMode('work');
+$('backToFile').onclick=()=>setMode('file');
+$('openSource').onclick=openSource;
+$('openSourceTop').onclick=openSource;
+$('openSourceFoot').onclick=openSource;
+$('openSourceWork').onclick=openSource;
+$('closeDrawer').onclick=closeSource;
+$('drawerMask').onclick=(e)=>{if(e.target===$('drawerMask'))closeSource()};
+$('focusWork').onclick=()=>{selected.id='calc_sql';setMode('work');renderAll();toast('已聚焦 calc_sql')};
+$('theme').onclick=()=>{const root=document.documentElement;const dark=root.dataset.theme!=='dark';root.dataset.theme=dark?'dark':'light';$('theme').textContent=dark?'浅色':'深色'};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSource()});
+const initialMode = new URLSearchParams(location.search).get('mode') === 'work' ? 'work' : 'file';
+setMode(initialMode);
+renderAll();
+</script>
+</body>
+</html>
