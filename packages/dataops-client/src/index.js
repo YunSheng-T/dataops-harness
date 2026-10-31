@@ -26,6 +26,21 @@ var TOOL_VIEWS = [
 ]
 
 function apply(ctx) {
+  // Code/config files opened from the standard workspace Files tab: use the
+  // DataOps structure renderer instead of the generic code viewer.
+  function registerDocumentPreview(previewCtx) {
+    if (!previewCtx || !previewCtx.documentPreviews || typeof previewCtx.documentPreviews.register !== 'function') return
+    var preview = DataopsDocumentPreview
+    previewCtx.effect(function () { return previewCtx.documentPreviews.register(preview.definition) }, 'dataops document preview type')
+    previewCtx.slots.inject('sidebar.right.tab.document', function () {
+      return previewCtx.slots.register({
+        name: 'sidebar.right.tab.document',
+        key: preview.id
+      }, preview.Body)
+    })
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['documentPreviews'], registerDocumentPreview)
+
   if (typeof document !== 'undefined') Cards.installStyles(document)
   var slots = ctx.slots
   if (slots === undefined) return

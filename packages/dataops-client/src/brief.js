@@ -315,11 +315,6 @@ export function createStageBrief(React, store, contextStore) {
     var view = viewState[0]
     var expanded = expandedState[0]
     if (!Object.keys(payloads).length) return null
-    function openRepo() {
-      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
-        window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: 'dataops-repo' } }))
-      }
-    }
     function focusCard(kind) {
       if (typeof document === 'undefined') return
       var nodes = document.querySelectorAll('.do-turn-card[data-kind="' + kind + '"]')
@@ -374,8 +369,6 @@ export function createStageBrief(React, store, contextStore) {
           subDefs[key].map(function (label, i) { return h('span', { key: label, className: 'do-stagebar-sub', 'data-active': (key === 'scheme' && currentStage === 'scheme' && i === 0) || (key === 'cicd' && currentStage === 'cicd' && i === 0) ? 'true' : undefined }, label) })
         )
       })) : null,
-      expanded ? h('div', { className: 'do-stagebar-tools' },
-        h('button', { type: 'button', className: 'do-stagebar-view', onClick: openRepo }, '代码仓')) : null,
       expanded && open ? h('div', { className: 'do-stagebar-cards' },
         h('div', { className: 'do-stagebar-cards-head' }, (stageDefs.filter(function (d) { return d[0] === selected })[0] || ['', selected])[1] + ' · ' + activeCards.length + ' 张'),
         activeCards.length ? activeCards.map(function (card) {

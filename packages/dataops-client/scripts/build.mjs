@@ -21,7 +21,8 @@ const SOURCES = [
   'src/context-store.js',
   'src/header-stage.js',
   'src/tabs.js',
-  'src/brief.js'
+  'src/brief.js',
+  'src/document-preview.js'
 ]
 
 function buildWorkbenchRuntime() {
@@ -101,6 +102,7 @@ ${inlined}
     }
     var Tabs = createDataopsTabs(React, ContextStore, LineageFlow)
     var Brief = createStageBrief(React, StageStore, ContextStore)
+    var DataopsDocumentPreview = createDataopsDocumentPreview(React)
 
 /* ---- src/index.js ---- */
 ${index}

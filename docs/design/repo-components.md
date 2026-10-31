@@ -182,21 +182,26 @@ dataops deploy execute --package <pkg> --artifact <zip> --config .dataops/build.
 - no dry-run
 - no deployment receipt
 
-## 6.1 UI 代码仓 tab
+## 6.1 UI：复用工作区文件 + 文档预览
 
-右侧栏新增 `代码仓` tab，直接读取 Host `GET /api/dataops/repo`：
+代码仓不再做独立“代码仓”tab。
 
-- 只读，不需要 Agent 回合
-- 需要 dataops-tools config 配置 `repoRoot`
-- 未配置时显示未就绪
-- 展示平台/包/文件数/待处理项
-- 展示 LTS 任务数、作业数、占位符和 findings
-- 不展示源码正文、token、绝对路径
+`ui-sidebar-files` 继续负责工作区文件树；DataOps 只注册文档预览渲染器：
+
+```text
+.yaml / .yml / .sql / .properties
+→ DataOps 代码预览
+→ 结构摘要 + 源码
+```
+
+LTS 文件显示任务/作业/占位符摘要；build.yaml 显示包和 toolChain；manifest 显示平台映射；SQL 显示 DDL/DML/语句数；properties 显示键值。
+
+这样文件管理完全复用 DSH 的工作区 Files tab，DataOps 只提供自己的文件渲染能力。
 
 ## 7. 后续
 
 ```text
-UI: 仓库/package/LTS 只读检查器
-Agent tool: 暴露 A/B/C 只读入口
+文档预览：继续补 LTS 完整 DAG、SQL 分段和 diff（当前是结构摘要 + 源码）
+Agent tool：暴露 A/B/C 只读入口
 真实 CLI：--json 或稳定 exit code/log contract
 ```

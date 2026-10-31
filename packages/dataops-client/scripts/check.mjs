@@ -5,6 +5,7 @@ import { createStageStore } from '../src/stage-store.js'
 import { createContextStore } from '../src/context-store.js'
 import { createDataopsTabs } from '../src/tabs.js'
 import { createStageBrief } from '../src/brief.js'
+import { createDataopsDocumentPreview } from '../src/document-preview.js'
 
 const React = {
   createElement(type, props, ...children) {
@@ -32,6 +33,7 @@ const text = node => {
   if (typeof node.type === 'function') return text(node.type(node.props))
   return text(node.props.children)
 }
+const text2 = node => text(node)
 const block = payload => ({ content: [{ type: 'text', text: '前面的说明文字' }, { type: 'text', text: JSON.stringify(payload) }] })
 
 check('design card renders grain, sources, impact and schedule', () => {
@@ -238,6 +240,19 @@ check('card renderers tolerate common string/object schema variants', () => {
   }
 })
 
+check('DataOps document preview renders LTS, build, SQL and properties', () => {
+  const Preview = createDataopsDocumentPreview(React)
+  const body = (name, text) => text2(Preview.Body({ resourceAddress: 'dsh-resource://file/session/s/' + name, content: { kind: 'text', text, eof: true }, wrap: false }))
+  const lts = body('task.yaml', 'formatVersion: 2\ntasks:\n  - itemName: PROJ\n    name: demo\n    cronExp: "0 0 2 * * ?"\n    jobs:\n      - name: job_1\n        jobType: url\n        jobExecPath: "$$JOB_1_URL$$"')
+  assert(lts.includes('LTS 调度') && lts.includes('1任务'), 'LTS preview: ' + lts.slice(0, 200))
+  const build = body('build.yaml', 'version: "1.2"\npackages:\n  - packageName: lts_demo\n    toolChain: data_schedule\n')
+  assert(build.includes('构建配置') && build.includes('1包') && build.includes('lts_demo'), 'build preview')
+  const sql = body('change.sql', 'CREATE TABLE x (id int);\nINSERT INTO x VALUES (1);\n')
+  assert(sql.includes('SQL') && sql.includes('DDL') && sql.includes('DML'), 'SQL preview')
+  const props = body('parameters.properties', 'JOB_URL=<URL>\n')
+  assert(props.includes('参数文件') && props.includes('JOB_URL') && props.includes('<URL>'), 'properties preview')
+})
+
 check('malformed payload falls back instead of throwing', () => {
   const body = text(Cards.DesignCard({ block: { content: [{ type: 'text', text: 'not json' }] } }))
   assert(body.includes('not json'), 'fallback should show raw text')
@@ -425,10 +440,10 @@ check('design impact draws a synthetic lineage graph', () => {
   assert(body.includes('来自设计卡影响面'), 'synthetic marker')
 })
 
-check('four right-sidebar tabs read the context store', () => {
-  assert(Tabs.definitions.length === 4, 'expected four tab types')
+check('three right-sidebar tabs read the context store', () => {
+  assert(Tabs.definitions.length === 3, 'expected three tab types')
   const kinds = Tabs.definitions.map(item => item.kind)
-  assert(new Set(kinds).size === 4, 'tab kinds must be unique')
+  assert(new Set(kinds).size === 3, 'tab kinds must be unique')
   const asset = Tabs.tabs[0]
   const empty = text(asset.body.Component({ sessionId: 's-empty' }))
   assert(empty.includes('还没有资产上下文'), 'empty state')
@@ -438,8 +453,6 @@ check('four right-sidebar tabs read the context store', () => {
   assert(text(lineage.body.Component({ sessionId: 's2' })).includes('dwd.y'), 'lineage tab should read context')
   const evidence = Tabs.tabs[2]
   assert(text(evidence.body.Component({ sessionId: 's-empty' })).includes('还没有证据'), 'evidence empty state')
-  const repo = Tabs.tabs[3]
-  assert(text(repo.body.Component({ sessionId: 's-empty' })).includes('代码仓'), 'repo empty state')
 })
 
 
