@@ -28,6 +28,8 @@ var DEV_DOCUMENTS_CONTRIBUTION = {
   descriptors: [
     descriptor('open', [param('sessionId'), param('path')]),
     descriptor('save', [param('sessionId'), param('documentId'), param('baseVersion'), param('text'), param('idempotencyKey')]),
+    descriptor('current', [param('sessionId'), param('documentId')]),
+    descriptor('reconcile', [param('sessionId'), param('documentId'), param('baseVersion'), param('targetDigest')]),
     descriptor('close', [param('sessionId'), param('documentId')]),
   ],
 }
@@ -49,6 +51,12 @@ function devDocumentsRemote(remote) {
     },
     close: function (sessionId, documentId, signal) {
       return Promise.resolve(remote.devDocuments.close(sessionId, documentId, signal)).then(unwrap)
+    },
+    current: function (sessionId, documentId, signal) {
+      return Promise.resolve(remote.devDocuments.current(sessionId, documentId, signal)).then(unwrap)
+    },
+    reconcile: function (sessionId, documentId, baseVersion, targetDigest, signal) {
+      return Promise.resolve(remote.devDocuments.reconcile(sessionId, documentId, baseVersion, targetDigest, signal)).then(unwrap)
     },
   }
 }

@@ -6,6 +6,7 @@ import {
   concurrentRead,
   documentUnknown,
   idempotencyConflict,
+  mapSaveError,
   notFound,
   notRegularFile,
   staleVersion,
@@ -36,6 +37,8 @@ export class DevDocumentStore {
     this.config = config
     /** @type {Map<string, DevDocumentRecord>} */
     this.documents = new Map()
+    /** (sessionId + '\n' + fileAddress) → documentId；同一地址只有一个文档模型。 */
+    this.byAddress = new Map()
     /** 保存能力一次性令牌：service.save 签发，bridge 消费。 @type {Set<string>} */
     this.pendingTokens = new Set()
     /** @type {Map<string, { token: string, documentId: string, targetDigest: string }>} */
@@ -43,24 +46,16 @@ export class DevDocumentStore {
   }
 
   /**
-   * 一致性打开：lstat（符号链接策略）→ resolve → stat → readBytes → stat，
-   * 前后 FsVersion 一致才返回快照；不一致有限重读，仍失败报 dev/concurrent-read。
+   * 一致性读取当前磁盘：stat → readBytes → stat，前后 FsVersion 一致才返回；
+   * 不一致有限重读，仍失败报 dev/concurrent-read。不更新任何文档记录。
    */
-  async open(fs, sessionId, workspaceRoot, path, signal) {
-    const info0 = await fs.lstat(path, { cwd: workspaceRoot }, signal)
-    if (info0 === undefined) throw notFound(path)
-    // 首版只有 regular file 可编辑；末端符号链接与目录、特殊文件一律拒绝。
-    if (info0.type !== 'file') throw notRegularFile(path, info0.type)
-
-    const target = await fs.resolve(path, { cwd: workspaceRoot, signal })
-    const displayPath = target.displayPath
-
+  async readConsistent(fs, target, displayPath, signal) {
     let lastError
     for (let attempt = 0; attempt < OPEN_RETRY_LIMIT; attempt++) {
       signal?.throwIfAborted()
       const stat1 = await fs.stat(target, signal)
-      if (stat1 === undefined) throw notFound(path)
-      if (stat1.type !== 'file') throw notRegularFile(path, stat1.type)
+      if (stat1 === undefined) throw notFound(displayPath)
+      if (stat1.type !== 'file') throw notRegularFile(displayPath, stat1.type)
       if (stat1.size !== undefined && stat1.size > this.config.maxBytes) {
         throw tooLarge(displayPath, stat1.size, this.config.maxBytes)
       }
@@ -74,26 +69,53 @@ export class DevDocumentStore {
         throw error
       }
       const stat2 = await fs.stat(target, signal)
-      if (stat2 === undefined) throw notFound(path)
+      if (stat2 === undefined) throw notFound(displayPath)
       if (String(stat1.version) === String(stat2.version)) {
-        const text = decodeUtf8Strict(bytes, displayPath)
-        const record = {
-          documentId: crypto.randomUUID(),
-          sessionId,
-          fileAddress: displayPath,
-          target,
-          baseVersion: String(stat2.version),
-          savedDigest: digestBytes(bytes),
-          contentType: contentTypeOf(displayPath),
-          idempotency: new Map(),
-          tail: Promise.resolve(),
-        }
-        this.documents.set(record.documentId, record)
-        return this.snapshot(record, bytes)
+        return { version: String(stat2.version), bytes }
       }
       lastError = concurrentRead(displayPath)
     }
     throw lastError
+  }
+
+  /**
+   * 一致性打开：lstat（符号链接策略）→ resolve → 一致性读取。
+   * 同一 (sessionId, 规范化 fileAddress) 只有一个文档模型：重复打开返回
+   * 已有 documentId + 当前磁盘一致快照（客户端负责聚焦已有 tab）。
+   */
+  async open(fs, sessionId, workspaceRoot, path, signal) {
+    const info0 = await fs.lstat(path, { cwd: workspaceRoot }, signal)
+    if (info0 === undefined) throw notFound(path)
+    // 首版只有 regular file 可编辑；末端符号链接与目录、特殊文件一律拒绝。
+    if (info0.type !== 'file') throw notRegularFile(path, info0.type)
+
+    const target = await fs.resolve(path, { cwd: workspaceRoot, signal })
+    const displayPath = target.displayPath
+
+    const { version, bytes } = await this.readConsistent(fs, target, displayPath, signal)
+    const addressKey = sessionId + '\n' + displayPath
+    const existingId = this.byAddress.get(addressKey)
+    const existing = existingId !== undefined ? this.documents.get(existingId) : undefined
+    if (existing !== undefined) {
+      // 同一文档重新打开：推进到当前磁盘快照，保留 documentId、幂等记录与保存队列。
+      existing.baseVersion = version
+      existing.savedDigest = digestBytes(bytes)
+      return this.snapshot(existing, bytes)
+    }
+    const record = {
+      documentId: crypto.randomUUID(),
+      sessionId,
+      fileAddress: displayPath,
+      target,
+      baseVersion: version,
+      savedDigest: digestBytes(bytes),
+      contentType: contentTypeOf(displayPath),
+      idempotency: new Map(),
+      tail: Promise.resolve(),
+    }
+    this.documents.set(record.documentId, record)
+    this.byAddress.set(addressKey, record.documentId)
+    return this.snapshot(record, bytes)
   }
 
   /** @returns 打开快照。 */
@@ -179,7 +201,8 @@ export class DevDocumentStore {
     try {
       outcome = await dispatchWrite(record, text, token, signal)
     } catch (error) {
-      if (error && error.code === 'FS_STALE_VERSION') throw staleVersion(record.fileAddress)
+      const mapped = mapSaveError(error, record.fileAddress)
+      if (mapped !== undefined) throw mapped
       throw error
     }
 
@@ -201,9 +224,53 @@ export class DevDocumentStore {
     return result
   }
 
+  /**
+   * 当前磁盘一致快照（P1 外部变化检测 / clean 刷新）。
+   * 返回前把文档基线推进到当前磁盘版本——调用方（轮询/刷新/冲突取数）
+   * 总是得到真实的 base/local/current 三方中的 current；保存仍以
+   * replaceIfVersion 兜底，推进基线不会放过任何过期写入。
+   */
+  async current(fs, sessionId, documentId, signal) {
+    const record = this.require(documentId)
+    if (record.sessionId !== sessionId) throw documentUnknown(documentId)
+    const { version, bytes } = await this.readConsistent(fs, record.target, record.fileAddress, signal)
+    record.baseVersion = version
+    record.savedDigest = digestBytes(bytes)
+    return this.snapshot(record, bytes)
+  }
+
+  /**
+   * save-unknown 对账：只比较真实磁盘状态，不重试写入、不伪造 receipt。
+   * - currentDigest == targetDigest → saved（有幂等记录给原 receipt，否则无 receipt）
+   * - currentVersion == 保存前 baseVersion 且内容不同 → not-saved
+   * - 其他 → conflict，附当前一致快照
+   */
+  async reconcile(fs, sessionId, documentId, baseVersion, targetDigest, signal) {
+    const record = this.require(documentId)
+    if (record.sessionId !== sessionId) throw documentUnknown(documentId)
+    const { version, bytes } = await this.readConsistent(fs, record.target, record.fileAddress, signal)
+    const currentDigest = digestBytes(bytes)
+    if (currentDigest === targetDigest) {
+      record.baseVersion = version
+      record.savedDigest = currentDigest
+      let receipt
+      for (const entry of record.idempotency.values()) {
+        if (entry.targetDigest === targetDigest) { receipt = entry.result.receipt; break }
+      }
+      return { kind: 'saved', version, savedDigest: currentDigest, receipt }
+    }
+    if (version === String(baseVersion)) {
+      return { kind: 'not-saved', version, currentDigest }
+    }
+    record.baseVersion = version
+    record.savedDigest = currentDigest
+    return { kind: 'conflict', current: this.snapshot(record, bytes) }
+  }
+
   close(sessionId, documentId) {
     const record = this.documents.get(documentId)
     if (record === undefined || record.sessionId !== sessionId) return
     this.documents.delete(documentId)
+    this.byAddress.delete(record.sessionId + '\n' + record.fileAddress)
   }
 }

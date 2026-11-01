@@ -71,9 +71,17 @@ export class DevDocuments extends TypertRemoteService {
     return this.store.save(this.ctx.fs, sessionId, documentId, baseVersion, text, idempotencyKey, dispatchWrite, signal)
   }
 
+  async current(sessionId, documentId, signal) {
+    return this.store.current(this.ctx.fs, sessionId, documentId, signal)
+  }
+
+  async reconcile(sessionId, documentId, baseVersion, targetDigest, signal) {
+    return this.store.reconcile(this.ctx.fs, sessionId, documentId, baseVersion, targetDigest, signal)
+  }
+
   async close(sessionId, documentId, signal) {
     this.store.close(sessionId, documentId)
   }
 }
 
-markRemoteMethods(DevDocuments.prototype, ['open', 'save', 'close'])
+markRemoteMethods(DevDocuments.prototype, ['open', 'save', 'current', 'reconcile', 'close'])

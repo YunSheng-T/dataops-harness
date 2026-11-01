@@ -13,7 +13,7 @@ const write = (path, body) => {
   writeFileSync(join(root, path), body)
 }
 
-const SOURCES = ['src/client/location.js', 'src/client/remote.js', 'src/client/view.js']
+const SOURCES = ['src/client/location.js', 'src/client/remote.js', 'src/client/model.js', 'src/client/hotexit.js', 'src/client/tabs.js', 'src/client/entry.js', 'src/client/view.js']
 
 const inlined = SOURCES.map(path => {
   const body = read(path).replace(/^export\s+/mu, '')

@@ -19,3 +19,16 @@ export const idempotencyConflict = key => devError('dev/idempotency-conflict', `
 export const documentUnknown = documentId => devError('dev/not-found', `unknown or closed document: ${documentId}`, { documentId })
 export const sessionUnknown = sessionId => devError('dev/not-found', `unknown session: ${sessionId}`, { sessionId })
 export const bridgeUnavailable = () => devError('dev/action-forbidden', 'dataops-dev write-intent bridge is not mounted; UI saves are disabled')
+export const readOnly = path => devError('dev/read-only', `file is not writable: ${path}`, { path })
+
+/**
+ * 把底层文件系统错误映射为确定性的 dev/* 失败（不是 save-unknown）。
+ * 只有无法判定是否落盘的传输/未知错误才允许走 save-unknown → reconcile。
+ */
+export function mapSaveError(error, path) {
+  const code = error && typeof error.code === 'string' ? error.code : ''
+  if (code === 'FS_STALE_VERSION') return staleVersion(path)
+  if (code === 'ENOENT' || code === 'FS_NOT_FOUND') return notFound(path)
+  if (code === 'EACCES' || code === 'EPERM' || code === 'EROFS' || code === 'FS_READ_ONLY' || code === 'FS_PERMISSION') return readOnly(path)
+  return undefined
+}
