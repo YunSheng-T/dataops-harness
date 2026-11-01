@@ -2,8 +2,30 @@
 
 > 目标：不依赖公网 npm，把 DataOps profile 装到已有 DSH runtime 的内网机器。  
 > 前提：目标机已经安装兼容的 `dsh` runtime（0.2.1-rc.2 / rc.3）。
+>
+> **状态：以下 source-bundle 流程是旧 dev 路径；M2/M3 起请优先使用 `scripts/release-dataops.mjs` + `dataops-install --offline`。** 旧路径在 M4 验收后退役。
 
-## 1. 构建离线包
+## 0. 推荐：本地 release + installer
+
+在可构建机器：
+
+```sh
+node scripts/release-dataops.mjs
+```
+
+把 `dist/dataops-0.1.0/` 整个目录传到内网，然后：
+
+```sh
+node packages/dataops-install/bin/dataops-install.mjs install \
+  --dsh <path-to-dsh> \
+  --offline dist/dataops-0.1.0 \
+  --yes
+node packages/dataops-install/bin/dataops-install.mjs doctor --dsh <path-to-dsh>
+```
+
+安装器会校验 `manifest.json` / sha256，并在 profile 的 `pnpm-workspace.yaml` 写离线 overrides；不访问 registry。
+
+## 1. 旧流程：构建 source bundle
 
 在可构建的机器上：
 

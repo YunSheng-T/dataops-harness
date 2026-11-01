@@ -1,7 +1,7 @@
 # 发布与安装设计
 
-> 状态：设计稿 · 关键决策已拍板（registry 细节与签名后置）  
-> 日期：2026-10-31  
+> 状态：设计稿 · 关键决策已定 · M1–M4 headless 验证通过（rc.2 + rc.3；Windows/视觉验收待补；未提交）
+> 日期：2026-10-31
 > 关联：[ADR 0013](../decisions/0013-release-install-unit.md) · [全量蓝图](../../prototype/release-install-blueprint.html) · [增量蓝图](../../prototype/release-install-blueprint-delta.html)
 
 ## 1. 问题
@@ -41,6 +41,8 @@
 
 ### 3.1 现状事实
 
+> 以下为 M1 前的基线；M1 已完成项见 §17。
+
 | 对象 | 现状 | 问题 |
 |---|---|---|
 | `packages/dataops-client` | 0.0.1，private，engines | 无 license，无发布配置 |
@@ -79,9 +81,9 @@
   - 禁用官方 `ui-brand-official`
   - `agent-preset-registry.default = dataops-dev`
   - `preset-dataops-dev` 行（来自 `dataops-preset` 的 patch 片段）
-- 依赖 `@dataops/dsh-dataops-client`、`-brand`、`-tools`、`-preset` 的**精确版本**；其中 `-preset` 用于 patch 源片段与版本对齐，运行时由 bundle patch 组合，不单独激活。
+- 依赖 `@dataops/dsh-dataops-client`、`-brand`、`-tools` 的**精确版本**。`-preset` 只作为 patch 源片段，**不进入 bundle 的 dependencies**：`dsh plugin add` 会把任何声明 `dsh.bundle` 的依赖自动加入 `dsh.profile.bundles`，导致 preset 行重复。
 - 声明 `engines.dsh`，值来自 [upstream.json](../../upstream.json) 的 `compatibleRuntimeRange`。
-- 首版版本 `0.1.0`；四个依赖同版本发布。
+- 首版版本 `0.1.0`；bundle、三个运行时依赖和 preset 源片段同版本发布。
 
 patch 不手写两份：构建时由 `profiles/dataops/cordis.patch.yml` 与 `packages/dataops-preset/cordis.patch.yml` 生成 `packages/dataops-bundle/cordis.patch.yml`，生成结果随包发布。生成器与校验放在 `scripts/`，release gate 检查生成结果与源片段一致。
 
@@ -171,8 +173,8 @@ dsh --profile dataops
 
 ### D9 · 发布渠道
 
-- **主渠道：内部 npm registry**。发布 bundle + 四个依赖的精确版本；配置 registry ACL 和 scope 权限。registry 地址、`@dataops` scope owner、发布审批人待补，文档先用 `<internal-registry>` / `<scope-owner>` / `<publish-approver>` 占位。
-- **离线渠道：tarball 集**。`pnpm pack` 出 bundle + 四个依赖，生成 `manifest.json` 和 `sha256sum`；安装器一次性 add 全部 tarball。发布前验证 pnpm 能用本地 tarball 满足精确依赖；若不能，离线渠道改用内部 registry 镜像。
+- **主渠道：内部 npm registry**。发布 bundle + 三个运行时依赖的精确版本；preset 源片段可作为可选开发包发布。配置 registry ACL 和 scope 权限。registry 地址、`@dataops` scope owner、发布审批人待补，文档先用 `<internal-registry>` / `<scope-owner>` / `<publish-approver>` 占位。
+- **离线渠道：tarball 集**。`pnpm pack` 出 bundle + 三个运行时依赖（preset 源片段可选），生成 `manifest.json` 和 `sha256sum`。安装器在 profile 的 `pnpm-workspace.yaml` 写 `overrides`，把三个 `@dataops` 运行时包指向本地 tarball，再 add bundle；本机已用 pnpm 11 验证可行。注意 pnpm 11 不再读 `package.json.pnpm.overrides`，必须用 workspace 配置。
 - **后续渠道**：DSH Desktop 插件市场 / 公共 npm / 品牌桌面 App。v1 不做；market 上架涉及公开索引、安全审核和品牌合规。
 
 ### D10 · 信任与合规
@@ -217,8 +219,8 @@ $DSH_HOME/profiles/dataops
 
 | 包 | 角色 | 发布 | `dsh.bundle` | `engines.dsh` | 依赖 |
 |---|---|---|---|---|---|
-| `@dataops/dsh-dataops-bundle` | 唯一用户安装目标 | 是 | 是（组合 patch） | 是 | 四个包精确版本 |
-| `@dataops/dsh-dataops-preset` | preset 定义 / patch 源片段 | 是（作为依赖，不单独激活） | 是 | 是 | 无 |
+| `@dataops/dsh-dataops-bundle` | 唯一用户安装目标 | 是 | 是（组合 patch） | 是 | 三个运行时包精确版本 |
+| `@dataops/dsh-dataops-preset` | preset 定义 / patch 源片段（dev bundle） | 可选（源片段） | 是 | 是 | 不进入 bundle 运行时依赖 |
 | `@dataops/dsh-dataops-tools` | Host 工具 | 是 | 否 | 是 | cordis peer |
 | `@dataops/dsh-dataops-client` | Client 卡片 | 是 | 否 | 是 | cordis peer |
 | `@dataops/dsh-dataops-brand` | 品牌占用 | 是 | 否 | 是 | cordis peer |
@@ -290,16 +292,17 @@ dsh --profile dataops
 ```sh
 shasum -a 256 -c dataops-0.1.0.sha256
 dataops-install --offline ./dist/dataops-0.1.0
-# 内部：dsh plugin add ./bundle.tgz ./client.tgz ./brand.tgz ./tools.tgz ./preset.tgz
+# 内部：安装器写 pnpm-workspace.yaml overrides，再 add bundle + 三个依赖 tarball
 ```
 
-离线模式不访问 registry；安装器先校验全部 tarball 和依赖版本，再执行 add。
+离线模式不访问 registry；安装器先校验全部 tarball 和依赖版本，写入 profile 的 `pnpm-workspace.yaml` overrides，再执行 add。
+- 已在本机验证：bundle tarball + 三个依赖 tarball + workspace overrides 可以完成安装，profile 只出现一个 bundle、一个 preset 行。
 
 ## 7. 版本与兼容
 
 | 维度 | 规则 |
 |---|---|
-| 插件版本 | SemVer；首版 0.1.0；bundle 与四个依赖同版本 |
+| 插件版本 | SemVer；首版 0.1.0；bundle、三个运行时依赖、preset 源片段同版本 |
 | DSH 版本 | `engines.dsh = >=0.2.1-rc.2 <0.3.0` |
 | Desktop | 2.0.x；以 desktop 实际内置 runtime 为准 |
 | 安装拒绝 | 版本不匹配、缺 pnpm、profile 缺 web-app、bundle 缺依赖 |
@@ -359,7 +362,7 @@ Linux 作为 CI/容器补充；没有真机时标注“未验证”，不当作�
 7. node scripts/build-dataops-bundle.mjs        （生成 patch）
 8. node packages/dataops-client/scripts/build.mjs
 9. node packages/dataops-brand/scripts/build.mjs
-10. pnpm pack (bundle + 4 deps + install CLI) → dist/
+10. node scripts/release-dataops.mjs（build + pack + manifest + sha256 + notices）→ dist/
 11. sha256sum / manifest.json
 12. Local gate（本机可跑）：pnpm pack + 本地 tarball 安装 + dump-config；不访问内部 registry
 13. clean-home install smoke（rc.2 / rc.3）
@@ -376,7 +379,7 @@ dist/dataops-0.1.0/
   dataops-dsh-dataops-client-0.1.0.tgz
   dataops-dsh-dataops-brand-0.1.0.tgz
   dataops-dsh-dataops-tools-0.1.0.tgz
-  dataops-dsh-dataops-preset-0.1.0.tgz
+  dataops-dsh-dataops-preset-0.1.0.tgz   # optional source artifact
   dataops-install-0.1.0.tgz
   manifest.json
   sha256sum
@@ -428,14 +431,15 @@ dist/dataops-0.1.0/
 
 ### M3 · 发布流水线与渠道
 
-- 内部 registry 发布 bundle、4 个依赖与 `@dataops/dataops-install`；离线 tarball + sha256 + NOTICE。
+- 内部 registry 发布 bundle、3 个运行时依赖与 `@dataops/dataops-install`；preset 源片段可选；离线 tarball + sha256 + NOTICE。
 - registry URL / scope / ACL 在内部环境补；**本机不依赖 registry**，本机只验本地 tarball 安装。
 - release gate 接入 rc.2/rc.3 干净 home smoke；registry 安装验收在内网执行。
 
 ### M4 · Desktop 与离线验收
 
-- Desktop 2.0.18 三模式；macOS/Windows；离线演练。
-- 失败路径（版本不匹配、缺 pnpm、tarball 损坏、技能冲突）回归。
+- Desktop 2.0.18 三模式：headless composition 已验证；真机视觉验收待补。
+- Windows x64 未验证；本机只有 macOS。
+- 离线演练（已做）；失败路径（版本不匹配、缺 pnpm、tarball 损坏、技能冲突）回归。
 
 ### M5 · 文档与支持
 
@@ -465,13 +469,13 @@ dist/dataops-0.1.0/
 | 2 | 许可证 | 公司内部专有许可；`LICENSE` / `THIRD_PARTY_NOTICES` 随包发布，法务文本待补 |
 | 3 | 技能默认行为 | 默认安装到 `$DSH_HOME/skills`，可用 `--no-skills` 关闭；不写 `~/.agents/skills`，不装 upstream `dsh-*` |
 | 4 | 现有 desktop profile | v1 只支持独立 `dataops` profile；现有 profile 安装后置为高级选项 |
-| 5 | bundle 命名/版本 | `@dataops/dsh-dataops-bundle`，首版 `0.1.0`；四个依赖同版本 |
+| 5 | bundle 命名/版本 | `@dataops/dsh-dataops-bundle`，首版 `0.1.0`；三个运行时依赖与 preset 源片段同版本 |
 | 6 | 安装器形态 | 独立 bin `@dataops/dataops-install`（`dataops-install` / `doctor` / `uninstall`）+ 离线包内置同一脚本 |
 | 7 | 签名/attestation | 后置；v1 保留 sha256 + registry ACL + 安装确认，等产品成熟再补签名 |
 | 8 | Desktop 支持范围 | 以 runtime `engines.dsh` 为准；发布时测 2.0.18 + 当期最新 Desktop |
 | 9 | 旧 dev 路径退役 | 新路径验收通过（M4）后立即退役；退役前发一次性迁移通知，不保留长期双路径 |
 | 10 | 代码保密 | 不作为发布门槛；v1 发布可读 JS，不做混淆/服务端化；未来若成为硬要求另立设计 |
-| 11 | `dataops-preset` 角色 | 保留为 patch 源片段/版本对齐依赖，不单独作为用户安装目标 |
+| 11 | `dataops-preset` 角色 | 保留为 patch 源片段；不进入 bundle 运行时依赖，避免被 `dsh plugin add` 当作独立 bundle 激活 |
 
 ### 15.1 仍需补充的信息
 
@@ -491,7 +495,24 @@ dist/dataops-0.1.0/
 - **代码可读**：已明确不作为发布门槛；如果后续出现保密要求，需要另立设计，不能靠签名/ACL 解决。
 - **品牌/法律**：第三方图标、宿主标题、官方背书边界需要法务/品牌确认。
 
-## 17. 参考
+## 17. 实施记录（M1–M4，2026-10-31）
+
+- 新增 `packages/dataops-bundle`（`@dataops/dsh-dataops-bundle@0.1.0`）与生成 patch；依赖 client/brand/tools 三个运行时包。
+- 新增 `scripts/build-dataops-bundle.mjs`、`scripts/check-dataops-bundle.mjs`；`verify-local` 已接入 bundle check（15 项）。
+- 五个包统一 0.1.0，补 `engines.dsh`、`license`、`repository`、`publishConfig`；新增根 `LICENSE`、`THIRD_PARTY_NOTICES.md`。
+- 本地 tarball 安装验证通过：bundle + 三个依赖 + profile `pnpm-workspace.yaml` overrides；profile 只出现一个 bundle、一行 preset。
+- 关键经验：`dataops-preset` 不能作为 bundle 运行时依赖；它声明 `dsh.bundle`，`dsh plugin add` 会把它也加入 profile bundles，导致 preset 行重复。
+- M2 新增 `packages/dataops-install`：`dataops-install` / `dataops-doctor` / `dataops-uninstall`；支持 preflight、版本检查、seed、registry/离线安装、receipt、skills、workspace、migrate/reset、dry-run。
+- M2 本机验证：离线安装/升级、19 个技能、workspace 技能、卸载、migrate/拒绝路径、版本不匹配、dry-run、doctor；`verify-local` 16 项通过。
+- M3 新增 `scripts/release-dataops.mjs`：构建、校验、打包 6 个包、嵌入 LICENSE/THIRD_PARTY_NOTICES、生成 `manifest.json` / `sha256sum` / `LOCAL-RELEASE.md`；release 产物 + 离线安装 + manifest 校验本机通过。
+- `verify-local` 16/16 通过；client smoke 增加 `navigator` stub，以覆盖新增 CodeMirror 预览运行时的 Node 沙箱。
+- 安装器已支持离线 manifest 校验和校验和失败拒绝；本机验证了正常安装与篡改 tarball 拒绝。
+- M4 新增 `scripts/check-desktop-modes.mjs`：用 DSH Desktop 的 profile resolver 在 headless 下组合 compatibility / extended / advanced，三种模式都找到 `desktop-shell` row，`skippedBundles` 为空（Desktop runtime rc.2）。
+- rc.3 临时安装 + release install / doctor / boot 通过。
+- M4 未完成：Windows x64、Desktop 真机视觉验收（侧栏/品牌/布局截图）；因此旧 symlink 路径暂不删除，先标记 deprecated。
+- 尚未完成：M3 内部 registry 发布/ACL（内网补）、M4 Windows/视觉验收、旧路径退役、提交/评审。
+
+## 18. 参考
 
 - [DSH 插件打包与安装](../../deepseek-harness/docs/user/develop/basic/publish.md)（只读上游参考）
 - [DSH profile 与兼容检查](../../deepseek-harness/packages/boot/app-boot/README.md)（只读上游参考）

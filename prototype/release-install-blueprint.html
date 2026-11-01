@@ -338,7 +338,7 @@
         </div>
       </div>
       <div class="metrics">
-        <div class="metric"><b>1</b><span>可安装 bundle · 4 个依赖包</span></div>
+        <div class="metric"><b>1</b><span>可安装 bundle · 3 个运行时依赖 + preset 源片段</span></div>
         <div class="metric"><b>2</b><span>发布渠道 · 内部 registry / 离线 tarball</span></div>
         <div class="metric"><b>3</b><span>门禁 · 版本兼容 / 发布完整性 / 安装验收</span></div>
         <div class="metric"><b>0</b><span>Desktop 代码改动 · 只重启与切换 profile</span></div>
@@ -420,7 +420,7 @@
       </div>
       <div class="grid-2" style="margin-top:11px">
         <div class="card soft"><div class="k">Channel A · 主渠道</div><h3>内部 npm registry</h3><p>按 <code>@dataops</code> scope 发布；安装器按精确 semver 解析，pnpm 生成 lock。适合联网的内网开发机与 CI。</p><div class="chips"><span class="chip">exact version</span><span class="chip">registry ACL</span><span class="chip">pnpm lock</span></div></div>
-        <div class="card soft"><div class="k">Channel B · 离线</div><h3>tarball + sha256</h3><p>离线包携带 bundle 及其依赖的打包产物与校验文件；目标机先校验再安装。registry 地址待补；签名/attestation 后置。</p><div class="chips"><span class="chip">.tgz</span><span class="chip">sha256</span><span class="chip">no public network</span></div></div>
+        <div class="card soft"><div class="k">Channel B · 离线</div><h3>tarball + sha256</h3><p>离线包携带 bundle 与三个运行时依赖的 tarball 和校验文件；安装器在 profile 的 pnpm-workspace.yaml 写 overrides 指向本地包，再 add bundle。本机已验证；registry 地址待补，签名/attestation 后置。</p><div class="chips"><span class="chip">.tgz</span><span class="chip">sha256</span><span class="chip">no public network</span></div></div>
       </div>
       <div class="callout" style="margin-top:11px"><b>稳定的只有接口：</b>用户看到的始终是 profile 名 <code>dataops</code>、bundle 包名与两条安装路径；包内部如何组合（patch 行、依赖树）属于实现，可在版本内演进。</div>
     </div>
@@ -446,7 +446,7 @@
           <div class="arrowrow"><b>web → bundle</b> 能力叠加</div>
           <div class="layer">
             <div class="layer-label">L2<b>DataOps bundle</b></div>
-            <div class="layer-main"><div class="box dataops"><h4><code>@dataops/dsh-dataops-bundle@0.1.0</code> <span class="tag brand"><i></i>新增 · 唯一安装单元</span></h4><p>本身是配置层：<code>dsh.bundle.patch</code> 组合 tools / brand / client 与 preset 行，禁用官方品牌座位，设默认 preset；patch 由 profile 与 preset 两份源片段生成。依赖写死精确版本，声明 <code>engines.dsh</code>。</p><div class="chips"><span class="chip">bundle.patch</span><span class="chip">4 exact deps</span><span class="chip">engines</span><span class="chip">v0.1.0</span></div></div></div>
+            <div class="layer-main"><div class="box dataops"><h4><code>@dataops/dsh-dataops-bundle@0.1.0</code> <span class="tag brand"><i></i>新增 · 唯一安装单元</span></h4><p>本身是配置层：<code>dsh.bundle.patch</code> 组合 tools / brand / client 与 preset 行，禁用官方品牌座位，设默认 preset；patch 由 profile 与 preset 两份源片段生成。依赖写死精确版本，声明 <code>engines.dsh</code>。</p><div class="chips"><span class="chip">bundle.patch</span><span class="chip">3 exact deps</span><span class="chip">engines</span><span class="chip">v0.1.0</span></div></div></div>
           </div>
           <div class="arrowrow"><b>bundle → 用户层</b> 不覆盖</div>
           <div class="layer">
@@ -464,12 +464,12 @@
             <div class="dep-tree"><b>@dataops/dsh-dataops-bundle</b>@0.1.0
 ├─ @dataops/dsh-dataops-tools
 ├─ @dataops/dsh-dataops-brand
-├─ @dataops/dsh-dataops-client
-└─ @dataops/dsh-dataops-preset
+└─ @dataops/dsh-dataops-client
+<span class="dim">preset: build-time source fragment only</span>
 <span class="dim">engines.dsh:
   &gt;=0.2.1-rc.2 &lt;0.3.0</span></div>
           </div>
-          <div class="card soft"><b>版本与元数据</b><p>4 个包当前 <code>0.0.1</code> / <code>0.0.0</code>、均为 private、无 license。发布时四包与 bundle 统一 <code>0.1.0</code>，补 engines / license / repository / publishConfig，并移除 private。</p></div>
+          <div class="card soft"><b>版本与元数据</b><p>M1 已把现有 4 个包与 bundle 统一到 <code>0.1.0</code>：移除 private，补 license / repository / publishConfig / engines；preset 仅作源片段。</p></div>
           <div class="card soft"><b>职责归属</b><p><b>DataOps</b>：bundle、tools、brand、client、preset、install CLI。<b>官方</b>：base、web-app、runtime。<b>用户</b>：profile overlay、home patch、workspace。</p></div>
         </div>
       </div>
@@ -477,11 +477,11 @@
         <table>
           <thead><tr><th>包 / 层</th><th>角色</th><th>安装位置</th><th>现状 → 目标</th><th>版本约束</th></tr></thead>
           <tbody>
-            <tr><td><b>bundle</b></td><td>配置组合 + 安装入口</td><td>profile 依赖</td><td>新增 <code>packages/dataops-bundle</code>，首版 <code>0.1.0</code></td><td>依赖 4 包精确版本</td></tr>
+            <tr><td><b>bundle</b></td><td>配置组合 + 安装入口</td><td>profile 依赖</td><td>新增 <code>packages/dataops-bundle</code>，首版 <code>0.1.0</code></td><td>依赖 3 个运行时包精确版本</td></tr>
             <tr><td><b>dataops-tools</b></td><td>Host 工具与 provider 接入</td><td>profile 依赖</td><td>保留；补 license / engines，真实 provider 仍后置</td><td>精确版本</td></tr>
             <tr><td><b>dataops-brand</b></td><td>Client 品牌占位（∞ / DataOps）</td><td>profile 依赖</td><td>保留；只换名字 / Logo，不动主题与官方包</td><td>精确版本</td></tr>
             <tr><td><b>dataops-client</b></td><td>Client 卡片与工作台</td><td>profile 依赖</td><td>保留；工具契约不变</td><td>精确版本</td></tr>
-            <tr><td><b>dataops-preset</b></td><td>preset 定义 / patch 源片段</td><td>bundle 依赖，不单独激活</td><td>保留；补 engines / license，版本统一 <code>0.1.0</code></td><td>精确版本</td></tr>
+            <tr><td><b>dataops-preset</b></td><td>preset 定义 / patch 源片段</td><td>build-time 源片段，不进入运行时依赖</td><td>保留；补 engines / license，版本统一 <code>0.1.0</code></td><td>同版本，不装进 profile</td></tr>
             <tr><td><b>dataops-install</b></td><td>安装 / 诊断 / 卸载 CLI</td><td>registry bin / 离线脚本</td><td>新增 <code>@dataops/dataops-install</code>，与离线包同一脚本</td><td>检查 runtime，不依赖 DSH 包</td></tr>
             <tr><td><b>profile overlay</b></td><td>用户配置与覆盖</td><td>profile 根目录</td><td>安装器创建后不覆盖</td><td>由用户掌控</td></tr>
             <tr><td><b>skills</b></td><td>独立 artifact</td><td><code>$DSH_HOME/skills</code>；可选 <code>--workspace</code></td><td>迁出全局 <code>~/.agents/skills</code>；只带筛选后的 DataOps 工作流技能</td><td>按 artifact 版本</td></tr>
@@ -707,7 +707,7 @@
             <tr><td><b>D8</b></td><td>旧路径退役时点</td><td>M4 验收通过后立即退役；提前发一次性迁移通知</td><td><span class="tbd done">已定</span></td></tr>
             <tr><td><b>D9</b></td><td>安装器形态</td><td>独立 <code>@dataops/dataops-install</code> bin + 离线包内置同一脚本</td><td><span class="tbd done">已定</span></td></tr>
             <tr><td><b>D10</b></td><td>代码保密</td><td>不作为发布门槛；v1 发布可读 JS，不做混淆/服务端化</td><td><span class="tbd done">已定</span></td></tr>
-            <tr><td><b>D11</b></td><td><code>dataops-preset</code> 角色</td><td>patch 源片段 / 版本对齐依赖，不单独作为用户安装目标</td><td><span class="tbd done">已定</span></td></tr>
+            <tr><td><b>D11</b></td><td><code>dataops-preset</code> 角色</td><td>patch 源片段；不进入 bundle 运行时依赖，避免被当作独立 bundle 激活</td><td><span class="tbd done">已定</span></td></tr>
           </tbody>
         </table>
       </div>

@@ -226,8 +226,8 @@
     </div>
     <div class="section-body">
       <div class="change-grid">
-        <div class="change"><div class="k">Change 01 · Unit</div><h3>安装单元：4 个包 → 1 个入口</h3><p>新增 <code>dataops-bundle</code> 作为唯一安装入口；运行时仍依赖 4 个包，由 patch 组合 tools / brand / client / preset。依赖精确版本，声明 engines。</p><span class="from">4 个独立包</span> <span class="to">1 个安装入口</span></div>
-        <div class="change"><div class="k">Change 02 · Install</div><h3>安装：手写 + symlink → 官方 pnpm</h3><p>先用 shipped web 模板 seed，再让 <code>dsh plugin add</code> 解析 bundle 与 4 个依赖；不再手写 manifest 或绝对链接。</p><span class="from">file: · 绝对 symlink</span> <span class="to">registry · pnpm lock</span></div>
+        <div class="change"><div class="k">Change 01 · Unit</div><h3>安装单元：4 个包 → 1 个入口</h3><p>新增 <code>dataops-bundle</code> 作为唯一安装入口；运行时依赖 client / brand / tools 3 个包；preset 只作为 patch 源片段，不进入运行时依赖。依赖精确版本，声明 engines。</p><span class="from">4 个独立包</span> <span class="to">1 个安装入口</span></div>
+        <div class="change"><div class="k">Change 02 · Install</div><h3>安装：手写 + symlink → 官方 pnpm</h3><p>先用 shipped web 模板 seed，再让 <code>dsh plugin add</code> 解析 bundle 与 3 个运行时依赖；不再手写 manifest 或绝对链接。</p><span class="from">file: · 绝对 symlink</span> <span class="to">registry · pnpm lock</span></div>
         <div class="change"><div class="k">Change 03 · Release</div><h3>发布：手工拷贝 → 两条流水线</h3><p>构建校验后发内部 registry；同时出离线 tarball + sha256。安装 receipt 记录版本、dshVersion 与 sha256（source 可选）。</p><span class="from">无发布渠道</span> <span class="to">registry / tarball</span></div>
         <div class="change"><div class="k">Change 04 · Lifecycle</div><h3>配置 / 技能：全局侵入 → 专用边界</h3><p>配置进 bundle + 用户 overlay；技能迁出 <code>~/.agents/skills</code>，默认装到 <code>$DSH_HOME/skills</code> 并做重名 preflight。</p><span class="from">全局技能软链</span> <span class="to">artifact + DSH_HOME root</span></div>
       </div>
@@ -263,7 +263,7 @@
           <h3>一条命令，装、升、回、卸</h3>
           <p>bundle 作为唯一安装入口；运行时仍加载 4 个包。安装由官方 CLI 与 pnpm 完成，用户配置有独立层。</p>
           <div class="stackline">
-            <div class="node add"><span class="mini-tag">repo</span><b>1 个 bundle</b> @0.1.0 · 依赖 4 个精确版本</div>
+            <div class="node add"><span class="mini-tag">repo</span><b>1 个 bundle</b> @0.1.0 · 3 个运行时依赖 + preset 源片段</div>
             <div class="node good"><span class="mini-tag">engine</span>engines.dsh &gt;=0.2.1-rc.2 &lt;0.3.0；不匹配拒绝</div>
             <div class="node good"><span class="mini-tag">profile</span>shipped web 模板 seed → pnpm lock</div>
             <div class="node add"><span class="mini-tag">install</span><code>dsh plugin --profile dataops add bundle</code></div>
@@ -297,7 +297,7 @@
             <tr><td><b>dataops-bundle</b></td><td>不存在</td><td><code>packages/dataops-bundle@0.1.0</code>；patch 组合 tools / brand / client + preset 行、禁官方品牌 + 默认 preset；由两份源片段生成</td><td><span class="diff-status add">新增</span></td></tr>
             <tr><td><b>4 个能力包</b></td><td><code>0.0.1</code> / <code>0.0.0</code>，private，无 license；preset 无 engines / 依赖</td><td>保留；补 engines / license / repository / publishConfig，移除 private；四包与 bundle 统一 <code>0.1.0</code></td><td><span class="diff-status keep">保留</span></td></tr>
             <tr><td><b>tools / brand / client 行</b></td><td>写在 <code>profiles/dataops/cordis.patch.yml</code></td><td>进入 bundle patch；profile 只留用户覆盖</td><td><span class="diff-status move">迁出</span></td></tr>
-            <tr><td><b>preset 声明</b></td><td>preset patch 只声明自身</td><td>作为依赖与 patch 源片段；运行时由 bundle patch 组合，不单独激活</td><td><span class="diff-status move">迁出</span></td></tr>
+            <tr><td><b>preset 声明</b></td><td>preset patch 只声明自身</td><td>仅作为 build-time patch 源片段，不进入 bundle 运行时依赖，避免被当作独立 bundle 激活</td><td><span class="diff-status move">迁出</span></td></tr>
             <tr><td><b>官方品牌禁用</b></td><td>profile patch 里 <code>ui-brand-official: disabled</code></td><td>移到 bundle patch；语义不变</td><td><span class="diff-status move">迁出</span></td></tr>
             <tr><td><b>默认 preset</b></td><td>profile patch 设 <code>default: dataops-dev</code></td><td>移到 bundle patch；用户仍可显式切换</td><td><span class="diff-status move">迁出</span></td></tr>
             <tr><td><b>profile 初始化</b></td><td>脚本手写 base + web-app manifest</td><td>从 shipped web 模板 seed，保证 web-app 存在</td><td><span class="diff-status replace">替换</span></td></tr>

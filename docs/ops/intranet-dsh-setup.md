@@ -38,44 +38,49 @@ dsh --version
 
 如果版本不匹配，先升级/降级 DSH，不要改插件 engines 硬扛。
 
-## 3. 离线包怎么进去
+## 3. 发布包怎么进去
+
+> 旧 source-bundle / symlink 流程已 deprecated；M2/M3 起使用 release + installer。旧路径在 M4 验收后退役。
 
 在可构建机器：
 
 ```sh
-node scripts/pack-dataops-offline.mjs
+node scripts/release-dataops.mjs
 ```
 
-当前产物：
+产物是目录：
 
 ```text
-dist/dataops-harness-offline-2026-10-28.tar.gz
-sha256: e0fd32c5226fdda1ccb0697478ac99912e4643683765b6f2b6cbf41bd46010e9
+dist/dataops-0.1.0/
+  manifest.json
+  sha256sum
+  dataops-*.tgz
+  LICENSE
+  THIRD_PARTY_NOTICES.md
 ```
 
-内网操作：
+把整个目录传到内网，并校验：
 
 ```sh
-shasum -a 256 -c dataops-harness-offline-2026-10-28.tar.gz.sha256
-mkdir -p /opt/dataops
-tar -xzf dataops-harness-offline-2026-10-28.tar.gz -C /opt/dataops
-cd /opt/dataops/dataops-harness-offline-2026-10-28
+cd dist/dataops-0.1.0
+shasum -a 256 -c sha256sum
 ```
-
-> 解压路径必须稳定。安装脚本用绝对路径 symlink 包；移动/删除这个目录会让 profile 断链。
 
 ## 4. 安装到内网 DSH
 
 ```sh
 export DSH_HOME="$HOME/.dsh"          # 或内网实际 DSH_HOME
-export DSH_AGENTS_HOME="$HOME/.agents"
 
-node scripts/install-dataops-profile.mjs --home "$DSH_HOME"
-node scripts/install-dataops-skills.mjs --agents-home "$DSH_AGENTS_HOME"
-node scripts/install-harness-skills.mjs --agents-home "$DSH_AGENTS_HOME"
-node scripts/check-install.mjs --home "$DSH_HOME"
-node scripts/check-dataops-health.mjs
+node packages/dataops-install/bin/dataops-install.mjs install \
+  --dsh <path-to-dsh> \
+  --offline dist/dataops-0.1.0 \
+  --yes
+
+node packages/dataops-install/bin/dataops-install.mjs doctor \
+  --dsh <path-to-dsh>
 ```
+
+安装器会自动 seed web 模板、写离线 overrides、校验 manifest/sha256、安装技能到 $DSH_HOME/skills，并生成 receipt。
 
 安装后：
 

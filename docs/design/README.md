@@ -59,6 +59,8 @@
 ### 发布与安装
 
 - [release-install.md](release-install.md)（发布单元、bundle/profile、registry/离线、升级/卸载）
+- [发布/安装 headless 验收](../verification/release-install-acceptance.md)
+- [发布/安装指南](../ops/release-install.md)
 
 ### 生命周期其他目录
 

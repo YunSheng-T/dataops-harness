@@ -1,7 +1,7 @@
 # 0013 · 发布与安装单元：独立 profile + 自包含 bundle
 
 - 日期：2026-10-31
-- 状态：已确认，待实施（registry 细节与签名后置）
+- 状态：已确认，M1–M4 headless 验证通过（rc.2 + rc.3；未提交；Windows/真机视觉与 registry 细节待补）
 - 关联：[发布与安装设计](../design/release-install.md) · [全量蓝图](../../prototype/release-install-blueprint.html) · [增量蓝图](../../prototype/release-install-blueprint-delta.html)
 
 ## 背景
@@ -16,7 +16,7 @@
 
 ## 决策
 
-1. **发布单元**是一个自包含 bundle：新增 `@dataops/dsh-dataops-bundle`，组合 tools/brand/client/preset 行、默认值、品牌禁用和默认 preset；依赖四个包精确版本；声明 `engines.dsh`。
+1. **发布单元**是一个自包含 bundle：新增 `@dataops/dsh-dataops-bundle`，组合 tools/brand/client/preset 行、默认值、品牌禁用和默认 preset；依赖三个运行时包（client/brand/tools）精确版本；preset 仅作为 patch 源片段，不进入运行时依赖（否则 `dsh plugin add` 会把 preset 也当作独立 bundle 激活）；声明 `engines.dsh`。
 2. **安装单元**是独立 `dataops` profile，从 shipped `web` 模板初始化，再用官方 `dsh plugin --profile dataops add <bundle>` 安装；pnpm 管理 profile，不手写、不用绝对 symlink。
 3. **默认不装进用户现有 `desktop` profile**；品牌、默认 preset 和工具集变化会侵入用户环境。现有 profile 安装作为未来可选能力，需拆分品牌/preset。
 4. **DSH Desktop 不改**：共用 `$DSH_HOME`，Desktop 自动为 web profile 注入 desktop shell；安装后重启并切换 profile。
@@ -29,7 +29,7 @@
 11. **许可证**：公司内部专有许可；`LICENSE` / `THIRD_PARTY_NOTICES` 随包发布，法务文本待补。
 12. **代码保密与签名**：代码保密不作为发布门槛；v1 保留 sha256 + registry ACL + 安装确认，签名/attestation 后置。
 13. **旧路径退役**：新路径 M4 验收通过后立即退役 symlink 安装；提前发一次性迁移通知，不保留长期双路径。
-14. **preset 角色**：`dataops-preset` 保留为 patch 源片段/版本对齐依赖，不单独作为用户安装目标。
+14. **preset 角色**：`dataops-preset` 保留为 patch 源片段，不进入 bundle 运行时依赖，也不单独作为用户安装目标。
 
 ## 后果
 
