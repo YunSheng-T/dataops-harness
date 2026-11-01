@@ -2,335 +2,373 @@
 
 > 状态：方案评审中，不实施。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
-> 工作项：`workitems/2026-11-01-dataops-plugin-roadmap/`
+> 聚合方案：`docs/design/dataops-plugin-surface.md`
 
 ## 1. 一句话
 
-Agent 在改内部代码仓前，先让 Repo Doctor 扫描一遍：它告诉 Agent 这个仓库有哪些 package、task、artifact，以及哪里会阻断构建或部署。
+Repo Doctor 是 DataOps 工作面板里的**仓库体检 section**，不是对话卡，也不是新的代码仓页面。
 
-用户看到的不是“又一个 IDE”，而是一张可读的**仓库体检卡**。
+它告诉 Agent 和用户：
+
+- 当前 workspace 是不是 DataOps 代码仓
+- 有哪些 package、task、artifact
+- 哪些地方会阻断构建/导入
+- 哪些只是部署前风险
 
 ## 2. 用户感知
 
-### 入口 A：对话里的体检卡
+### 唯一入口：DataOps 面板
 
-Agent 调用 `dataops_repo_scan` 后，Turn 内出现一张卡：
+```text
+右侧栏
+[文件] [DataOps]
+          │
+          ├─ 概览
+          ├─ 仓库
+          ├─ 资产
+          ├─ 血缘
+          ├─ 证据
+          └─ 检查
+```
+
+打开 DataOps 面板，默认显示 `概览`：
 
 ```text
 ┌──────────────────────────────────────────────┐
-│ ● 仓库体检   internal-code-repo     [通过]    │
-│   dataops-harness / lts_code + code          │
+│ DataOps                                      │
+│ internal-code-repo                 [已识别]   │
 │                                              │
-│   5 packages   4 tasks   6 findings           │
-│   0 blocking   2 warnings   4 info            │
+│ 仓库体检                                     │
+│ 5 packages · 4 tasks · 13 jobs · 36 files    │
+│ 0 blocking · 2 warnings · 4 info             │
 │                                              │
-│   ⚠ 占位符缺失                        2 项    │
-│     DB_EXEC · channel_backfill/task.yaml:44  │
-│     ALERT_URL · channel_alert/task.yaml:31   │
-│                                              │
-│   ● package 文件覆盖                   全部通过 │
-│   ● task parent / group               全部通过 │
-│                                              │
-│   只读扫描 · 2026-11-01 23:40                 │
-│   [重新检查]  [复制摘要]  [让 Agent 处理]      │
+│ [运行检查]  [刷新索引]                        │
+├──────────────────────────────────────────────┤
+│ 检查                                         │
+│ ⚠ PLACEHOLDER_MISSING                 2 项   │
+│   DB_EXEC · channel_backfill/task.yaml:44     │
+│   ALERT_URL · channel_alert/task.yaml:31      │
+│ ● package 覆盖                          通过  │
+│ ● task parent / group                   通过  │
 └──────────────────────────────────────────────┘
 ```
 
-### 入口 B：`/dataops-check` 命令
+### 不是对话卡
 
-用户在 composer 输入：
+- Agent 调用工具后，不在对话里插入大卡片
+- 面板有固定位置，不随对话滚动丢失
+- 对话里最多出现一行“已更新 DataOps 面板”
+- 用户可以随时重新打开面板查看当前状态
 
-```text
-/dataops-check
-/dataops-check --package lts_channel_daily
-/dataops-check --task channel_backfill
-```
+### 命令
 
-执行一次只读扫描，在对话里插入同一张体检卡。
-
-### 入口 C：composer 状态 chip
-
-仓库被识别且最近扫描过一次时，在 composer dock 显示：
+只注册一个 `/dataops`：
 
 ```text
-[ 仓库 5 pkg · 2 issues ]   [重扫]
+/dataops                打开 DataOps 面板
+/dataops open checks    打开检查 section
+/dataops scan           只做索引扫描
+/dataops validate       只做规则校验
+/dataops check          索引 + 校验
 ```
 
-- 不自动扫描
-- 点击 chip 打开/展开最近一次体检卡
-- 没有仓库时不显示
-- 不影响普通对话输入
-
-### 入口 D：设置
-
-在 DataOps 设置页增加：
+P0 可以只实现：
 
 ```text
-DataOps Repo
-
-仓库根目录   <workspace>/internal-code-repo     [只读/路径]
-扫描范围     manifest + build + lts_code + code
-忽略目录     output, .git, node_modules
-检查级别     基础 / 严格
+/dataops
+/dataops check
 ```
 
-P0 可以先用 workspace 当前目录，设置页作为可选阶段。
+`scan` / `validate` 的完整命令可以后续开放。
 
-## 3. 用户旅程
+### Composer chip
 
-### 场景 1：Agent 准备改 task
-
-1. 用户说“把 channel_alert 的告警 URL 改一下”。
-2. Agent 调 `dataops_repo_scan`。
-3. 卡片显示 2 个 warning：`ALERT_URL` 未在 parameters.properties 声明，`send_alert` 的父依赖正常。
-4. Agent 先补齐参数，再生成修改。
-5. 修改后再扫描一次，卡片变绿。
-
-### 场景 2：用户主动检查
-
-1. 用户输入 `/dataops-check`。
-2. 卡片显示 5 packages、4 tasks、findings。
-3. 用户点“让 Agent 处理”，卡片把 findings 摘要作为普通用户消息发给 Agent。
-
-### 场景 3：没有仓库
+可选，后续再加：
 
 ```text
-当前 workspace 不是 DataOps 代码仓
-缺少 .dataops/manifest.yaml
-[打开 Files]  [选择仓库根目录]
+[DataOps · 2]   // 未读 findings 数
 ```
 
-## 4. 卡片结构
+- 全局面板只有一个聚合 chip
+- 不为每个插件加 chip
+- 点击打开面板
+- 没有 repo 或没有结果时不显示
 
-### 4.1 Header
+## 3. 检测：当前 workspace 是不是数据代码仓
 
-- 左侧状态点 + “仓库体检”
-- 当前 workspace / repo 名
-- 状态 chip：`通过` / `警告` / `阻断` / `扫描中` / `错误`
+默认根目录：**当前 Session 的 workspace root**。
+不递归搜索整个 workspace，不扫描 `$HOME`，不猜子目录。
 
-### 4.2 概览
+### 强信号
+
+同时满足：
+
+1. `.dataops/manifest.yaml` 存在且可解析
+2. `.dataops/build.yaml` 存在且可解析
+3. `manifest.structure.ref` 至少一个平台根目录存在
+4. `build.packages` 至少一个 package
+
+### 三态
 
 ```text
-packages / tasks / jobs / artifacts
-blocking / warning / info
+detected       强信号满足，进入扫描
+partial        有 .dataops 但配置/平台根目录有缺失；显示诊断，不宣称正常仓库
+not-detected   不是 DataOps 代码仓；显示说明，不自动扫描
 ```
 
-数字使用 `b` 标签 + 小标签；不要用大面积彩色块。
+### 反例
 
-### 4.3 Findings
+- 只有 `task.yaml`，没有 `.dataops/`：`not-detected`
+- `.dataops/manifest.yaml` 存在但没有 build：`partial`
+- workspace 内有 `samples/internal-code-repo` 子目录：默认不递归，用户应打开该子目录作为 workspace
+- 未来支持 `dataops.repoRoots` 配置，但 P0 只做当前 workspace
 
-按严重度分组：
-
-```text
-阻断（blocking）
-  REPO_FILE_MISSING  文件不存在    lts_code/foo/task.yaml
-  TASK_PARENT_MISSING 父作业不存在  channel_daily/task.yaml:42
-
-警告（warning）
-  PLACEHOLDER_MISSING 参数缺失 ...
-  PACKAGE_NO_FILES  package 没有命中文件 ...
-
-提示（info）
-  ...
-```
-
-每行显示：
-
-- 严重度
-- code（monospace）
-- 人类可读信息
-- file:line
-- 可选 task / job / package
-- “打开文件”动作
-
-### 4.4 Footer
-
-```text
-只读扫描 · as_of
-[重新检查] [复制摘要] [让 Agent 处理]
-```
-
-## 5. 视觉
-
-- 使用 DSH 的 `--dsw-alias-*` token
-- 卡片最大宽度约 720，不铺满整页
-- 标题 13px，正文 11px，路径 10px monospace
-- 状态色：通过绿、警告琥珀、阻断红、信息中性
-- 不展示源码正文；只展示摘要和 file:line
-- findings 超过 5 条时折叠为“还有 N 条”
-- 空状态简洁，不画大插图
-
-## 6. 交互
-
-- 默认折叠 info
-- 点击 finding 行可展开 hint
-- “打开文件”复用 DSH Files / workspace file 打开
-- “重新检查”不直接调用工具；它发送一条普通用户消息 `/dataops-check`，保持 Agent 回合和审计链
-- “让 Agent 处理”把 findings 摘要发送为普通消息，不自动修改
-- 扫描中显示 skeleton / 进行中，不阻塞对话
-- 错误显示可诊断 code，不吞异常
-
-## 7. 工具契约
-
-### `dataops_repo_scan`
-
-输入：
+### 输出
 
 ```json
 {
-  "root": "optional workspace-relative path",
-  "scope": "all | packages | lts | code",
-  "package": "optional package name",
-  "task": "optional task name",
-  "maxFindings": 100
+  "detected": true,
+  "confidence": "strong",
+  "root": "internal-code-repo",
+  "signals": [".dataops/manifest.yaml", ".dataops/build.yaml", "lts_code", "code"]
 }
 ```
+
+## 4. scan 与 validate
+
+### scan：发现，不下结论
+
+- 读取 manifest / build
+- 遍历 package 文件范围
+- 解析 LTS tasks/jobs
+- 识别 artifact 类型
+- 构建 RepoIndex
+- 不产生 severity
+- 可以缓存；文件变化后失效
 
 输出：
 
-```json
-{
-  "schemaVersion": 1,
-  "repo": "internal-code-repo",
-  "asOf": "2026-11-01T23:40:00+08:00",
-  "status": "pass | warn | block | error",
-  "metrics": {
-    "packages": 5,
-    "tasks": 4,
-    "jobs": 13,
-    "artifacts": 36,
-    "blocking": 0,
-    "warning": 2,
-    "info": 4
-  },
-  "packages": [],
-  "tasks": [],
-  "findings": [
-    {
-      "severity": "warning",
-      "code": "PLACEHOLDER_MISSING",
-      "message": "ALERT_URL 未在 parameters.properties 声明",
-      "path": "lts_code/channel_alert/task.yaml",
-      "line": 31,
-      "task": "channel_alert_trigger",
-      "job": "send_alert",
-      "hint": "在参数文件中补充 key，或在作业中移除引用"
-    }
-  ],
-  "truncated": false
-}
+```text
+RepoIndex
+  repo, root, asOf, digest
+  detection
+  packages[]
+  tasks[]
+  artifacts[]
+  files[]
 ```
 
-### `dataops_repo_validate`
+### validate：规则，产生 findings
 
-- 与 scan 共用同一套 rules
-- 只返回 findings / pass 状态
-- 用于 Agent 修改后的快速复检
+- 读取 RepoIndex
+- 执行规则
+- 产生 `blocking / warning / info`
+- 不重新遍历全仓，除非 index 失效
+- 可被 Agent、面板、CI 共用
 
-### `/dataops-check`
+输出：
 
-- 参数：`--package`、`--task`
-- 执行只读 scan
-- 结果进入同一张卡
-- 不写工作项、不改文件
+```text
+ValidationResult
+  indexDigest
+  status: pass | warn | block | error
+  findings[]
+```
 
-## 8. 检查规则 P0
+### check：组合
+
+```text
+/dataops check = scan（若过期）+ validate
+```
+
+### 工具契约
+
+Host 只暴露两个 Agent 工具：
+
+```text
+dataops_repo_scan
+dataops_repo_validate
+```
+
+P0 的 `check` 是面板/命令层组合，不新增第三个 agent 工具。
+
+## 5. 严重度
+
+### blocking
+
+确定会阻断构建/导入/解析：
+
+- manifest/build 解析失败
+- package 必填字段缺失
+- package 文件路径不命中
+- task/job 解析失败
+- parentJobName 指向不存在的 job
+- 存在 parent cycle
+- group path 与 parent 不一致
+- jobType 非法
+
+### warning
+
+无法确定外部环境，但部署前必须确认：
+
+- `$$KEY$$` 未在 `parameters.properties` 声明
+- parameters 文件缺失
+- package 没有命中文件以外的覆盖缺口
+- 任务/作业命名 warning
+- 依赖目标无法静态确认
+
+### info
+
+- 覆盖率建议
+- 命名风格
+- 可优化项
+
+### 关于占位符
+
+`$$KEY$$` 缺失默认是 **warning**，不是 blocking：
+
+- build 不替换
+- deploy 才替换
+- 可能由目标环境提供
+- 但不能宣称通过；应显示“部署前确认”
+
+只有以下情况可升级为 blocking：
+
+- 配置要求所有占位符必须由本地 properties 声明
+- 该 key 被标记为 required
+- validate 明确运行在 deploy-ready 模式
+
+## 6. P0 规则
 
 ### 仓库
 
-- `manifest.yaml` 版本 1.2
-- `build.yaml` 版本 1.2
+- manifest/build 版本 1.2
 - package 必填：packageName/toolChain/serviceType/pipelineType/operationType
 - package 文件范围命中
-- package 之间不重复
+- package 不重复
+- package 不混平台
 
 ### LTS
 
-- `formatVersion: 2`
-- task name 非空且不重复
+- formatVersion 2
+- task name 非空且唯一
 - job name 非空且 task 内唯一
-- `parentJobName` 引用存在
-- 无 parent cycle
-- `path` 的 group 层级与 parent 一致
-- jobType 在允许集合
+- parent 引用存在
+- 无 cycle
+- path 的 group 层级与 parent 一致
+- jobType 白名单
 - 触发型任务 cron 为空
-- tskdep 必须具备上游 task/job
-- `$$KEY$$` 在 parameters.properties 中存在
+- tskdep 上游字段齐全
+- 占位符引用可追踪
 
-### 产物覆盖
+### 产物
 
 - SQL/ETL/DataService 文件至少属于一个 package
 - package 不混平台
-- 文件路径不得逃逸仓库根目录
+- 文件路径不逃逸 root
 
-P0 不执行 build，不调用外部平台。
+## 7. 面板布局
 
-## 9. 架构放置
+### 概览
 
-### 推荐 P0
+- detection 状态
+- repo root / workspace
+- metrics
+- blocking/warning/info
+- 最近扫描 as_of
+- 操作：运行检查 / 刷新索引
 
-先落在现有包：
+### 检查
+
+- 按 severity 分组
+- 每条 finding 显示 code、message、file:line
+- 可展开 hint
+- 点击路径打开 DSH Files
+- 空状态：`当前没有发现问题`
+- 不显示源码正文
+
+### 仓库
+
+- package 列表
+- 每个 package 的文件覆盖和平台
+- 点击 package 查看包含文件
+- 不放文件树编辑器
+
+### 资产 / 血缘 / 证据
+
+现有 sections 迁入，不在 P0 重做。
+
+## 8. 交互
+
+- 打开面板时只做 detection + 轻量 scan
+- 重规则 validate 需要显式触发
+- 刷新按钮只刷新当前 section
+- 文件变化后 badge 标“索引过期”
+- 不自动弹出提示
+- 不写文件，不执行 build，不部署
+
+## 9. 视觉
+
+- 使用 DSH token
+- 右栏内单列，宽度 620–720 可用
+- findings 行高约 44–56
+- code 用 monospace
+- 状态用点 + 文本，不用大面积色块
+- 分组标签克制，不做卡片套卡片
+- 面板本身可滚动，section 不争抢整个视口
+
+## 10. 架构放置
+
+### P0
+
+先扩展现有包，不新增独立 npm 包：
 
 ```text
-packages/dataops-tools/
-  src/repo/                现有 index + parser
-  src/repo-doctor/         新规则和 scan 结果
-  index.js                 注册 dataops_repo_scan/validate
+dataops-tools/
+  src/repo/                 现有 index
+  src/repo-doctor/          新 rules + scan/validate
+  index.js                  注册 dataops_repo_scan/validate
 
-packages/dataops-client/
-  src/repo-doctor-card.js  卡片
-  src/index.js             tool.call.toolview 注册
+dataops-client/
+  src/dataops-panel/        panel shell + sections
+  src/repo-doctor-section.js
+  src/index.js              注册 DataOps tab
 ```
 
-理由：
+### 后续抽离条件
 
-- 复用现有 repo index，避免两套扫描
-- 不分拆 npm 包，减少发布和依赖成本
-- 仍然是一个独立的能力边界，可在后续抽取
-
-### 后续
-
-如果 IDE Agent 或别的 profile 也要用，再抽成独立插件：
+出现第二个消费者，或 IDE/其他 profile 需要独立版本时，再抽：
 
 ```text
 @dataops/dsh-repo-doctor
 ```
 
-抽离条件：出现第二个消费者，或需要独立版本节奏。
+## 11. 非目标
 
-## 10. 非目标
-
-- 不自动修改代码
-- 不执行 build
-- 不部署
-- 不读取真实凭据
 - 不做文件树/编辑器
+- 不做对话大卡
 - 不做全宽工作台
-- 不在工作区后台自动频繁扫描
-
-## 11. 失败与边界
-
-- 非 DataOps 仓库：明确提示缺少 manifest，不猜
-- 大仓库：限制文件数、扫描时间、findings 数量
-- 超过上限：返回 `truncated: true` 和提示
-- parser 失败：返回 `error` finding，不崩溃
-- 路径逃逸：`PATH_OUTSIDE_ROOT`
-- 权限/文件系统错误：返回可诊断 code
+- 不做自动修复
+- 不执行 build/deploy
+- 不读取真实凭据
+- 不递归扫描任意目录
 
 ## 12. 验收
 
-1. `samples/internal-code-repo` 扫描到 5 packages、4 tasks。
-2. 删除一个 package 文件路径，返回 `REPO_FILE_MISSING`。
-3. 修改一个 parent 为不存在的 job，返回 `TASK_PARENT_MISSING`。
-4. 增加一个未声明的占位符，返回 `PLACEHOLDER_MISSING`。
-5. 扫描只读，不改变仓库文件。
-6. 卡片支持 pass / warn / block / scanning / error 五态。
-7. `/dataops-check` 能生成同一张卡。
+1. 当前 workspace 有合法 `.dataops` 时检测为 `detected`。
+2. 只有 task.yaml 没有 `.dataops` 时检测为 `not-detected`。
+3. 有 manifest 无 build 时检测为 `partial`。
+4. 样例仓 scan 得到 5 packages、4 tasks。
+5. 删除 package 文件后 validate 返回 `PACKAGE_FILE_MISSING`。
+6. parent 指向不存在 job 时返回 `TASK_PARENT_MISSING`。
+7. 未声明占位符返回 warning，不返回 blocking。
+8. 面板有 loading / empty / error / stale 状态。
+9. `/dataops check` 能刷新面板，不产生对话大卡。
+10. 全程只读。
 
 ## 13. 待确认
 
-1. P0 是否同时做 `/dataops-check` 和 composer chip，还是只做 tool card？
-2. 默认扫描 workspace 当前目录，还是要求配置 repoRoot？
-3. `blocking` 是否包含 placeholder 缺失，还是 warning？
-4. “让 Agent 处理”发摘要，还是发送固定修复指令？
-5. 卡片是否允许展示最多 3 个文件路径，其余折叠？
+1. DataOps 面板是否替代现有资产 / 血缘 / 证据三个 tab？
+2. P0 是否只做 `/dataops` + `/dataops check`？
+3. placeholder 缺失统一 warning，是否同意？
+4. 当前 workspace 不是 repo 时，是否允许在面板里选择子目录，还是只提示用户打开正确 workspace？

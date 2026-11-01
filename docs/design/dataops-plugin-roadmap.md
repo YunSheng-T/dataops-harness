@@ -2,6 +2,7 @@
 
 > 状态：维护中。P0 已选定，尚未实现。
 > 工作项：`workitems/2026-11-01-dataops-plugin-roadmap/`
+> 聚合入口：[DataOps 插件聚合设计](dataops-plugin-surface.md)
 > 维护规则：新方向先进入本表，P0/P1 才能写详细设计；状态变化同时更新 `plan.md` 和本表底部的变更记录。
 
 ## 1. 判断标准
@@ -20,18 +21,27 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 
 | ID | 名称 | 优先级 | 状态 | 用户入口 | Host / Client | 依赖 | 下一步 |
 |---|---|---|---|---|---|---|---|
-| DO-PLUGIN-001 | **Repo Doctor** | P0 | design | 对话卡片、`/dataops-check`、composer chip | Host + Client | repo index、LTS parser | 评审 P0 设计 |
-| DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | idea | findings 卡、task 预览提示 | Host + Client | Repo Doctor findings | 定义 placeholder 规则 |
-| DO-PLUGIN-003 | **LTS Guard** | P1 | idea | findings 卡、`/dataops-check` | Host | LTS parser | 定义 parent/path 规则 |
-| DO-PLUGIN-004 | **Impact Watch** | P2 | idea | 改动后影响卡 | Host + Client | workspaceChanges / fs | 评估事件来源 |
-| DO-PLUGIN-005 | **Migration Review** | P2 | idea | review 卡、SQL 预览提示 | Host + Client | SQL/model parser | 定义 DDL/DML/Rollback 规则 |
-| DO-PLUGIN-006 | **Run Timeline** | P2 | idea | 失败 run 时间线卡 | Host + Client | dataops_shared_read_logs | 先做 mock 日志 |
+| DO-PLUGIN-001 | **Repo Doctor** | P0 | design | DataOps 面板「概览 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 评审 P0 设计 |
+| DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | idea | DataOps 检查 section | Host + Client | Repo Doctor findings | 定义 placeholder 规则 |
+| DO-PLUGIN-003 | **LTS Guard** | P1 | idea | DataOps 检查 section | Host | LTS parser | 定义 parent/path 规则 |
+| DO-PLUGIN-004 | **Impact Watch** | P2 | idea | DataOps 检查 / 血缘 section | Host + Client | workspaceChanges / fs | 评估事件来源 |
+| DO-PLUGIN-005 | **Migration Review** | P2 | idea | DataOps 检查 section | Host + Client | SQL/model parser | 定义 DDL/DML/Rollback 规则 |
+| DO-PLUGIN-006 | **Run Timeline** | P2 | idea | DataOps 证据 / 检查 section | Host + Client | dataops_shared_read_logs | 先做 mock 日志 |
 | DO-PLUGIN-007 | **Data Contract Diff** | P3 | idea | API 预览差异卡 | Host + Client | API YAML / ofl | 定义兼容性规则 |
-| DO-PLUGIN-008 | **Repo Change Digest** | P3 | idea | turn tail / assistant action | Host + Client | workspaceChanges | 聚合粒度 |
-| DO-PLUGIN-009 | **Repo Context Pack** | P3 | idea | system prompt / composer chip | Host | repo index | 控制上下文预算 |
+| DO-PLUGIN-008 | **Repo Change Digest** | P3 | idea | DataOps 概览 section | Host + Client | workspaceChanges | 聚合粒度 |
+| DO-PLUGIN-009 | **Repo Context Pack** | P3 | idea | system prompt / DataOps 面板 | Host | repo index | 控制上下文预算 |
 | DO-PLUGIN-010 | **Task Health Advisor** | P3 | idea | 任务卡 / schedule preview | Host + Client | LTS + lineage | 定义 SLA/cron 规则 |
 | DO-PLUGIN-011 | **Evidence Completeness** | P3 | idea | evidence card / review card | Host + Client | evidence schema | 定义缺失判定 |
-| DO-PLUGIN-012 | **Repo Doctor Settings** | P3 | idea | settings.section | Host + Client | repo config | 等 P0 用户入口确认 |
+| DO-PLUGIN-012 | **Repo Doctor Settings** | P3 | idea | DataOps 设置 / settings.section | Host + Client | repo config | 等 P0 用户入口确认 |
+
+## 2.1 表面聚合原则
+
+- 插件不拥有自己的右栏 tab
+- 插件不拥有自己的对话大卡
+- 插件向 DataOps 面板注册 section
+- 一个 `/dataops` 命令命名空间
+- 一个 composer 聚合状态入口
+- 详情见 [DataOps 插件聚合设计](dataops-plugin-surface.md)
 
 ## 3. 为什么 P0 是 Repo Doctor
 

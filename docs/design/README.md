@@ -36,6 +36,7 @@
 ### 插件与开发工具
 
 - [DataOps 插件路线图](dataops-plugin-roadmap.md)
+- [DataOps 插件聚合设计](dataops-plugin-surface.md)
 - [Repo Doctor 详细设计](repo-doctor.md)
 
 ### 架构
