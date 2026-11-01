@@ -1,0 +1,91 @@
+version: 1
+project: dataops-dev
+baseline:
+  repository: deepseek-ai/deepseek-harness
+  commit: ce7073d51254c26cd63b22a60835b8f948deb447
+  rule: 验证本地实际 commit 和 API；偏差必须记录
+workspace:
+  implementation: deepseek-harness
+  handoff: DataOps-Dev本地Agent开发交接包
+  reports: DataOps-Dev本地开发验证记录
+rules:
+  no_fork: true
+  no_parallel_filesystem: true
+  no_actor_undefined_bypass: true
+  no_production_mock_fallback: true
+  no_auto_commit_push_merge_deploy: true
+  production_default_read_only: true
+phases:
+  - id: discovery
+    name: 上游核查
+    required_outputs:
+      - 上游证据记录.md
+      - 实际构建测试命令
+      - 本地 API 偏差
+    gate: 关键 API 和插件样例均有真实路径与行号
+  - id: P0
+    name: 原生扩展与文件策略
+    prompt: 03-阶段提示词/01-P0原生扩展与文件策略提示词.md
+    capabilities:
+      - conversation.view
+      - sidebar.files.tree
+      - consistent-open
+      - replace-if-version-save
+      - ui-agent-policy-composition
+    tests: [DOC-01, DOC-02, DOC-03, DOC-10, AGT-01, AGT-02, AGT-04, AGT-05, UI-01, UI-03]
+    gate: 不 fork 且 UI 保存与 Agent 原生 policy 均通过真实集成验证
+  - id: P1
+    name: 可靠文本 IDE
+    prompt: 03-阶段提示词/02-P1可靠文本IDE提示词.md
+    capabilities:
+      - single-document-per-file
+      - manual-save
+      - idempotency
+      - save-unknown-reconcile
+      - three-way-conflict
+      - hot-exit
+      - readonly-fallback
+    tests: [DOC-01, DOC-02, DOC-03, DOC-04, DOC-05, DOC-06, DOC-07, DOC-08, DOC-09, DOC-10, DOC-11, DOC-12, UI-02, UI-04, UI-05, UI-06]
+    gate: 所有失败路径不静默丢失本地草稿
+  - id: P2
+    name: Agent 共同编辑
+    prompt: 03-阶段提示词/03-P2-Agent共同编辑提示词.md
+    capabilities:
+      - presence-lease
+      - clean-native-agent-edit
+      - dirty-write-guard
+      - edit-proposal
+      - explicit-draft-sharing
+    tests: [AGT-01, AGT-02, AGT-03, AGT-04, AGT-05, AGT-06, AGT-07, AGT-08, AGT-09]
+    gate: Agent 不绕过原生 policy 且不直接写 dirty 文档
+  - id: P3
+    name: 结构化与 Diagnostics
+    prompt: 03-阶段提示词/04-P3-结构化与Diagnostics提示词.md
+    capabilities:
+      - yaml-cst
+      - source-map
+      - scalar-whitelist-edit
+      - provider-registry
+      - atomic-analysis
+      - draft-saved-diagnostics
+    tests: [STR-01, STR-02, STR-03, STR-04, DIA-01, DIA-02, DIA-03, DIA-04, DIA-05]
+    gate: 源码、投影、SourceMap 和 Diagnostics 可证明同版
+  - id: P4
+    name: Artifact 与 Slots
+    prompt: 03-阶段提示词/05-P4-Artifact与Slots提示词.md
+    capabilities:
+      - saved-artifact-ref
+      - host-action-registry
+      - five-restricted-slots
+      - slot-error-boundary
+    tests: [ART-01, ART-02, ART-03, ART-04, SLOT-01, SLOT-02, SLOT-03, SLOT-04]
+    gate: savedDigest 与 Host 权限无 UI 或 Agent 旁路
+  - id: final
+    name: 最终验证
+    prompt: 03-阶段提示词/06-最终验证与交付提示词.md
+    required_outputs:
+      - 最终验证报告.md
+      - 偏差记录.md
+      - 变更文件清单
+      - 本地运行与测试说明
+    gate: 所有声明完成的功能均有真实验证，未验证项明确披露

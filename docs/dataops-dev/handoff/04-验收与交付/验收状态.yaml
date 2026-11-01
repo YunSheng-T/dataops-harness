@@ -1,0 +1,49 @@
+version: 1
+status_legend: [pending, passed, failed, blocked, not_implemented]
+reporting_rule: 本地 Agent 更新状态时同时填写 evidence；无 evidence 不得 passed
+critical_rule: 任一 critical=true 项 failed 或 blocked，对应阶段和最终交付均不得通过
+items:
+  - {id: DOC-01, phase: P0, critical: true, name: 一致打开不混版, status: pending, evidence: ''}
+  - {id: DOC-02, phase: P0, critical: true, name: 正常受防护保存, status: pending, evidence: ''}
+  - {id: DOC-03, phase: P0, critical: true, name: 保存竞争进入冲突, status: pending, evidence: ''}
+  - {id: DOC-04, phase: P1, critical: true, name: 已落盘响应丢失对账, status: pending, evidence: ''}
+  - {id: DOC-05, phase: P1, critical: true, name: 未落盘响应丢失对账, status: pending, evidence: ''}
+  - {id: DOC-06, phase: P1, critical: true, name: 保存期间继续输入仍 dirty, status: pending, evidence: ''}
+  - {id: DOC-07, phase: P1, critical: false, name: clean 外部更新安全刷新, status: pending, evidence: ''}
+  - {id: DOC-08, phase: P1, critical: true, name: dirty 外部更新三方冲突, status: pending, evidence: ''}
+  - {id: DOC-09, phase: P1, critical: true, name: hot-exit 不自动保存, status: pending, evidence: ''}
+  - {id: DOC-10, phase: P0, critical: true, name: 大文件编码与普通文件降级, status: pending, evidence: ''}
+  - {id: DOC-11, phase: P1, critical: true, name: 保存幂等键约束, status: pending, evidence: ''}
+  - {id: DOC-12, phase: P1, critical: true, name: 删除与只读保留草稿, status: pending, evidence: ''}
+  - {id: AGT-01, phase: P0, critical: true, name: Agent clean 仍走原生 policy, status: pending, evidence: ''}
+  - {id: AGT-02, phase: P0, critical: true, name: Agent 未观察写仍失败, status: pending, evidence: ''}
+  - {id: AGT-03, phase: P2, critical: true, name: Agent dirty 直写拒绝, status: pending, evidence: ''}
+  - {id: AGT-04, phase: P0, critical: true, name: 其他 actor 无 UI 特权, status: pending, evidence: ''}
+  - {id: AGT-05, phase: P0, critical: true, name: preset 顺序安全失败, status: pending, evidence: ''}
+  - {id: AGT-06, phase: P2, critical: true, name: Proposal 过期禁止应用, status: pending, evidence: ''}
+  - {id: AGT-07, phase: P2, critical: true, name: 默认草稿不泄露, status: pending, evidence: ''}
+  - {id: AGT-08, phase: P2, critical: true, name: 显式草稿共享受控, status: pending, evidence: ''}
+  - {id: AGT-09, phase: P2, critical: false, name: 离线回线冲突对账, status: pending, evidence: ''}
+  - {id: STR-01, phase: P3, critical: true, name: 白名单标量保留源码, status: pending, evidence: ''}
+  - {id: STR-02, phase: P3, critical: false, name: entityRef 稳定定位, status: pending, evidence: ''}
+  - {id: STR-03, phase: P3, critical: false, name: 节点布局不改源码, status: pending, evidence: ''}
+  - {id: STR-04, phase: P3, critical: false, name: 语法错误回退文本, status: pending, evidence: ''}
+  - {id: DIA-01, phase: P3, critical: true, name: 旧分析不覆盖新草稿, status: pending, evidence: ''}
+  - {id: DIA-02, phase: P3, critical: true, name: 分析结果原子同版, status: pending, evidence: ''}
+  - {id: DIA-03, phase: P3, critical: true, name: draft 与 saved 证据分层, status: pending, evidence: ''}
+  - {id: DIA-04, phase: P3, critical: false, name: Provider 失败与空态分离, status: pending, evidence: ''}
+  - {id: DIA-05, phase: P3, critical: true, name: UI 不可伪造诊断, status: pending, evidence: ''}
+  - {id: ART-01, phase: P4, critical: true, name: dirty Artifact 门禁, status: pending, evidence: ''}
+  - {id: ART-02, phase: P4, critical: true, name: unknown 与 conflict 门禁, status: pending, evidence: ''}
+  - {id: ART-03, phase: P4, critical: true, name: Host 重算动作权限, status: pending, evidence: ''}
+  - {id: ART-04, phase: P4, critical: true, name: Agent 与 UI 同命令路径, status: pending, evidence: ''}
+  - {id: SLOT-01, phase: P4, critical: false, name: Slot 故障不丢草稿, status: pending, evidence: ''}
+  - {id: SLOT-02, phase: P4, critical: true, name: 非法 Slot 编辑拒绝, status: pending, evidence: ''}
+  - {id: SLOT-03, phase: P4, critical: false, name: 不改核心扩展贡献, status: pending, evidence: ''}
+  - {id: SLOT-04, phase: P4, critical: false, name: 贡献冲突可诊断, status: pending, evidence: ''}
+  - {id: UI-01, phase: P0, critical: false, name: 原生深链打开, status: pending, evidence: ''}
+  - {id: UI-02, phase: P1, critical: false, name: 同文件单 tab, status: pending, evidence: ''}
+  - {id: UI-03, phase: P0, critical: true, name: 非法 focus 不越权, status: pending, evidence: ''}
+  - {id: UI-04, phase: P1, critical: false, name: 窄容器安全降级, status: pending, evidence: ''}
+  - {id: UI-05, phase: P1, critical: false, name: 无 Parser 与失败降级, status: pending, evidence: ''}
+  - {id: UI-06, phase: P1, critical: true, name: 冲突操作不自动落盘, status: pending, evidence: ''}
