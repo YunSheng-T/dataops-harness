@@ -62,6 +62,25 @@ Repo Doctor 是 DataOps 工作面板里的**仓库体检 section**，不是对�
 
 ### 命令
 
+#### 使用者
+
+```text
+人：
+  DataOps 面板
+  /dataops
+  /dataops repo check
+
+Agent：
+  dataops_repo_index
+  dataops_repo_validate
+
+CI / 脚本：
+  Host 工具或 CLI
+```
+
+slash command 是 DSH 的人类命令面，Agent 不会调用它。Agent 的入口始终是 tool。
+
+
 只注册一个 `/dataops`。
 DSH 的命令名不能包含空格，`repo index` 是 `rawInput`，不是原生命令层级：
 

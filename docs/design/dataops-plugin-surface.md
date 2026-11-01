@@ -64,6 +64,31 @@ DSH 原生命令只注册一个名字：
 
 这也是为什么不再注册 `/dataops-repo-index` 这类分散命令。
 
+## 2.2 谁使用这个命令
+
+`/dataops` 是**人用的命令**，不是 Agent 调用入口。
+
+| 使用者 | 入口 | 用途 |
+|---|---|---|
+| 数据开发 | DataOps 面板 | 主流程：看仓库、改文件、跑检查 |
+| 数据开发 | `/dataops` | 用键盘快速打开面板 |
+| 数据运维 | `/dataops repo check` | 拉取变更后强制检查当前 workspace |
+| Agent | `dataops_repo_index` / `dataops_repo_validate` 工具 | 读取结构化结果，不能调用 slash command |
+| CI / 脚本 | Host 工具或 CLI | 不经过聊天命令 |
+
+主入口是面板，命令是快捷键和诊断入口，不是唯一入口。
+
+推荐公开程度：
+
+```text
+公开：/dataops            打开面板
+公开：/dataops repo check 强制检查
+高级：/dataops repo index  只刷新索引
+高级：/dataops repo validate 只跑规则
+```
+
+`index` / `validate` 可以保留，但不应该成为普通用户必须记住的命令。
+
 ## 3. 位置
 
 ### 右栏 DataOps tab
