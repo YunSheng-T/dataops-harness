@@ -64,7 +64,7 @@ node scripts/e2e/dataops-p1.4.mjs --scenario query
 node scripts/install-dataops-profile.mjs
 
 # 3. 安装原生 dsh（推荐，版本对齐桌面端；只需一次）
-npm install -g @deepseek-ai/dsh@0.2.1-rc.2
+npm install -g @deepseek-ai/dsh@0.2.1-rc.4
 
 # 4. 先看组合，再启动
 dsh --profile dataops --dump-config

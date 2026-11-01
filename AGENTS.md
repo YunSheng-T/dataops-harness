@@ -53,7 +53,7 @@ dsh --profile dataops --dump-config
 dsh --profile dataops
 ```
 
-- 桌面端自带的运行时是 `0.2.1-rc.2`；两个插件的 `engines.dsh` 是 `>=0.2.1-rc.2 <0.3.0`，所以 rc.2 / rc.3 都能装。
+- DSH NEXT 桌面端（2.0.21-next）自带运行时 `0.2.1-rc.4`，与本仓 pin 一致；旧版 DSH Desktop 自带 `0.2.1-rc.2`。各插件的 `engines.dsh` 是 `>=0.2.1-rc.2 <0.3.0`，rc.2 / rc.3 / rc.4 都能装。
 - 不要再对 `dataops` profile 跑 `--from-default-profile`，会覆盖我们的 patch。
 
 - 开发期一律 headless 验证：不开图形界面、不依赖桌面壳。

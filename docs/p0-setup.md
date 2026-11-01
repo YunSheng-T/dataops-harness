@@ -22,7 +22,7 @@ export DSH_HOME="$HOME/.dsh-dataops"
 cd /Users/zhangshu/code/dataops-harness
 
 # 固定版本，避免"昨天还能跑"
-npx @deepseek-ai/dsh@0.2.1-rc.3 --profile dataops --from-default-profile web
+npx @deepseek-ai/dsh@0.2.1-rc.4 --profile dataops --from-default-profile web
 ```
 
 第一次会从 `web` 模板初始化 `$DSH_HOME/profiles/dataops/` 并启动 Web UI（默认 `http://127.0.0.1:3080`）。
@@ -60,7 +60,7 @@ dsh --profile dataops --from-default-profile web
 ## 检查组合（不启动）
 
 ```sh
-npx @deepseek-ai/dsh@0.2.1-rc.3 --profile dataops --dump-config
+npx @deepseek-ai/dsh@0.2.1-rc.4 --profile dataops --dump-config
 ```
 
 看 `system-prompt`、`skill-filesystem`、`agent-instructions` 这几行是否按预期出现。以后加 bundle 时，这个命令是第一个验证手段。
