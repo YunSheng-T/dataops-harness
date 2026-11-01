@@ -31,6 +31,39 @@ DataOps 面板        一个固定右栏 tab
 
 插件只提供数据和 section 视图，不直接向 `sidebar.right.pane.tab` 塞多个 tab。
 
+## 2.1 DSH 命令语法的现实
+
+DSH 原生命令只注册一个名字：
+
+```text
+/dataops
+```
+
+名字只能是小写字母、数字、`_`、`-`，**不能包含空格**。
+空格后的内容全部进入 `rawInput`，由命令 handler 自己解析：
+
+```text
+/dataops repo index
+  name: dataops
+  rawInput: " repo index"
+```
+
+因此：
+
+- `/dataops repo index` 是**一个命令 + 自有子命令 grammar**
+- 命令面板只会显示 `/dataops`，不会显示 `/dataops repo index`
+- 参数提示用 `input.hint`，例如：
+
+```text
+<repo index|validate|check | open>
+```
+
+- 没有原生的二级命令树、自动补全和结构化参数校验
+- 空白符、引号、`--package` 等都要由 handler 自己解析
+- 如果以后需要更好的补全，可以在 client `commandUi` 做 popup，但 Host 仍然只看到 `/dataops`
+
+这也是为什么不再注册 `/dataops-repo-index` 这类分散命令。
+
 ## 3. 位置
 
 ### 右栏 DataOps tab
@@ -58,7 +91,7 @@ DataOps 面板        一个固定右栏 tab
 [DataOps · 2]   // 未读 findings 数
 ```
 
-点击打开 DataOps 面板。  
+点击打开 DataOps 面板。
 不再每个插件一个 chip。
 
 ### 命令

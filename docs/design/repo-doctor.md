@@ -62,7 +62,19 @@ Repo Doctor 是 DataOps 工作面板里的**仓库体检 section**，不是对�
 
 ### 命令
 
-只注册一个 `/dataops`：
+只注册一个 `/dataops`。
+DSH 的命令名不能包含空格，`repo index` 是 `rawInput`，不是原生命令层级：
+
+```text
+/dataops
+  name: dataops
+  input.hint: "open [section] | repo <index|validate|check>"
+  rawInput: " repo check"
+```
+
+命令面板只显示 `/dataops`；二级动作由 handler 解析。P0 不依赖原生补全。
+
+
 
 ```text
 /dataops                打开 DataOps 面板
