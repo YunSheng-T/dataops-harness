@@ -1,0 +1,67 @@
+formatVersion: 2
+
+tasks:
+  - itemName: "<PROJECT_NAME>"
+    groupName: "<GROUP_NAME>"
+    name: "channel_alert_trigger"
+    type: "触发型任务"
+    startTime: "2026/10/01 00:00:00"
+    endTime: null
+    cronExp: null
+    depPrevious: "否"
+    isCleanTask: "否"
+    isMultitonal: "是"
+    isParallel: "是"
+    isCleanExceptionTask: "否"
+    isFullJob: "是"
+    scheduleHistory: "否"
+    owner: "<OWNER>"
+    taskParams: []
+    taskResource: null
+    freqConfigName: null
+    calendarData: null
+    taskExtension: null
+    rsyncMark: null
+    jobs:
+      - name: "prep"
+        path: "prep"
+        jobType: shell
+        parentJobName: ["start"]
+        jobExecPath: "$$ALERT_SHELL$$"
+        jobCallMethod: ""
+        jobTimeout: 20
+        jobRetryTimes: 1
+        jobRetryInterval: 10
+        jobExecNode: "<EXEC_NODE>"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam: null
+      - name: "send_alert"
+        path: "send_alert"
+        jobType: url
+        parentJobName: ["prep"]
+        jobExecPath: "$$ALERT_URL$$"
+        jobCallMethod: POST
+        jobTimeout: 20
+        jobRetryTimes: 2
+        jobRetryInterval: 10
+        jobExecNode: "任一节点"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam:
+          appId: ""
+          appToken: ""
+          authenticationType: "无"
+          headers: "Content-Type: application/json"
+          invokingMode: "异步"
+          jobRunParams: "{\"task\":\"channel_alert\"}"
+          returnVal: ""
+          timeout: 10

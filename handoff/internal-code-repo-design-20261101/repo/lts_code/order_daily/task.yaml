@@ -1,0 +1,102 @@
+formatVersion: 2
+
+tasks:
+  - itemName: "<PROJECT_NAME>"
+    groupName: "<GROUP_NAME>"
+    name: "order_daily_serial"
+    type: "周期任务"
+    startTime: "2026/10/01 00:00:00"
+    endTime: null
+    cronExp: "0 20 1 * * ?"
+    depPrevious: "是"
+    isCleanTask: "否"
+    isMultitonal: "否"
+    isParallel: "否"
+    isCleanExceptionTask: "否"
+    isFullJob: "是"
+    scheduleHistory: "否"
+    owner: "<OWNER>"
+    taskParams:
+      - name: "bizdate"
+        value: "$getTaskPlanTime(yyyyMMdd)"
+    taskResource: null
+    freqConfigName: null
+    calendarData: null
+    taskExtension: null
+    rsyncMark: null
+    jobs:
+      - name: "fetch_order"
+        path: "fetch_order"
+        jobType: url
+        parentJobName: ["start"]
+        jobExecPath: "$$ORDER_FETCH_URL$$"
+        jobCallMethod: GET
+        jobTimeout: 30
+        jobRetryTimes: 3
+        jobRetryInterval: 60
+        jobExecNode: "任一节点"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "是"
+        componentResources: "未设置"
+        jobParam:
+          appId: ""
+          appToken: ""
+          authenticationType: "无"
+          headers: ""
+          invokingMode: "同步"
+          jobRunParams: "?dt=${bizdate}"
+          returnVal: ""
+          timeout: 10
+      - name: "aggregate_order"
+        path: "aggregate_order"
+        jobType: url
+        parentJobName: ["fetch_order"]
+        jobExecPath: "$$ORDER_AGG_URL$$"
+        jobCallMethod: POST
+        jobTimeout: 60
+        jobRetryTimes: 2
+        jobRetryInterval: 30
+        jobExecNode: "任一节点"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "是"
+        componentResources: "未设置"
+        jobParam:
+          appId: ""
+          appToken: ""
+          authenticationType: "无"
+          headers: "Content-Type: application/json"
+          invokingMode: "同步"
+          jobRunParams: "{\"dt\":\"${bizdate}\"}"
+          returnVal: ""
+          timeout: 10
+      - name: "notify_order"
+        path: "notify_order"
+        jobType: url
+        parentJobName: ["aggregate_order"]
+        jobExecPath: "$$ORDER_NOTIFY_URL$$"
+        jobCallMethod: POST
+        jobTimeout: 20
+        jobRetryTimes: 1
+        jobRetryInterval: 30
+        jobExecNode: "任一节点"
+        jobExceptionHandleType: "fail"
+        jobInterruptHandle: "$$INTERRUPT_URL$$"
+        jobMailNotice: "一次提醒"
+        isCleanJob: "跟随任务"
+        parameterEmptyVerify: "否"
+        componentResources: "未设置"
+        jobParam:
+          appId: ""
+          appToken: ""
+          authenticationType: "无"
+          headers: "Content-Type: application/json"
+          invokingMode: "同步"
+          jobRunParams: "{\"dt\":\"${bizdate}\"}"
+          returnVal: ""
+          timeout: 10
