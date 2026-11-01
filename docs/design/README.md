@@ -33,6 +33,11 @@
   - [领导汇报版概要](user-journey/leadership-summary.md)
   - [总体设计](user-journey/overall-design.md)
 
+### 插件与开发工具
+
+- [DataOps 插件路线图](dataops-plugin-roadmap.md)
+- [Repo Doctor 详细设计](repo-doctor.md)
+
 ### 架构
 
 - [agent-orchestration.md](agent-orchestration.md)
