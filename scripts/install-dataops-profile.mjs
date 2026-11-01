@@ -30,7 +30,8 @@ const packages = [
   { name: '@dataops/dsh-dataops-brand', dir: join(root, 'packages', 'dataops-brand'), entry: 'lib/client.js' },
   { name: '@dataops/dsh-dataops-client', dir: join(root, 'packages', 'dataops-client'), entry: 'lib/client.js' },
   { name: '@dataops/dsh-dataops-tools', dir: join(root, 'packages', 'dataops-tools'), entry: 'src/index.js' },
-  { name: '@dataops/dsh-dataops-preset', dir: join(root, 'packages', 'dataops-preset'), entry: 'package.json' }
+  { name: '@dataops/dsh-dataops-preset', dir: join(root, 'packages', 'dataops-preset'), entry: 'package.json' },
+  { name: '@dataops/dsh-dataops-dev', dir: join(root, 'packages', 'dataops-dev'), entry: 'lib/client.js' }
 ]
 
 const manifest = {
