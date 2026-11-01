@@ -56,6 +56,28 @@ function createDataDevelopmentView(React) {
         h('button', { onClick: function () { download(basename(model.state.fileAddress) + '.draft.txt', c.localText) } }, '导出 local')))
   }
 
+  // clean 外部刷新的轻量行 Diff：共同前后缀折叠，仅渲染变化行，避免大文件 O(n²)。
+  function ExternalDiff(props) {
+    var before = String(props.before || '').split('\n')
+    var after = String(props.after || '').split('\n')
+    var prefix = 0
+    while (prefix < before.length && prefix < after.length && before[prefix] === after[prefix]) prefix += 1
+    var suffix = 0
+    while (suffix < before.length - prefix && suffix < after.length - prefix && before[before.length - 1 - suffix] === after[after.length - 1 - suffix]) suffix += 1
+    var removed = before.slice(prefix, before.length - suffix)
+    var added = after.slice(prefix, after.length - suffix)
+    var rows = removed.map(function (text) { return { kind: '-', text: text } })
+      .concat(added.map(function (text) { return { kind: '+', text: text } }))
+    var visible = rows.slice(0, 200)
+    return h('div', { style: { margin: '8px 12px 0', border: '1px solid var(--border, #e5e7eb)', borderRadius: '6px', overflow: 'auto', maxHeight: '30vh', flexShrink: 0 } },
+      h('div', { style: { padding: '5px 10px', fontSize: '12px', fontWeight: 600, borderBottom: '1px solid var(--border, #e5e7eb)' } }, '外部变更 Diff（base → current）'),
+      visible.map(function (row, index) {
+        return h('div', { key: index, style: { display: 'flex', gap: '8px', padding: '1px 10px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '12px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: row.kind === '-' ? '#b91c1c' : '#15803d', background: row.kind === '-' ? 'rgba(185,28,28,.06)' : 'rgba(21,128,61,.06)' } },
+          h('span', null, row.kind), h('span', null, row.text || ' '))
+      }),
+      rows.length > visible.length ? h('div', { style: { padding: '5px 10px', fontSize: '11px', color: '#6b7280' } }, '其余 ' + (rows.length - visible.length) + ' 行变更省略') : null)
+  }
+
   function EditorBody(props) {
     var model = props.model
     var s = model.state
@@ -177,6 +199,9 @@ function createDataDevelopmentView(React) {
               ? h('div', { style: { display: 'flex', gap: '8px', padding: '6px 12px', fontSize: '12px', borderBottom: '1px solid var(--border, #e5e7eb)', color: notice.kind === 'error' ? '#b91c1c' : '#6b7280' } },
                   h('span', { style: { flex: 1 } }, notice.message),
                   h('button', { onClick: function () { dismissedRef.current = notice; dismissTick[1](dismissTick[0] + 1) } }, '知道了'))
+              : null,
+            noticeVisible && notice.kind === 'external-clean'
+              ? h(ExternalDiff, { before: notice.baseText, after: notice.currentText })
               : null,
             // 主体
             s.phase === 'opening' ? h('div', { style: { padding: '24px', color: '#9ca3af', fontSize: '13px' } }, '打开中…') : null,

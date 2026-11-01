@@ -6,10 +6,10 @@
  *   见 dsh-typert-protocol 的 REMOTE_METHOD_DESCRIPTOR）。
  * - open/save 的参数必须是简单命名形参（SRC 模式按源码解析参数名），
  *   末位 `signal` 是保留的 AbortSignal 参数名。
- * - Session 绑定：workspaceRoot 依次取 sessions header.cwd → sandboxPolicy.workspaceRoot
- *   → 插件 config.workspaceRoot（显式部署/测试配置）；sessions 在线而 sessionId
- *   未知时拒绝。Client 提供的 sessionId 只用于定位，权限由 Host 侧文件系统与
- *   沙箱策略决定。
+ * - Session 绑定：workspaceRoot 依次取 live sessions header.cwd → 冷会话
+ *   sessionPersistence header.cwd → sandboxPolicy.workspaceRoot → 插件
+ *   config.workspaceRoot（显式部署/测试配置）；所有来源都无法识别时拒绝。
+ *   Client 提供的 sessionId 只用于定位，权限由 Host 侧文件系统与沙箱策略决定。
  */
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { DevDocumentStore } from './documents.js'
@@ -39,14 +39,14 @@ export class DevDocuments extends TypertRemoteService {
     this.config = config
   }
 
-  /** 解析本次调用允许的工作区根。 */
-  workspaceRootOf(sessionId) {
-    const sessions = this.ctx.get('sessions')
-    if (sessions !== undefined) {
-      const header = sessions.get(sessionId)?.header
-      if (header === undefined) throw sessionUnknown(sessionId)
-      if (header.cwd) return header.cwd
-    }
+  /** 与上游 workspaceFiles 一致：活跃 Session 不在内存时回退到持久化 header。 */
+  async workspaceRootOf(sessionId) {
+    const live = this.ctx.get('sessions')?.get(sessionId)?.header
+    const stored = live === undefined
+      ? await this.ctx.get('sessionPersistence')?.stat(sessionId)
+      : undefined
+    const header = live ?? stored?.header
+    if (header?.cwd) return header.cwd
     const sandboxRoot = this.ctx.get('sandboxPolicy')?.workspaceRoot
     if (sandboxRoot !== undefined) return sandboxRoot
     if (this.config.workspaceRoot !== undefined) return this.config.workspaceRoot
@@ -56,7 +56,7 @@ export class DevDocuments extends TypertRemoteService {
   async open(sessionId, path, signal) {
     if (typeof sessionId !== 'string' || sessionId.length === 0) throw sessionUnknown(String(sessionId))
     if (typeof path !== 'string' || path.length === 0) throw sessionUnknown('(empty path)')
-    const workspaceRoot = this.workspaceRootOf(sessionId)
+    const workspaceRoot = await this.workspaceRootOf(sessionId)
     return this.store.open(this.ctx.fs, sessionId, workspaceRoot, path, signal)
   }
 

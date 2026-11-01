@@ -124,6 +124,8 @@ test('DOC-07: clean 外部更新 → 安全刷新并提示', async () => {
   assert.equal(model.state.sync, 'clean')
   assert.equal(model.state.draft, 'select 9\n')
   assert.equal(model.state.notice.kind, 'external-clean')
+  assert.equal(model.state.notice.baseText, 'select 1\n')
+  assert.equal(model.state.notice.currentText, 'select 9\n')
 })
 
 test('DOC-08 + UI-06: dirty 外部更新 → 三方冲突；保留 local 只改基线，不自动落盘', async () => {

@@ -1,11 +1,22 @@
 /**
- * devDocuments Remote 命名空间的客户端贡献描述符（P0 手写）。
+ * devDocuments Remote 命名空间的客户端贡献描述符。
  *
- * 上游正式路径是 typert 构建期生成 `./remote` 产物；P0 以 src-json codec 手写，
- * 字段与生成物同构（InvocationDescriptor）。替换为生成产物是 P1 硬化项，
- * 已记录在《P0验证报告.md》偏差清单。
+ * rc.4 的 Remote client 挂载入口要求所有入参声明 strict codec；本包的业务
+ * 参数均为 lossless JSON，结果仍由 Host 的 src-json 契约返回。描述符保持
+ * 与生成物同构，并显式声明可选 AbortSignal 的位置。
  */
-var JSON_CODEC = { mode: 'src-json' }
+var JSON_CODEC = {
+  mode: 'strict',
+  typeSymbol: '@dataops/dsh-dataops-dev#devDocuments/string',
+  create: function () {
+    return {
+      parse: function (value) {
+        if (typeof value !== 'string') throw new TypeError('devDocuments parameter must be a string')
+        return value
+      },
+    }
+  },
+}
 
 function param(name) {
   return { name: name, wire: name, source: 'json', codec: JSON_CODEC }
@@ -19,6 +30,7 @@ function descriptor(method, parameters) {
     method: method,
     invocation: { kind: 'direct' },
     parameters: parameters,
+    cancellation: { parameter: 'signal' },
     result: { mode: 'src-json' },
   }
 }

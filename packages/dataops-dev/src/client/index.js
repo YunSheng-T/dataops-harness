@@ -4,11 +4,16 @@
  * Chat、Trajectory 与原生右侧栏保持不变；本视图只是并列的第三个视图。
  */
 function apply(ctx) {
-  // 挂载 Remote 贡献；视图注册不等它——调用发生在用户动作时，届时挂载已结算。
-  Promise.resolve(ctx.remote.$mount(DEV_DOCUMENTS_CONTRIBUTION)).catch(function (error) {
+  // 动态命名空间由本插件挂载，不能在顶层 inject 中声明，否则启动会等待自身。
+  // 挂载完成后再开子作用域，Cordis 才允许读取 remote.devDocuments。
+  Promise.resolve(ctx.remote.$mount(DEV_DOCUMENTS_CONTRIBUTION)).then(function () {
+    ctx.inject(['remote.devDocuments'], applyClient)
+  }).catch(function (error) {
     console.error('[dataops-dev] failed to mount devDocuments remote contribution:', error)
   })
+}
 
+function applyClient(ctx) {
   var pending = createPendingLocations()
   var hotExit = createHotExit()
   var clientInstance = crypto.randomUUID()

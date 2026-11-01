@@ -251,7 +251,12 @@ function createDocumentModel(options) {
         savedDigest: snapshot.savedDigest,
         baseText: snapshot.text,
         draft: snapshot.text,
-        notice: { kind: 'external-clean', message: '磁盘已被外部更新，已刷新为最新内容' },
+        notice: {
+          kind: 'external-clean',
+          message: '磁盘已被外部更新，已刷新为最新内容',
+          baseText: s.baseText,
+          currentText: snapshot.text,
+        },
       }))
     } else {
       enterConflict(snapshot)
