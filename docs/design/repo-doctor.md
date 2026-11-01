@@ -72,14 +72,16 @@ Repo Doctor 是 DataOps 工作面板里的**仓库体检 section**，不是对�
 /dataops check          索引 + 校验
 ```
 
-P0 可以只实现：
+P0 四个子命令一起做：
 
 ```text
-/dataops
-/dataops check
+/dataops              打开面板
+/dataops scan         只做索引
+/dataops validate     只做规则校验
+/dataops check        索引 + 校验
 ```
 
-`scan` / `validate` 的完整命令可以后续开放。
+`scan` / `validate` 不是两个功能重复项，区别见第 4 节。
 
 ### Composer chip
 
@@ -225,7 +227,7 @@ P0 的 `check` 是面板/命令层组合，不新增第三个 agent 工具。
 
 ### 关于占位符
 
-`$$KEY$$` 缺失默认是 **warning**，不是 blocking：
+已确认：`$$KEY$$` 缺失默认是 **warning**，不是 blocking：
 
 - build 不替换
 - deploy 才替换
@@ -366,9 +368,10 @@ dataops-client/
 9. `/dataops check` 能刷新面板，不产生对话大卡。
 10. 全程只读。
 
-## 13. 待确认
+## 13. 已确认
 
-1. DataOps 面板是否替代现有资产 / 血缘 / 证据三个 tab？
-2. P0 是否只做 `/dataops` + `/dataops check`？
-3. placeholder 缺失统一 warning，是否同意？
-4. 当前 workspace 不是 repo 时，是否允许在面板里选择子目录，还是只提示用户打开正确 workspace？
+- DataOps 面板替代现有资产 / 血缘 / 证据三个 tab。
+- P0 一起实现 `/dataops`、`/dataops scan`、`/dataops validate`、`/dataops check`。
+- placeholder 缺失统一 warning。
+- 当前 workspace 不是 repo 时只提示打开正确 workspace，不递归搜索，不在 P0 做目录选择器。
+- P0 仍需补全一次 blueprint 和增量说明后再进入实现。

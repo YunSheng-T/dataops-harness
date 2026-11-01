@@ -17,12 +17,12 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 
 ## 2. 清单
 
-状态：`idea` → `design` → `approved` → `building` → `shipped` → `paused`
+状态：`idea` → `design` → `approved` → `approved-design` → `building` → `shipped` → `paused`
 
 | ID | 名称 | 优先级 | 状态 | 用户入口 | Host / Client | 依赖 | 下一步 |
 |---|---|---|---|---|---|---|---|
-| DO-PLUGIN-001 | **Repo Doctor** | P0 | design | DataOps 面板「概览 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 评审 P0 设计 |
-| DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | idea | DataOps 检查 section | Host + Client | Repo Doctor findings | 定义 placeholder 规则 |
+| DO-PLUGIN-001 | **Repo Doctor** | P0 | approved-design | DataOps 面板「概览 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 补全 blueprint 后实施 |
+| DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | idea | DataOps 检查 section | Host + Client | Repo Doctor findings | 合并进 Repo Doctor P0 |
 | DO-PLUGIN-003 | **LTS Guard** | P1 | idea | DataOps 检查 section | Host | LTS parser | 定义 parent/path 规则 |
 | DO-PLUGIN-004 | **Impact Watch** | P2 | idea | DataOps 检查 / 血缘 section | Host + Client | workspaceChanges / fs | 评估事件来源 |
 | DO-PLUGIN-005 | **Migration Review** | P2 | idea | DataOps 检查 section | Host + Client | SQL/model parser | 定义 DDL/DML/Rollback 规则 |
@@ -58,6 +58,24 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 - 不自动修复
 - 不接生产凭据
 - 不做与 DSH Files / lineage card 重复的视觉表面
+
+## 4.1 已有命令盘点
+
+当前**没有已实现的 DSH slash 子命令**。
+
+已有命令行工具：
+
+```text
+dataops-install
+dataops-doctor
+dataops-uninstall
+```
+
+它们是安装/诊断 CLI，不是聊天命令。
+
+已有 Agent 工具是 `dataops_*` tool calls，也不是 slash command。
+
+因此 `/dataops` 是新的统一命名空间，不迁移旧子命令。
 
 ## 5. 变更记录
 

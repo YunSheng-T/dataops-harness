@@ -171,9 +171,34 @@ open panel
 - 不与 DSH Files / 编辑器竞争
 - 不把 panel 状态存在单次对话卡片里
 
-## 9. 待确认
+## 9. 已确认
 
-1. DataOps 面板是否完全替代现有资产 / 血缘 / 证据三个 tab？
-2. 面板是右栏固定 tab，还是主区可切换面板？
-3. 是否允许插件用 `settings.section` 注册自己的配置，还是也收进 DataOps 设置页？
-4. 是否保留一个 composer 状态 chip？ 
+- DataOps 面板**替代**现有资产 / 血缘 / 证据三个独立 tab。
+- 面板是右栏固定 tab，不新开主区页面。
+- 插件的持久结果只进入面板 section，不进入对话大卡。
+- composer 状态 chip 是可选后续项，不作为 P0 依赖。
+- 设置入口可以后续收进 DataOps 设置页；P0 不强制做设置 UI。
+
+## 10. 命令盘点
+
+当前仓库**没有已实现的 DSH slash 子命令**。
+
+已有的是 CLI：
+
+```text
+dataops-install       安装
+dataops-doctor        安装/profile 诊断
+dataops-uninstall     卸载
+```
+
+以及 Agent tools：
+
+```text
+dataops_shared_*
+dataops_cicp_*
+...
+```
+
+这些都不是 `/dataops` 的子命令，不能直接复用为聊天命令。
+
+因此 P0 的 `/dataops` 是**新命令命名空间**，不是迁移旧命令。
