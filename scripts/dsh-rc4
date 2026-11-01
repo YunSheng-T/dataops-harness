@@ -1,0 +1,32 @@
+#!/bin/sh
+# Run the rc.4-pinned dsh CLI under the DSH NEXT desktop's Electron runtime.
+#
+# The rc.4 CLI refuses a full boot under bare Node (app-boot checks the
+# Electron runtime fingerprint); DSH NEXT 2.0.21-next ships exactly the rc.4
+# kernel, so we borrow its Electron binary with ELECTRON_RUN_AS_NODE=1.
+# The CLI itself comes from npx (cached after the first run).
+#
+# usage:
+#   ./scripts/dsh-rc4 --profile dataops --dump-config
+#   ./scripts/dsh-rc4 --profile dataops --port 3088
+#
+# Override the app location when DSH NEXT is not in /Applications:
+#   DSH_NEXT_APP="/path/to/DSH NEXT.app" ./scripts/dsh-rc4 ...
+set -eu
+
+NEXT_APP="${DSH_NEXT_APP:-/Applications/DSH NEXT.app}"
+ELECTRON="$NEXT_APP/Contents/MacOS/DSH NEXT"
+PIN="@deepseek-ai/dsh@0.2.1-rc.4"
+
+if [ ! -x "$ELECTRON" ]; then
+  echo "scripts/dsh-rc4: DSH NEXT not found at $NEXT_APP" >&2
+  echo "Set DSH_NEXT_APP to the .app path and retry." >&2
+  exit 1
+fi
+
+BIN="$(npx -y -p "$PIN" sh -c 'command -v dsh')" || {
+  echo "scripts/dsh-rc4: failed to fetch $PIN via npx" >&2
+  exit 1
+}
+
+exec env ELECTRON_RUN_AS_NODE=1 "$ELECTRON" "$BIN" "$@"
