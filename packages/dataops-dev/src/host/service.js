@@ -60,13 +60,24 @@ export class DevDocuments extends TypertRemoteService {
     return this.store.open(this.ctx.fs, sessionId, workspaceRoot, path, signal)
   }
 
+  /** 与 tool-fs 一致：写操作必须携带当前 Session 的 mode 与 workspaceRoot。 */
+  async sandboxPolicyOf(sessionId) {
+    const sandbox = this.ctx.get('sandboxPolicy')
+    if (sandbox === undefined) return undefined
+    const session = this.ctx.get('sessions')?.get(sessionId)
+    if (session !== undefined) return sandbox.resolve({ session })
+    // 冷 Session 没有 projection 对象可用；保留部署默认 mode，只恢复其持久化 cwd。
+    return { ...sandbox.resolve(), workspaceRoot: await this.workspaceRootOf(sessionId) }
+  }
+
   async save(sessionId, documentId, baseVersion, text, idempotencyKey, signal) {
     if (!this.bridge.mounted()) throw bridgeUnavailable()
+    const sandboxPolicy = await this.sandboxPolicyOf(sessionId)
     const dispatchWrite = (record, content, token, writeSignal) => {
       const uiActor = createUiActor(token)
       return this.ctx
         .waterfall('fs/write-intent', record.target, uiActor, () => { throw bridgeUnavailable() })
-        .then(intent => this.ctx.fs.writeText(record.target, content, intent, signal))
+        .then(intent => this.ctx.fs.writeText(record.target, content, intent, writeSignal, sandboxPolicy))
     }
     return this.store.save(this.ctx.fs, sessionId, documentId, baseVersion, text, idempotencyKey, dispatchWrite, signal)
   }

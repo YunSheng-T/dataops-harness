@@ -29,6 +29,6 @@ export function mapSaveError(error, path) {
   const code = error && typeof error.code === 'string' ? error.code : ''
   if (code === 'FS_STALE_VERSION') return staleVersion(path)
   if (code === 'ENOENT' || code === 'FS_NOT_FOUND') return notFound(path)
-  if (code === 'EACCES' || code === 'EPERM' || code === 'EROFS' || code === 'FS_READ_ONLY' || code === 'FS_PERMISSION') return readOnly(path)
+  if (code === 'EACCES' || code === 'EPERM' || code === 'EROFS' || code === 'FS_READ_ONLY' || code === 'FS_PERMISSION' || code === 'FS_SANDBOX_DENIED') return readOnly(path)
   return undefined
 }
