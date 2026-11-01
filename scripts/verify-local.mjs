@@ -15,6 +15,8 @@ const checks = [
   ['stage contract', 'scripts/check-stage-contract.mjs'],
   ['harness skills', 'scripts/install-harness-skills.mjs', '--check'],
   ['preset check', 'scripts/check-dataops-preset.mjs'],
+  ['bundle check', 'scripts/check-dataops-bundle.mjs'],
+  ['installer check', 'packages/dataops-install/scripts/check.mjs'],
   ['workitem check', 'scripts/check-dataops-workitem.mjs'],
   ['repo components', 'packages/dataops-tools/scripts/repo-check.mjs'],
   ['internal code repo', 'scripts/check-internal-code-repo.mjs'],

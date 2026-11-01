@@ -1,9 +1,17 @@
 {
   "name": "@dataops/dsh-dataops-client",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "description": "数据开发工作台 · DSH client plugin：把阶段产物渲染成对话内的卡片（需求/设计/技术方案/证据）",
   "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YunSheng-T/dataops-harness.git",
+    "directory": "packages/dataops-client"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
@@ -13,7 +21,8 @@
   "files": [
     "lib",
     "src",
-    "README.md"
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "dsh": {
     "client": {
@@ -31,6 +40,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs",
     "check": "node scripts/check.mjs && node scripts/smoke-apply.mjs && node --check lib/client.js && node --check lib/index.js",
     "smoke": "node scripts/smoke-apply.mjs"
   }

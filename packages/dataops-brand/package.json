@@ -1,9 +1,17 @@
 {
   "name": "@dataops/dsh-dataops-brand",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "description": "DataOps brand occupants for the DSH sidebar and empty-session hero: infinity mark + DataOps wordmark",
   "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YunSheng-T/dataops-harness.git",
+    "directory": "packages/dataops-brand"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
@@ -14,7 +22,8 @@
     "lib",
     "src",
     "assets",
-    "README.md"
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "dsh": {
     "client": {
@@ -33,6 +42,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs",
     "check": "node scripts/check.mjs && node scripts/smoke-apply.mjs && node --check lib/client.js && node --check lib/index.js",
     "smoke": "node scripts/smoke-apply.mjs"
   }

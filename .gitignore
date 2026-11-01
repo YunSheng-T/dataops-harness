@@ -33,3 +33,7 @@ node_modules/
 
 # Offline build artifacts
 /dist/
+
+# Staged into package tarballs by the release script, then removed.
+packages/*/LICENSE
+packages/*/THIRD_PARTY_NOTICES.md

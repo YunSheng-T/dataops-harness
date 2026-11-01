@@ -17,6 +17,8 @@ import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
 const args = process.argv.slice(2)
+console.warn('deprecated: install-dataops-profile.mjs is dev-only; use packages/dataops-install instead')
+
 const check = args.includes('--check')
 const homeFlag = args.indexOf('--home')
 const home = homeFlag >= 0

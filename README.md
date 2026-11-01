@@ -18,11 +18,13 @@ git submodule update --init --recursive
 | `packages/dataops-client` | 用户面插件：14 个活动 toolview（事实/CICD/USPicker/阶段卡/StageResultCard 等）、标题阶段 chip、阶段简报、右栏资产/血缘/证据 |
 | `packages/dataops-brand` | 品牌插件：∞ 标记 + `DataOps` 字标（侧栏 + 空会话 Hero） |
 | `packages/dataops-tools` | Host 工具：19 个活动原子能力（事实/CICD/工作项/日志/presenter/US/DataMap/ensure/stage）；provider 支持 `mock` / `cli` / `http`；真实域 adapter 见内网架构 |
-| `packages/dataops-preset` | Agent preset `dataops-dev`：DataOps Lead persona、workflow/workitem 技能、文件/提问/待办工具、发布审批约束 |
+| `packages/dataops-preset` | Agent preset `dataops-dev` 的 patch 源片段：DataOps Lead persona、workflow/workitem 技能、文件/提问/待办工具、发布审批约束 |
+| `packages/dataops-bundle` | 发布 bundle：组合 tools/brand/client/preset，声明 `dsh.bundle` 与 `engines.dsh`；用户唯一安装入口 |
+| `packages/dataops-install` | 安装 / 诊断 / 卸载 CLI：preflight、seed web 模板、官方 `dsh plugin add`、receipt、skills、离线 overrides |
 | `profiles/dataops` | 独立 profile 模板（基于 `dsh-base` + `dsh-web-app`，不碰 `desktop` profile） |
 | `.agents/skills` | 领域技能：SQL 评审、建模评审、管道排障、影响面、服务契约、工作项协议 |
 | `prototype` | 原生 DSH 界面追加原型、三视图富节点血缘图谱原型（React Flow）与截图 |
-| `docs/design` | 框架、用户面、换品牌、Mock 演示、真实数据接入 |
+| `docs/design` | 框架、用户面、换品牌、发布/安装、Mock 演示、真实数据接入 |
 | `workitems/_template` | 工作项 v0 模板：item.yaml / intent.md / plan.md / decision.md；交付阶段与审批记录 |
 | `docs/dataops-harness-blueprint.md` | 两仓库关系与 DSH 高价值资产盘点 |
 
@@ -81,6 +83,27 @@ dsh --profile dataops
 ```sh
 dsh --profile dataops
 ```
+
+## 本地发布与安装（M2/M3）
+
+```sh
+# 构建 registry-free 发布目录：dist/dataops-0.1.0
+node scripts/release-dataops.mjs
+
+# 用安装器装到独立 dataops profile（不碰 desktop）
+node packages/dataops-install/bin/dataops-install.mjs install \
+  --dsh ./scripts/dsh \
+  --offline dist/dataops-0.1.0 \
+  --yes
+
+# 诊断 / 卸载
+node packages/dataops-install/bin/dataops-install.mjs doctor --dsh ./scripts/dsh
+node packages/dataops-install/bin/dataops-install.mjs uninstall --dsh ./scripts/dsh --yes
+```
+
+本地发布只做 tarball + manifest + sha256 + notices；内部 registry 发布/ACL 留到内网 M3 gate。若工作树被其他在研改动阻塞，先跑 `node scripts/verify-local.mjs` 定位；`--skip-checks` 只用于本地打包，不作为发布门禁。
+
+headless 验收记录见 [docs/verification/release-install-acceptance.md](docs/verification/release-install-acceptance.md)；用户操作见 [docs/ops/release-install.md](docs/ops/release-install.md)。
 
 ## 验证
 

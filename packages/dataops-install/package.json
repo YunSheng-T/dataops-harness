@@ -1,0 +1,32 @@
+{
+  "name": "@dataops/dataops-install",
+  "version": "0.1.0",
+  "description": "DataOps installer, doctor and uninstall CLI for DSH / DSH Desktop",
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YunSheng-T/dataops-harness.git",
+    "directory": "packages/dataops-install"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "bin": {
+    "dataops-install": "bin/dataops-install.mjs",
+    "dataops-doctor": "bin/dataops-install.mjs",
+    "dataops-uninstall": "bin/dataops-install.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs"
+  }
+}

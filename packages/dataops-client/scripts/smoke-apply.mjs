@@ -14,6 +14,7 @@ const documentStub = {
 const sandbox = {
   window: { __ModuleLoader__: { load: ({ factory: captured }) => { factory = captured } } },
   document: documentStub,
+  navigator: { userAgent: 'dataops-smoke' },
   Symbol,
   console
 }

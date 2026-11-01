@@ -1,0 +1,38 @@
+{
+  "name": "@dataops/dsh-dataops-bundle",
+  "version": "0.1.0",
+  "description": "DataOps distribution bundle: tools, brand, client and agent preset for DSH / DSH Desktop",
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YunSheng-T/dataops-harness.git",
+    "directory": "packages/dataops-bundle"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "dependencies": {
+    "@dataops/dsh-dataops-brand": "0.1.0",
+    "@dataops/dsh-dataops-client": "0.1.0",
+    "@dataops/dsh-dataops-tools": "0.1.0"
+  },
+  "scripts": {
+    "build": "node ../../scripts/build-dataops-bundle.mjs",
+    "check": "node ../../scripts/check-dataops-bundle.mjs",
+    "prepack": "node ../../scripts/build-dataops-bundle.mjs"
+  }
+}

@@ -1,9 +1,17 @@
 {
   "name": "@dataops/dsh-dataops-tools",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "description": "DataOps Host tools (mock): requirement / design / tech plan / evidence payloads for the workbench cards",
   "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YunSheng-T/dataops-harness.git",
+    "directory": "packages/dataops-tools"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
@@ -15,7 +23,8 @@
   },
   "files": [
     "src",
-    "README.md"
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "engines": {
     "dsh": ">=0.2.1-rc.2 <0.3.0"
