@@ -21,7 +21,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 
 | ID | 名称 | 优先级 | 状态 | 用户入口 | Host / Client | 依赖 | 下一步 |
 |---|---|---|---|---|---|---|---|
-| DO-PLUGIN-001 | **Repo Doctor** | P0 | approved-design | DataOps 面板「概览 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 补全 blueprint 后实施 |
+| DO-PLUGIN-001 | **Repo Doctor** | P0 | building | DataOps 面板「概览 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 补全 blueprint 后实施 |
 | DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | idea | DataOps 检查 section | Host + Client | Repo Doctor findings | 合并进 Repo Doctor P0 |
 | DO-PLUGIN-003 | **LTS Guard** | P1 | idea | DataOps 检查 section | Host | LTS parser | 定义 parent/path 规则 |
 | DO-PLUGIN-004 | **Impact Watch** | P2 | idea | DataOps 检查 / 血缘 section | Host + Client | workspaceChanges / fs | 评估事件来源 |

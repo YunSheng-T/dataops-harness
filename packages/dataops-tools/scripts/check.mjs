@@ -41,12 +41,12 @@ function isLossless(value, ancestors = new Set()) {
 }
 
 
-check('twenty-seven registry fixtures are in the expected order', () => {
+check('registry fixtures are in the expected order', () => {
   const names = tools.map(tool => tool.name)
   assert(JSON.stringify(names) === JSON.stringify([
     'dataops_requirement_extract_spec', 'dataops_design_compose_model', 'dataops_shared_read_table', 'dataops_shared_read_lineage', 'dataops_scheme_compose_tech_plan', 'dataops_shared_read_evidence',
     'dataops_shared_read_profile', 'dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_develop_generate_code',
-    'dataops_cicd_scan', 'dataops_cicd_compile', 'dataops_cicd_test', 'dataops_cicd_release', 'dataops_review_write_postmortem', 'dataops_incident_triage', 'dataops_shared_read_develop', 'dataops_cicd_pipeline', 'dataops_shared_read_stage', 'dataops_shared_present_deliverable', 'dataops_shared_read_workitem', 'dataops_shared_update_workitem', 'dataops_shared_read_logs', 'dataops_shared_read_us', 'dataops_shared_read_datamap', 'dataops_shared_ensure_workitem', 'dataops_shared_stage'
+    'dataops_cicd_scan', 'dataops_cicd_compile', 'dataops_cicd_test', 'dataops_cicd_release', 'dataops_review_write_postmortem', 'dataops_incident_triage', 'dataops_shared_read_develop', 'dataops_cicd_pipeline', 'dataops_shared_read_stage', 'dataops_shared_present_deliverable', 'dataops_shared_read_workitem', 'dataops_shared_update_workitem', 'dataops_shared_read_logs', 'dataops_shared_read_us', 'dataops_shared_read_datamap', 'dataops_shared_ensure_workitem', 'dataops_shared_stage', 'dataops_repo_index', 'dataops_repo_validate'
   ]), 'unexpected tools: ' + names.join(','))
   for (const tool of tools) {
     assert(typeof tool.description === 'string' && tool.description.length > 20, tool.name + ': weak description')
@@ -56,9 +56,9 @@ check('twenty-seven registry fixtures are in the expected order', () => {
   }
 })
 
-check('stage-0-5 active surface exposes 19 tools', () => {
+check('stage-0-5 active surface exposes 21 tools', () => {
   const active = createTools(normalizeConfig({ disabledTools: ['dataops_requirement_extract_spec', 'dataops_design_compose_model', 'dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_scheme_compose_tech_plan', 'dataops_develop_generate_code', 'dataops_review_write_postmortem', 'dataops_incident_triage'] }), {})
-  assert(active.length === 19, 'P3 should expose 19 tools, got ' + active.length)
+  assert(active.length === 21, 'P3 should expose 21 tools, got ' + active.length)
   assert(!active.some(tool => tool.name === 'dataops_requirement_extract_spec'), 'requirement content tool is hidden')
   assert(!active.some(tool => tool.name === 'dataops_design_compose_model'), 'design content tool is hidden')
   for (const name of ['dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_scheme_compose_tech_plan', 'dataops_develop_generate_code', 'dataops_review_write_postmortem', 'dataops_incident_triage']) assert(!active.some(tool => tool.name === name), name + ' is hidden')

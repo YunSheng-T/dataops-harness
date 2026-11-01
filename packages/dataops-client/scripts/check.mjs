@@ -454,7 +454,7 @@ check('lineage tab draws a graph from real lineage', () => {
     ],
     truncated: false
   })
-  const body = text(Tabs.tabs[1].body.Component({ sessionId: 's-graph' }))
+  const body = text(Tabs._internals.LineageBody({ sessionId: 's-graph' }))
   assert(body.includes('dws.trade_channel_daily'), 'graph target')
   assert(body.includes('设计血缘') && body.includes('一层上游'), 'graph card')
   assert(body.includes('ads.channel_report') && body.includes('api.channel_metrics'), 'graph nodes')
@@ -468,7 +468,7 @@ check('design impact draws a synthetic lineage graph', () => {
       { table: 'member_growth', type: 'dashboard', owner: '会员组' }
     ] }
   })
-  const body = text(Tabs.tabs[1].body.Component({ sessionId: 's-impact' }))
+  const body = text(Tabs._internals.LineageBody({ sessionId: 's-impact' }))
   assert(body.includes('dim.member'), 'synthetic target: ' + body.slice(0, 800))
   assert(body.includes('ads.member_level') && body.includes('member_growth'), 'synthetic nodes')
   assert(body.includes('设计血缘'), 'synthetic card')
@@ -484,7 +484,7 @@ check('lineage tab renders schedule view from task/job lineage', () => {
     edges: [{ from: 'task:channel_pay', to: 'job:etl_target', type: 'triggers' }],
     schedule: { taskId: 'task:channel_pay', cycle: 'daily', cron: '0 3 * * *', sla: '05:00', retries: 2, dependsOn: ['table:dwd.orders@dt-1'] }
   })
-  const body = text(Tabs.tabs[1].body.Component({ sessionId: 's-schedule' }))
+  const body = text(Tabs._internals.LineageBody({ sessionId: 's-schedule' }))
   assert(body.includes('调度血缘') && body.includes('渠道支付日报'), 'schedule title')
   assert(body.includes('支付口径聚合') && body.includes('0 3 * * *'), 'schedule job and cron')
   assert(!body.includes('设计血缘'), 'right tab must not default to design lineage')
@@ -494,23 +494,19 @@ check('lineage tab uses embedded three-view surface when available', () => {
   const EmbeddedTabs = createDataopsTabs(React, ContextStore, {
     LineageSurface: () => React.createElement('div', null, '三视图 surface')
   })
-  const body = text(EmbeddedTabs.tabs[1].body.Component({ sessionId: 's-surface' }))
+  const body = text(EmbeddedTabs._internals.LineageBody({ sessionId: 's-surface' }))
   assert(body.includes('三视图 surface'), 'embedded surface was not used')
 })
 
-check('three right-sidebar tabs read the context store', () => {
-  assert(Tabs.definitions.length === 3, 'expected three tab types')
-  const kinds = Tabs.definitions.map(item => item.kind)
-  assert(new Set(kinds).size === 3, 'tab kinds must be unique')
-  const asset = Tabs.tabs[0]
-  const empty = text(asset.body.Component({ sessionId: 's-empty' }))
+check('DataOps panel sections read the context store', () => {
+  assert(Tabs.definitions.length === 1, 'expected one aggregated DataOps tab')
+  assert(Tabs.definitions[0].kind === 'dataops', 'DataOps tab kind')
+  const empty = text(Tabs._internals.AssetBody({ sessionId: 's-empty' }))
   assert(empty.includes('还没有资产上下文'), 'empty state')
-  const populated = text(asset.body.Component({ sessionId: 's1' }))
-  assert(populated.includes('dws.v2'), 'asset tab should read the latest design target')
-  const lineage = Tabs.tabs[1]
-  assert(text(lineage.body.Component({ sessionId: 's2' })).includes('dwd.y'), 'lineage tab should read context')
-  const evidence = Tabs.tabs[2]
-  assert(text(evidence.body.Component({ sessionId: 's-empty' })).includes('还没有证据'), 'evidence empty state')
+  const populated = text(Tabs._internals.AssetBody({ sessionId: 's1' }))
+  assert(populated.includes('dws.v2'), 'asset section should read the latest design target')
+  assert(text(Tabs._internals.LineageBody({ sessionId: 's2' })).includes('dwd.y'), 'lineage section should read context')
+  assert(text(Tabs._internals.EvidenceBody({ sessionId: 's-empty' })).includes('还没有证据'), 'evidence empty state')
 })
 
 

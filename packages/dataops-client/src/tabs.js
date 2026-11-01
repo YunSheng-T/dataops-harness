@@ -1,5 +1,5 @@
 /**
- * Right-sidebar tabs: 资产 / 血缘 / 证据.
+ * Right-sidebar DataOps panel: 概览 / 仓库 / 资产 / 血缘 / 证据 / 检查.
  *
  * Each tab is a page kind registered through `ctx.sidebarRightTabs.register`,
  * with its body on the keyed `sidebar.right.pane.tab` slot. Bodies read the
@@ -338,6 +338,129 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   }
 
 
+  var PANEL_SECTIONS = [
+    ['overview', '概览'],
+    ['repo', '仓库'],
+    ['assets', '资产'],
+    ['lineage', '血缘'],
+    ['evidence', '证据'],
+    ['checks', '检查']
+  ]
+
+  function panelInitialSection() {
+    if (typeof window === 'undefined') return 'overview'
+    var requested = window.__dataopsPanelSection
+    return PANEL_SECTIONS.some(function (item) { return item[0] === requested }) ? requested : 'overview'
+  }
+
+  function PanelMetric(props) {
+    return h('div', { className: 'do-panel-metric' }, h('b', null, props.value), h('span', null, props.label))
+  }
+
+  function PanelFinding(props) {
+    var item = props.finding
+    return h('div', { className: 'do-panel-finding', 'data-severity': item.severity },
+      h('span', { className: 'do-panel-severity' }, item.severity === 'blocking' ? '阻断' : item.severity === 'warning' ? '警告' : '提示'),
+      h('div', { className: 'do-panel-finding-main' },
+        h('div', null, h('code', null, item.code || 'FINDING'), h('span', null, item.message || '')),
+        item.path ? h('div', { className: 'do-panel-path mono' }, item.path + (item.task ? ' · ' + item.task : '') + (item.job ? ' · ' + item.job : '')) : null))
+  }
+
+  function DataOpsPanelBody(props) {
+    var sectionState = React.useState(panelInitialSection())
+    var dataState = React.useState(null)
+    var loadingState = React.useState(false)
+    var errorState = React.useState(null)
+    var section = sectionState[0]
+    var data = dataState[0]
+    var loading = loadingState[0]
+    var error = errorState[0]
+
+    React.useEffect(function () {
+      if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
+      var onSection = function (event) {
+        var next = event && event.detail && event.detail.section
+        if (PANEL_SECTIONS.some(function (item) { return item[0] === next })) sectionState[1](next)
+      }
+      window.addEventListener('dataops:panel-section', onSection)
+      return function () { window.removeEventListener('dataops:panel-section', onSection) }
+    }, [])
+
+    React.useEffect(function () {
+      if (section !== 'overview' && section !== 'repo' && section !== 'checks') {
+        dataState[1](null)
+        errorState[1](null)
+        return
+      }
+      if (!props.sessionId || typeof fetch !== 'function') {
+        errorState[1]({ code: 'SESSION_REQUIRED', message: '当前 Session 还没有可用的工作区' })
+        return
+      }
+      var cancelled = false
+      loadingState[1](true)
+      errorState[1](null)
+      var mode = section === 'overview' || section === 'repo' ? 'scan' : 'check'
+      fetch('/api/dataops/repo-doctor?sessionId=' + encodeURIComponent(props.sessionId) + '&mode=' + mode, { headers: { accept: 'application/json' } })
+        .then(function (response) { return response.json().then(function (body) { if (!response.ok) throw Object.assign(new Error(body.message || body.error || 'repo doctor failed'), { body: body }); return body }) })
+        .then(function (body) { if (!cancelled) dataState[1](body) })
+        .catch(function (reason) { if (!cancelled) errorState[1](reason.body || { code: 'REQUEST_FAILED', message: reason.message }) })
+        .finally(function () { if (!cancelled) loadingState[1](false) })
+      return function () { cancelled = true }
+    }, [section, props.sessionId])
+
+    var scan = data && data.scan ? data.scan : data
+    var metrics = (data && data.metrics) || (scan && scan.metrics) || {}
+    var detection = (data && data.detection) || (scan && scan.detection) || null
+    var findings = (data && data.findings) || []
+    var content = null
+    if (section === 'overview') {
+      content = h('div', { className: 'do-panel-content' },
+        loading ? h('div', { className: 'do-panel-loading' }, '扫描当前 workspace…') : null,
+        error ? h('div', { className: 'do-panel-error' }, h('b', null, error.code || 'ERROR'), h('span', null, error.message || '扫描失败')) : null,
+        data ? h(React.Fragment, null,
+          h('div', { className: 'do-panel-title' }, h('b', null, detection && detection.detected ? 'DataOps 仓库' : '当前 workspace'), h('span', { className: 'do-panel-badge', 'data-tone': detection && detection.detected ? 'pass' : 'warn' }, detection && detection.detected ? '已识别' : detection && detection.partial ? '需检查' : '未识别')),
+          h('div', { className: 'do-panel-metrics' },
+            h(PanelMetric, { value: metrics.packages || 0, label: 'packages' }),
+            h(PanelMetric, { value: metrics.tasks || 0, label: 'tasks' }),
+            h(PanelMetric, { value: metrics.jobs || 0, label: 'jobs' }),
+            h(PanelMetric, { value: (metrics.blocking || 0) + (metrics.warning || 0) + (metrics.info || 0), label: 'findings' })),
+          detection && detection.reasons && detection.reasons.length ? h('div', { className: 'do-panel-hint' }, detection.reasons.join(' · ')) : null,
+          h('div', { className: 'do-panel-actions' }, h('button', { type: 'button', className: 'do-panel-btn', onClick: function () { sectionState[1]('checks') } }, '运行检查'), h('button', { type: 'button', className: 'do-panel-btn', onClick: function () { sectionState[1]('repo') } }, '查看 packages'))) : null,
+        !loading && !error && !data ? h('div', { className: 'do-panel-empty' }, '当前 workspace 不是 DataOps 代码仓。打开包含 .dataops/manifest.yaml 的 workspace。') : null)
+    } else if (section === 'checks') {
+      content = h('div', { className: 'do-panel-content' },
+        loading ? h('div', { className: 'do-panel-loading' }, '运行仓库检查…') : null,
+        error ? h('div', { className: 'do-panel-error' }, error.message || '检查失败') : null,
+        data && !loading ? h(React.Fragment, null,
+          h('div', { className: 'do-panel-title' }, h('b', null, '仓库检查'), h('span', { className: 'do-panel-badge', 'data-tone': data.status === 'pass' ? 'pass' : data.status === 'block' ? 'fail' : 'warn' }, data.status === 'pass' ? '通过' : data.status === 'block' ? '阻断' : '警告')),
+          findings.length ? findings.map(function (item, index) { return h(PanelFinding, { key: index, finding: item }) }) : h('div', { className: 'do-panel-empty' }, '当前没有发现问题')) : null)
+    } else if (section === 'repo') {
+      var packages = (scan && scan.packages) || []
+      content = h('div', { className: 'do-panel-content' },
+        loading ? h('div', { className: 'do-panel-loading' }, '读取 packages…') : null,
+        error ? h('div', { className: 'do-panel-error' }, error.message || '读取失败') : null,
+        !loading && !error ? h(React.Fragment, null,
+          h('div', { className: 'do-panel-title' }, h('b', null, 'Packages'), h('span', null, String(packages.length))),
+          packages.length ? packages.map(function (pkg) {
+            return h('div', { key: pkg.packageName, className: 'do-panel-package' },
+              h('div', null, h('b', null, pkg.packageName), h('span', { className: 'do-panel-path' }, pkg.platform || pkg.toolChain || '')),
+              h('div', { className: 'do-panel-path' }, (pkg.files || []).length + ' files' + (pkg.missing && pkg.missing.length ? ' · ' + pkg.missing.length + ' missing' : '')))
+          }) : h('div', { className: 'do-panel-empty' }, '没有 package')) : null)
+    } else if (section === 'assets') {
+      content = h('div', { className: 'do-panel-content' }, h(AssetBody, { sessionId: props.sessionId }))
+    } else if (section === 'lineage') {
+      content = h('div', { className: 'do-panel-content' }, h(LineageBody, { sessionId: props.sessionId }))
+    } else if (section === 'evidence') {
+      content = h('div', { className: 'do-panel-content' }, h(EvidenceBody, { sessionId: props.sessionId }))
+    }
+    return h('div', { className: 'do-panel' },
+      h('div', { className: 'do-panel-head' }, h('span', { className: 'do-panel-mark' }, 'DataOps'), h('b', null, '数据工作台')),
+      h('div', { className: 'do-panel-nav', role: 'tablist' }, PANEL_SECTIONS.map(function (item) {
+        return h('button', { key: item[0], type: 'button', className: 'do-panel-tab', 'data-active': String(section === item[0]), onClick: function () { sectionState[1](item[0]) } }, item[1])
+      })),
+      content)
+  }
+
   function tab(id, kind, label, description, order, Body) {
     return {
       definition: {
@@ -351,13 +474,12 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   }
 
   var tabs = [
-    tab('asset', 'dataops-asset', '资产', '目标表与字段', 10, AssetBody),
-    tab('lineage', 'dataops-lineage', '血缘', '上下游影响面', 20, LineageBody),
-    tab('evidence', 'dataops-evidence', '证据', '结论背后的查询', 30, EvidenceBody)
+    tab('dataops', 'dataops', 'DataOps', '仓库、资产、血缘、证据与检查', 10, DataOpsPanelBody)
   ]
 
   return {
     tabs: tabs,
-    definitions: tabs.map(function (item) { return item.definition })
+    definitions: tabs.map(function (item) { return item.definition }),
+    _internals: { AssetBody: AssetBody, LineageBody: LineageBody, EvidenceBody: EvidenceBody, DataOpsPanelBody: DataOpsPanelBody }
   }
 }

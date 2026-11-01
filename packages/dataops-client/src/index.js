@@ -5,7 +5,7 @@
  * leave the stock interface unchanged:
  *   - tool.call.toolview                stage cards (requirement/design/…)
  *   - conversation.session.header.actions  "设计 · 2/6" beside the title
- *   - sidebarRightTabs + sidebar.right.pane.tab  asset/lineage/evidence tabs
+ *   - sidebarRightTabs + sidebar.right.pane.tab  one DataOps panel
  *   - conversation.chat.turnTail        end-of-turn stage brief
  */
 var TOOL_VIEWS = [
@@ -314,6 +314,30 @@ function apply(ctx) {
       })
     })
   }
+  // Client decoration for the host `dataops` command: bare invocation opens
+  // the single DataOps panel; arguments still execute on the Host.
+  function registerCommandUi(commandUiCtx) {
+    var commandUi = commandUiCtx && commandUiCtx.commandUi ? commandUiCtx.commandUi : (commandUiCtx && typeof commandUiCtx.get === 'function' ? commandUiCtx.get('commandUi') : null)
+    if (!commandUi || typeof commandUi.decorate !== 'function' || typeof window === 'undefined') return
+    var decorate = function () {
+      return commandUi.decorate({
+        name: 'dataops',
+        available: function () { return true },
+        ui: {
+          kind: 'action',
+          run: function () {
+            if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+              window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: 'dataops' } }))
+            }
+          }
+        }
+      })
+    }
+    if (typeof commandUiCtx.effect === 'function') commandUiCtx.effect(decorate, 'dataops command ui decoration')
+    else decorate()
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['commandUi'], registerCommandUi)
+
   if (typeof ctx.inject === 'function') ctx.inject(['sidebarRightTabs'], registerTabs)
   else registerTabs({ sidebarRightTabs: typeof ctx.get === 'function' ? ctx.get('sidebarRightTabs') : ctx.sidebarRightTabs, effect: ctx.effect })
 

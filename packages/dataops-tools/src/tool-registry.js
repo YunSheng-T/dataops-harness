@@ -142,8 +142,17 @@ export const TOOL_REGISTRY = [
     name: 'dataops_shared_stage',
     scope: 'shared', action: 'stage', object: 'deliverable', shared: true,
     stages: ['requirement', 'design', 'scheme'], payloadKind: 'deliverable', card: 'StageResultCard', skill: 'dataops-workflow', implemented: true
-  }
-]
+  },
+  {
+    name: 'dataops_repo_index',
+    scope: 'repo', action: 'index', object: 'repo', shared: false,
+    stages: ['repo'], payloadKind: 'repo', card: null, skill: null, implemented: true
+  },
+  {
+    name: 'dataops_repo_validate',
+    scope: 'repo', action: 'validate', object: 'repo', shared: false,
+    stages: ['repo'], payloadKind: 'repo', card: null, skill: null, implemented: true
+  },]
 
 export const LEGACY_CONTENT_TOOL_NAMES = [
   'dataops_requirement_extract_spec',
@@ -162,4 +171,4 @@ export const ACTIVE_TOOL_NAMES = TOOL_REGISTRY
 export const TOOL_NAMES = Object.fromEntries(TOOL_REGISTRY.map(item => [item.name, item.name]))
 export const IMPLEMENTED_TOOLS = TOOL_REGISTRY.filter(item => item.implemented)
 export const IMPLEMENTED_TOOL_NAMES = IMPLEMENTED_TOOLS.map(item => item.name)
-export const TOOL_NAME_PATTERN = /^dataops_(shared|requirement|design|scheme|develop|cicd|review|incident)_[a-z][a-z0-9_]*$/
+export const TOOL_NAME_PATTERN = /^dataops_(shared|repo|requirement|design|scheme|develop|cicd|review|incident)_[a-z][a-z0-9_]*$/

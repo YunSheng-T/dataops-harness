@@ -13,6 +13,8 @@ import { createCicdCliAdapter } from './providers/cicd-cli.js'
 import { createWorkitemStore } from './workitem-store.js'
 import { registerSignoffRoute } from './signoff-route.js'
 import { registerRepoRoute } from './repo/route.js'
+import { checkRepository, scanRepository, validateRepository } from './repo-doctor/index.js'
+import { registerRepoDoctorRoute } from './repo-doctor/route.js'
 import { createAdapterIdentity } from './signoff-service.js'
 import { createDomainAdapters } from './providers/domain-adapters.js'
 import { buildDevelopArtifacts } from './develop-package.js'
@@ -528,6 +530,30 @@ export function createTools(config, deps) {
     return stagePayload(buildSchedule(args), { source: 'mock', asOf: now() })
   }
 
+  async function repoRoot(exec) {
+    try {
+      const cwd = options.ctx && typeof options.ctx.get === 'function' ? options.ctx.get('workingDirectory') : null
+      if (cwd && exec && exec.agent && typeof cwd.ensure === 'function') return await cwd.ensure(exec.agent, exec.signal)
+    } catch (error) { /* fall back to process cwd */ }
+    return process.cwd()
+  }
+
+  async function runRepoIndex(_args, exec) {
+    const root = await repoRoot(exec)
+    const scan = scanRepository(root)
+    if (!scan.ok) {
+      throw new Error('dataops_repo_index: ' + (scan.diagnostics || []).map(item => item.message).join('; ') || 'repository not detected')
+    }
+    return scan
+  }
+
+  async function runRepoValidate(_args, exec) {
+    const root = await repoRoot(exec)
+    const scan = scanRepository(root)
+    const validation = validateRepository(scan)
+    return validation
+  }
+
   const tools = [
     textTool({
       name: 'dataops_requirement_extract_spec',
@@ -807,6 +833,20 @@ export function createTools(config, deps) {
       summary: value => value.action === 'signoff' || value.gateStatus
         ? '阶段签收：' + (value.id || '') + '｜' + (value.gateStatus || '') + (value.advanced ? '｜进入 ' + value.advanced : '')
         : '阶段交付：' + (value.kind || '') + '｜' + (value.workitemId || value.id || '')
+    }),
+    textTool({
+      name: 'dataops_repo_index',
+      description: '只读扫描当前 workspace 的数据代码仓：识别 .dataops manifest/build、package、LTS task/job 和制品。返回结构化索引，不执行规则、不写文件。',
+      parameters: parameterRoot({}),
+      execute: runRepoIndex,
+      summary: value => '仓库索引：' + value.metrics.packages + ' packages / ' + value.metrics.tasks + ' tasks / ' + value.metrics.jobs + ' jobs'
+    }),
+    textTool({
+      name: 'dataops_repo_validate',
+      description: '对当前 workspace 的数据代码仓执行只读规则校验：package 文件覆盖、LTS parent/path、占位符、制品覆盖等。返回 blocking/warning/info findings。',
+      parameters: parameterRoot({}),
+      execute: runRepoValidate,
+      summary: value => '仓库检查：' + value.status + ' · ' + value.findings.length + ' findings'
     })
   ]
   const disabled = new Set(config.disabledTools || [])
@@ -834,4 +874,48 @@ export function apply(ctx, config) {
   }
   if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountRepo)
   else mountRepo(ctx)
+  const mountRepoDoctor = child => {
+    try { registerRepoDoctorRoute(child) } catch { /* optional host service; tools stay usable */ }
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountRepoDoctor)
+  else mountRepoDoctor(ctx)
+
+  function mountDataopsCommand(child) {
+    const commands = child && child.commands ? child.commands : (child && typeof child.get === 'function' ? child.get('commands') : null)
+    if (!commands || typeof commands.register !== 'function') return
+    const register = () => commands.register({
+      name: 'dataops',
+      description: 'DataOps 仓库入口：打开面板或检查当前 workspace',
+      input: { hint: 'open [section] | repo <index|validate|check>' },
+      handler: async invocation => {
+        const raw = String(invocation.rawInput || '').trim()
+        const tokens = raw ? raw.split(/\s+/u) : []
+        if (!tokens.length || tokens[0] === 'open') {
+          return { kind: 'success', text: '打开右侧 DataOps 面板' }
+        }
+        if (tokens[0] !== 'repo' || !['index', 'validate', 'check'].includes(tokens[1])) {
+          return { kind: 'error', text: '用法：/dataops [open [section] | repo index|validate|check]' }
+        }
+        try {
+          const cwd = child && typeof child.get === 'function' ? child.get('workingDirectory') : null
+          const root = cwd && invocation.agent && typeof cwd.ensure === 'function'
+            ? await cwd.ensure(invocation.agent, invocation.signal)
+            : process.cwd()
+          const scan = scanRepository(root)
+          if (tokens[1] === 'index') {
+            const summary = scan.metrics
+            return { kind: 'success', text: '仓库索引：' + summary.packages + ' packages / ' + summary.tasks + ' tasks / ' + summary.jobs + ' jobs' }
+          }
+          const validation = tokens[1] === 'validate' ? validateRepository(scan) : validateRepository(scan)
+          return { kind: validation.status === 'block' ? 'error' : 'success', text: '仓库检查：' + validation.status + ' · ' + validation.findings.length + ' findings' }
+        } catch (error) {
+          return { kind: 'error', text: 'DataOps 检查失败：' + (error && error.message ? error.message : String(error)) }
+        }
+      }
+    })
+    if (typeof child.effect === 'function') child.effect(register, 'dataops command')
+    else register()
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['commands'], mountDataopsCommand)
+  else mountDataopsCommand(ctx)
 }

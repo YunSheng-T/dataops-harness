@@ -1,6 +1,6 @@
 # DataOps 插件聚合设计
 
-> 状态：方案评审中，不实施。
+> 状态：P0 已实现第一版（DataOps 单面板 + `/dataops` 命令）。
 > 关联：`docs/design/dataops-plugin-roadmap.md`、`docs/design/repo-doctor.md`
 
 ## 1. 问题

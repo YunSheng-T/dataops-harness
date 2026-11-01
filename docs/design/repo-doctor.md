@@ -1,6 +1,6 @@
 # Repo Doctor 详细设计
 
-> 状态：方案评审中，不实施。
+> 状态：P0 已实现第一版（Host scan/validate + DataOps 面板）。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
 > 聚合方案：`docs/design/dataops-plugin-surface.md`
 

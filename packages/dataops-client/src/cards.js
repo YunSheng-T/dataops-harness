@@ -222,6 +222,39 @@ export function createDataopsCards(React) {
     '.do-doc-muted{font-size:10px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.do-doc-types{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}',
     '.do-doc-type{font-size:8px;line-height:15px;padding:0 5px;border-radius:3px;background:var(--dsw-alias-bg-overlay,#eef0f5);color:var(--dsw-alias-label-secondary,#61666b);font-family:ui-monospace,Menlo,monospace}',
+    '.do-panel{height:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--dsw-alias-bg-layer-1,#fff)}',
+    '.do-panel-head{display:flex;align-items:baseline;gap:7px;padding:12px 14px 8px;flex:none}',
+    '.do-panel-mark{font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--dsw-alias-state-business-primary,#3f63d9);text-transform:uppercase}',
+    '.do-panel-head b{font-size:13px}',
+    '.do-panel-nav{display:flex;gap:2px;padding:0 10px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));flex:none;overflow-x:auto}',
+    '.do-panel-tab{border:0;background:transparent;color:var(--dsw-alias-label-tertiary,#8b93a2);font-size:10px;line-height:28px;padding:0 7px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}',
+    '.do-panel-tab[data-active=true]{color:var(--dsw-alias-label-primary,#171a20);border-bottom-color:var(--dsw-alias-state-business-primary,#3f63d9)}',
+    '.do-panel-content{padding:12px 14px 20px;overflow:auto;min-height:0;flex:1}',
+    '.do-panel-title{display:flex;align-items:center;gap:7px;margin-bottom:10px;font-size:12px}',
+    '.do-panel-title > span:not(.do-panel-badge){margin-left:auto;color:var(--dsw-alias-label-tertiary,#8b93a2);font-size:10px}',
+    '.do-panel-badge{font-size:9px;line-height:17px;padding:0 6px;border-radius:4px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.08));color:var(--dsw-alias-label-secondary,#61666b);background:var(--dsw-alias-bg-l2,#f7f8fa)}',
+    '.do-panel-badge[data-tone=pass]{color:var(--dsw-alias-state-success-primary,#17835c);background:var(--dsw-alias-state-success-bg,#eaf7f1);border-color:var(--dsw-alias-state-success-line,#c5e8d9)}',
+    '.do-panel-badge[data-tone=warn]{color:var(--dsw-alias-state-warn-primary,#93620e);background:var(--dsw-alias-state-warn-bg,#fff6e6);border-color:var(--dsw-alias-state-warn-line,#f0d6a6)}',
+    '.do-panel-badge[data-tone=fail]{color:var(--dsw-alias-state-error-primary,#b33737);background:var(--dsw-alias-state-error-bg,#fff0ef);border-color:var(--dsw-alias-state-error-line,#f0c9c5)}',
+    '.do-panel-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}',
+    '.do-panel-metric{min-width:0;padding:7px 8px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));border-radius:7px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
+    '.do-panel-metric b{display:block;font-size:16px;line-height:20px}',
+    '.do-panel-metric span{display:block;font-size:8.5px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-panel-actions{display:flex;gap:6px;margin:9px 0}',
+    '.do-panel-btn{border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.12));border-radius:5px;background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-secondary,#61666b);font-size:10px;line-height:23px;padding:0 8px;cursor:pointer}',
+    '.do-panel-btn:hover{border-color:var(--dsw-alias-state-business-primary,#3f63d9);color:var(--dsw-alias-state-business-primary,#3f63d9)}',
+    '.do-panel-finding{display:grid;grid-template-columns:38px minmax(0,1fr);gap:7px;padding:7px 0;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.05));font-size:10px;line-height:1.45}',
+    '.do-panel-severity{font-size:8.5px;height:17px;line-height:17px;text-align:center;border-radius:3px;color:var(--dsw-alias-label-secondary,#61666b);background:var(--dsw-alias-bg-l2,#f7f8fa)}',
+    '.do-panel-finding[data-severity=blocking] .do-panel-severity{color:var(--dsw-alias-state-error-primary,#b33737);background:var(--dsw-alias-state-error-bg,#fff0ef)}',
+    '.do-panel-finding[data-severity=warning] .do-panel-severity{color:var(--dsw-alias-state-warn-primary,#93620e);background:var(--dsw-alias-state-warn-bg,#fff6e6)}',
+    '.do-panel-finding-main{min-width:0}',
+    '.do-panel-finding-main code{font-family:ui-monospace,Menlo,monospace;font-size:8.5px;color:var(--dsw-alias-state-business-primary,#3f63d9);margin-right:5px}',
+    '.do-panel-path{font-size:9px;color:var(--dsw-alias-label-tertiary,#8b93a2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.do-panel-package{padding:8px 0;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.05));font-size:10px}',
+    '.do-panel-package > div:first-child{display:flex;gap:7px;align-items:baseline}',
+    '.do-panel-package b{font-size:11px}',
+    '.do-panel-loading,.do-panel-empty{padding:12px 0;color:var(--dsw-alias-label-tertiary,#8b93a2);font-size:10px;line-height:1.6}',
+    '.do-panel-error{padding:9px 10px;margin:5px 0;border:1px solid var(--dsw-alias-state-error-line,#f0c9c5);border-radius:6px;background:var(--dsw-alias-state-error-bg,#fff0ef);color:var(--dsw-alias-state-error-primary,#b33737);font-size:10px}',
     '.do-lineage-inline{display:flex;justify-content:center;padding:12px 10px 16px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
     '.do-lineage-inline > .do-label{margin-bottom:7px}',
     '.do-sched-card{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-top:4px;min-width:0}',
@@ -760,7 +793,12 @@ export function createDataopsCards(React) {
 
   function openTab(kind) {
     if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return
-    window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: kind } }))
+    var section = kind === 'dataops-lineage' ? 'lineage' : kind === 'dataops-evidence' ? 'evidence' : kind === 'dataops-asset' ? 'assets' : 'overview'
+    if (kind && String(kind).indexOf('dataops') === 0) {
+      try { window.__dataopsPanelSection = section } catch (error) { /* ignore */ }
+      try { window.dispatchEvent(new CustomEvent('dataops:panel-section', { detail: { section: section } })) } catch (error) { /* ignore */ }
+    }
+    window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: kind && String(kind).indexOf('dataops') === 0 ? 'dataops' : kind } }))
   }
 
   function Modal(props) {
