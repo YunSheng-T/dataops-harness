@@ -1,0 +1,55 @@
+{
+  "name": "@dataops/dsh-dataops-dev",
+  "version": "0.1.0",
+  "description": "dataops-dev 数据开发 IDE：DSH 原生 conversation.view + DevDocument 一致性打开/受防护保存（P0）",
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YunSheng-T/dataops-harness.git",
+    "directory": "packages/dataops-dev"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "main": "src/host/index.js",
+  "exports": {
+    ".": "./src/host/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "lib",
+    "README.md"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-fs": "0.2.1-rc.4",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.4"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-fs": "0.2.1-rc.4",
+    "@deepseek-ai/dsh-fs-local": "0.2.1-rc.4",
+    "@deepseek-ai/dsh-fs-observation-policy": "0.2.1-rc.4",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.4"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs",
+    "check": "node --check src/host/index.js && node --check lib/client.js && npm run test",
+    "test": "node --test tests/*.test.mjs"
+  }
+}
