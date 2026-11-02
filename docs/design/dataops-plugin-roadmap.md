@@ -25,6 +25,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 | DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | shipped | DataOps 检查 section | Host + Client | Repo Doctor findings | 已用临时仓验证 |
 | DO-PLUGIN-003 | **LTS Guard** | P1 | shipped | DataOps 检查 section | Host | LTS parser | 已用临时仓验证 |
 | DO-PLUGIN-004 | **Impact Watch** | P2 | idea | DataOps 检查 / 血缘 section | Host + Client | workspaceChanges / fs | 评估事件来源 |
+| DO-PLUGIN-013 | **Change Impact Review** | P2.1 | design | DataOps 变更 section | Host + Client | ChangeSet、RepoIndex、lineage | 评审输入契约 |
 | DO-PLUGIN-005 | **Migration Review** | P2 | idea | DataOps 检查 section | Host + Client | SQL/model parser | 定义 DDL/DML/Rollback 规则 |
 | DO-PLUGIN-006 | **Run Timeline** | P2 | idea | DataOps 证据 / 检查 section | Host + Client | dataops_shared_read_logs | 先做 mock 日志 |
 | DO-PLUGIN-007 | **Data Contract Diff** | P3 | idea | API 预览差异卡 | Host + Client | API YAML / ofl | 定义兼容性规则 |
