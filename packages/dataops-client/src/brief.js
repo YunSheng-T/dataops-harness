@@ -418,7 +418,7 @@ export function createStageBrief(React, store, contextStore) {
           var gate = card.kind === 'analysis' ? 'scheme.analysis' : card.kind === 'solution' ? 'scheme.solution' : card.kind === 'tech_plan' ? 'scheme.tech_plan' : card.kind === 'design' ? 'design' : 'requirement'
           var approval = workitem && Array.isArray(workitem.approvals) ? workitem.approvals.filter(function (a) { return a && a.gate === gate })[0] : null
           var status = approval && approval.status === 'approved' ? 'approved' : card.status === 'blocked' ? 'blocked' : card.status === 'reviewed' ? 'reviewed' : 'draft'
-          return h('button', { key: card.kind, type: 'button', className: 'do-stagebar-card', onClick: function () { viewState[1](withApproval(card)) } },
+          return h('button', { key: card.kind, type: 'button', className: 'do-stagebar-card', onClick: function () { viewState[1](action && card.kind === action.spec.kind ? enrichedCardPayload(action) : withApproval(card)) } },
             h('span', { className: 'do-stagebar-card-dot', 'data-state': status }),
             h('span', { className: 'do-stagebar-card-name' }, cardLabels[card.kind] || card.kind),
             h('span', { className: 'do-stagebar-card-status', 'data-state': status }, statusLabel(status)),
@@ -430,7 +430,7 @@ export function createStageBrief(React, store, contextStore) {
         h('span', { className: 'do-stagebar-gate-dot', 'data-state': action.blocking ? 'blocked' : 'pending' }),
         h('span', null, '当前门禁 · ' + action.spec.label),
         h('span', { className: 'do-stagebar-gate-meta' }, action.blocking ? '待补证' : action.pending.length + ' 个待签角色'),
-        h('button', { type: 'button', className: 'do-stagebar-view', onClick: function () { viewState[1](action.payload) } }, '查看卡')
+        h('button', { type: 'button', className: 'do-stagebar-view', onClick: function () { viewState[1](enrichedCardPayload(action)) } }, '查看卡')
       ) : null,
       view ? h('div', { className: 'do-card-modal-mask', onClick: function (e) { if (e.target === e.currentTarget) viewState[1](null) } },
         h('div', { className: 'do-card-modal' },
