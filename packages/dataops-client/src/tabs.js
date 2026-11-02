@@ -58,6 +58,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   }
 
   function AssetBody(props) {
+    var focus = props.focus || null
     var context = useContext(props.sessionId) || {}
     var table = context.table
     var design = context.design
@@ -74,6 +75,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
       columns: []
     }
     return h('div', null,
+      focus && focus.table ? h('div', { className: 'do-focus-banner' }, '定位 · ', h('code', null, focus.table)) : null,
       h(CtxCard, {
         title: target.table,
         sub: [target.layer, target.grain, target.partition ? '分区 ' + target.partition : null].filter(Boolean).join(' · ')
@@ -322,19 +324,22 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   }
 
   function EvidenceBody(props) {
+    var focus = props.focus || null
     var context = useContext(props.sessionId) || {}
     var evidence = context.evidence
     if (!evidence) {
       return h(Empty, { title: '还没有证据', hint: '让 Agent 调用 dataops_shared_read_evidence，或在卡片上点开证据胶囊。' })
     }
-    return h(CtxCard, {
+    return h('div', null,
+      focus && (focus.evidenceId || focus.claim) ? h('div', { className: 'do-focus-banner' }, '定位 · ', h('code', null, focus.evidenceId || focus.claim)) : null,
+      h(CtxCard, {
       title: '证据 · ' + (evidence.claim || '未命名'),
       sub: [evidence.env, evidence.timeRange, evidence.cost].filter(Boolean).join(' · ')
     },
       evidence.query ? h('pre', { className: 'do-logic', style: { margin: '8px 0 0', whiteSpace: 'pre-wrap' } }, evidence.query) : null,
       h('div', { className: 'do-ctx-sub', style: { marginTop: '6px' } },
         '来源 ' + (evidence.source || '—') + ' · 截至 ' + (evidence.asOf || '—'))
-    )
+    ))
   }
 
 
@@ -347,6 +352,11 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     ['evidence', '证据'],
     ['checks', '检查']
   ]
+
+  function panelInitialFocus() {
+    if (typeof window === 'undefined') return null
+    return window.__dataopsPanelFocus || null
+  }
 
   function panelInitialSection() {
     if (typeof window === 'undefined') return 'overview'
@@ -381,6 +391,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
 
   function DataOpsPanelBody(props) {
     var sectionState = React.useState(panelInitialSection())
+    var focusState = React.useState(panelInitialFocus())
     var dataState = React.useState(null)
     var loadingState = React.useState(false)
     var errorState = React.useState(null)
@@ -404,6 +415,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var context = useContext(props.sessionId)
     var workitem = context && context.workitem ? context.workitem : null
     var section = sectionState[0]
+    var focus = focusState[0]
     var data = dataState[0]
     var loading = loadingState[0]
     var error = errorState[0]
@@ -432,6 +444,18 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
       }
       window.addEventListener('dataops:panel-section', onSection)
       return function () { window.removeEventListener('dataops:panel-section', onSection) }
+    }, [])
+
+    React.useEffect(function () {
+      if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
+      var onFocus = function (event) {
+        var detail = event && event.detail
+        if (!detail) return
+        focusState[1](detail)
+        if (detail.section && PANEL_SECTIONS.some(function (item) { return item[0] === detail.section })) sectionState[1](detail.section)
+      }
+      window.addEventListener('dataops:panel-focus', onFocus)
+      return function () { window.removeEventListener('dataops:panel-focus', onFocus) }
     }, [])
 
     React.useEffect(function () {
@@ -766,7 +790,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
         h('button', { type: 'button', className: evidenceTab === 'runtime' ? 'on' : '', onClick: function () { evidenceTabState[1]('runtime') } }, '运行日志'))
       if (evidenceTab === 'deploy') return h(React.Fragment, null, tabs, h(DeployLog))
       if (evidenceTab === 'runtime') return h(React.Fragment, null, tabs, h(RuntimeLog))
-      return h(React.Fragment, null, tabs, h('div', { className: 'rd-legacy' }, h(EvidenceBody, { sessionId: props.sessionId })))
+      return h(React.Fragment, null, tabs, h('div', { className: 'rd-legacy' }, h(EvidenceBody, { sessionId: props.sessionId, focus: focus })))
     }
 
     function Checks() {
@@ -794,7 +818,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var deployView = section === 'evidence' && evidenceTab === 'deploy'
     var sectionTitle = scanView ? '代码扫描' : runtimeView ? '运行日志' : deployView ? '部署日志' : section === 'deliverables' ? '交付物' : section === 'assets' ? '资产' : section === 'lineage' ? '血缘' : section === 'evidence' ? '证据' : '仓库体检'
     var sectionSub = scanView ? '代码扫描结果由 scanning service 提供，只按 scanId 读取。' : runtimeView ? '按平台坐标查询最近运行，再按 runId 查看单次日志。' : deployView ? '按 deploymentId 查询一次制品包部署。' : section === 'deliverables' ? 'Workitem 的阶段产物与不可变 revision。' : section === 'assets' ? '当前 Session 的目标表与字段。' : section === 'lineage' ? '当前 Session 的上下游影响面。' : section === 'evidence' ? '当前 Session 的查询、时间范围与证据。' : '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。'
-    var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'deliverables' ? h(Deliverables) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId })) : section === 'evidence' ? h(EvidencePanel) : h(Overview)
+    var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'deliverables' ? h(Deliverables) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId, focus: focus })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId })) : section === 'evidence' ? h(EvidencePanel) : h(Overview)
     return h('div', { className: 'rd-panel' },
       h('div', { className: 'rd-inner' },
       h('div', { className: 'rd-head', style: { display: 'flex', alignItems: 'flex-start' } },

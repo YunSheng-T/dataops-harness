@@ -382,6 +382,16 @@ export function createDataopsCards(React) {
     '.rd-artifact-side code{font-family:ui-monospace,Menlo,monospace;font-size:8px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.rd-current-iteration{display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));margin-top:9px;padding-top:8px;font-size:8.5px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.rd-current-iteration code{font-family:ui-monospace,Menlo,monospace;font-size:8px;color:var(--dsw-alias-label-secondary,#61666b);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.do-sum-lead{display:flex;flex-direction:column;gap:1px;margin:1px 0 6px;min-width:0}',
+    '.do-sum-lead b{font-size:12px;line-height:1.35;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.do-sum-lead span{font-size:9px;line-height:1.45;color:var(--dsw-alias-label-tertiary,#8b93a2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.do-sum-metrics{display:flex;gap:18px;padding:6px 0;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));border-bottom:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07))}',
+    '.do-sum-metrics > div{min-width:0}',
+    '.do-sum-metrics b{display:block;font-size:12px;line-height:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}',
+    '.do-sum-metrics span{display:block;font-size:7.5px;line-height:10px;color:var(--dsw-alias-label-tertiary,#8b93a2);margin-top:1px;text-transform:uppercase;letter-spacing:.04em}',
+    '.do-sum-note{font-size:8.5px;line-height:1.45;color:var(--dsw-alias-label-secondary,#61666b);margin-top:6px}',
+    '.do-focus-banner{display:flex;align-items:center;gap:6px;border:1px solid var(--dsw-alias-state-business-line,#d7e0ff);background:var(--dsw-alias-state-business-bg,#eef2ff);border-radius:5px;padding:4px 7px;margin:0 0 7px;font-size:8.5px;color:var(--dsw-alias-state-business-primary,#3f63d9)}',
+    '.do-focus-banner code{font-family:ui-monospace,Menlo,monospace;font-size:8px;color:var(--dsw-alias-label-primary,#171a20);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.do-design-lead{display:flex;flex-direction:column;gap:2px;border-left:2px solid var(--dsw-alias-state-business-primary,#3f63d9);padding:1px 0 1px 8px;margin:1px 0 8px}',
     '.do-design-lead b{font-size:12px;line-height:1.4;font-weight:500}',
     '.do-design-lead span{font-size:10.5px;line-height:1.5;color:var(--dsw-alias-label-secondary,#61666b)}',
@@ -1043,6 +1053,15 @@ export function createDataopsCards(React) {
     window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: kind && String(kind).indexOf('dataops') === 0 ? 'dataops' : kind } }))
   }
 
+  function openDataOps(section, focus) {
+    if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return
+    try { window.__dataopsPanelSection = section } catch (error) { /* ignore */ }
+    try { window.__dataopsPanelFocus = focus || null } catch (error) { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('dataops:panel-focus', { detail: Object.assign({ section: section }, focus || {}) })) } catch (error) { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('dataops:panel-section', { detail: { section: section } })) } catch (error) { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: 'dataops' } })) } catch (error) { /* ignore */ }
+  }
+
   function Modal(props) {
     if (!props.open) return null
     return h('div', { className: 'do-modal' },
@@ -1323,6 +1342,8 @@ export function createDataopsCards(React) {
   function TableCard(props) {
     var m = parseModel(props.block, 'table')
     if (!m) return h(Fallback, props)
+    var columns = Array.isArray(m.columns) ? m.columns : []
+    var gaps = Array.isArray(m.gaps) ? m.gaps : []
     return h(Frame, {
       title: '表 · ' + (m.table || '未命名'),
       state: 'done',
@@ -1330,25 +1351,16 @@ export function createDataopsCards(React) {
       pills: [h(Pill, { key: 'src', tone: 'brand' }, m.source || 'catalog')],
       footer: [
         h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'table')),
-        h(Btn, { key: 'lineage', variant: 'ghost', onClick: function () { openTab('dataops-lineage') } }, '查看血缘')
+        h(Btn, { key: 'asset', variant: 'ghost', onClick: function () { openDataOps('assets', { table: m.table }) } }, '在 DataOps 资产里打开')
       ]
     },
-      h('dl', { className: 'do-grid' },
-        h('dt', null, 'owner'), h('dd', null, m.owner || '—'),
-        h('dt', null, '分层'), h('dd', null, m.layer || '—'),
-        h('dt', null, '粒度'), h('dd', null, m.grain || '—'),
-        h('dt', null, '分区'), h('dd', null, m.partition || '—'),
-        h('dt', null, '行数'), h('dd', null, m.rowCount === null || m.rowCount === undefined ? '—' : String(m.rowCount))
-      ),
-      (m.columns || []).length ? h('div', { className: 'do-cols' },
-        h('div', { className: 'do-label' }, '字段（' + m.columns.length + '）'),
-        m.columns.map(function (column, i) {
-          return h('div', { key: i, className: 'do-field' },
-            h('span', { className: 'do-fn' }, column.name),
-            h('span', { className: 'do-ft' }, column.type + (column.comment ? ' · ' + column.comment : '')))
-        })
-      ) : null,
-      h(Gaps, { gaps: m.gaps })
+      h('div', { className: 'do-sum-lead' }, h('b', null, m.table || '未命名表'), h('span', null, [m.owner, m.layer, m.partition ? '分区 ' + m.partition : null].filter(Boolean).join(' · ') || '元数据待补充')),
+      h('div', { className: 'do-sum-metrics' },
+        h('div', null, h('b', null, m.rowCount === null || m.rowCount === undefined ? '待补充' : String(m.rowCount)), h('span', null, 'rows')),
+        h('div', null, h('b', null, columns.length ? String(columns.length) : '待补充'), h('span', null, 'fields')),
+        h('div', null, h('b', null, gaps.length ? String(gaps.length) : '0'), h('span', null, 'gaps'))),
+      h('div', { className: 'do-sum-note' }, m.grain ? '粒度 ' + m.grain : '粒度待补充'),
+      h(Gaps, { gaps: gaps })
     )
   }
 
@@ -1589,28 +1601,26 @@ export function createDataopsCards(React) {
 
   function EvidenceCard(props) {
     var m = parseModel(props.block, 'evidence')
-    var copied = React.useState(false)
-    var notice = React.useState(false)
     if (!m) return h(Fallback, props)
-    function copy() {
-      if (typeof navigator === 'undefined' || !navigator.clipboard) return
-      navigator.clipboard.writeText(m.query || '').then(function () { copied[1](true) })
-    }
+    var gaps = Array.isArray(m.gaps) ? m.gaps : []
+    var evidenceId = m.evidenceId || m.id || m.artifact || null
     return h(Frame, {
-      title: '证据 · ' + (m.claim || ''),
+      title: '证据 · ' + (m.claim || '未命名'),
       state: 'done',
       tone: m.tone || 'pass',
-      pills: [h(Pill, { key: 'env' }, m.env || 'prod 只读')],
+      pills: [h(Pill, { key: 'env' }, m.env || 'prod 只读'), h(Pill, { key: 'status', tone: m.tone === 'warn' ? 'warn' : 'pass' }, m.tone === 'warn' ? 'warn' : 'pass')],
       footer: [
-        h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'evidence') + (m.cost ? ' · ' + m.cost : '')),
-        h(Btn, { key: 'copy', variant: 'ghost', onClick: copy }, copied[0] ? '已复制' : '复制 SQL'),
-        h(Btn, { key: 'open', onClick: function () { notice[1](true) } }, '在编辑器打开')
+        h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'evidence')),
+        h(Btn, { key: 'evidence', variant: 'ghost', onClick: function () { openDataOps('evidence', { evidenceId: evidenceId, claim: m.claim }) } }, '在 DataOps 证据里打开')
       ]
     },
-      m.query ? h('pre', { className: 'do-logic', style: { margin: '0', whiteSpace: 'pre-wrap' } }, m.query) : null,
-      m.timeRange ? h('div', { className: 'do-muted', style: { marginTop: '6px' } }, '范围 ' + m.timeRange) : null,
-      h(Gaps, { gaps: m.gaps }),
-      h(MockNotice, { open: notice[0], onClose: function () { notice[1](false) }, text: 'Mock 模式：不会打开真实 SQL 编辑器。' })
+      h('div', { className: 'do-sum-lead' }, h('b', null, m.claim || '证据'), h('span', null, [m.env, m.timeRange, m.cost].filter(Boolean).join(' · ') || '范围和成本待补充')),
+      h('div', { className: 'do-sum-metrics' },
+        h('div', null, h('b', null, m.timeRange || '待补充'), h('span', null, 'range')),
+        h('div', null, h('b', null, m.cost || '待补充'), h('span', null, 'cost')),
+        h('div', null, h('b', null, m.asOf || '待补充'), h('span', null, 'asOf'))),
+      h('div', { className: 'do-sum-note' }, '完整 SQL 和查询结果在 DataOps 证据里查看。'),
+      h(Gaps, { gaps: gaps })
     )
   }
 
@@ -1875,34 +1885,26 @@ export function createDataopsCards(React) {
   function ProfileCard(props) {
     var m = parseModel(props.block, 'profile')
     if (!m) return h(Fallback, props)
-    var columns = m.columns || []
+    var columns = Array.isArray(m.columns) ? m.columns : []
+    var findings = Array.isArray(m.findings) ? m.findings : []
+    var gaps = Array.isArray(m.gaps) ? m.gaps : []
     return h(Frame, {
       title: '数据画像 · ' + (m.table || ''),
       state: 'done',
       tone: m.partial ? 'warn' : 'pass',
-      pills: [h(Pill, { key: 'rows', tone: 'brand' }, (m.rowCount || 0) + ' 行')],
-      footer: [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'profile.yaml'))]
+      pills: [h(Pill, { key: 'rows', tone: 'brand' }, m.rowCount === null || m.rowCount === undefined ? '行数待补充' : m.rowCount + ' 行')],
+      footer: [
+        h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'profile.yaml')),
+        h(Btn, { key: 'asset', variant: 'ghost', onClick: function () { openDataOps('assets', { table: m.table }) } }, '在 DataOps 资产里打开')
+      ]
     },
-      h('dl', { className: 'do-grid' },
-        h('dt', null, '粒度'), h('dd', null, m.grain || '—'),
-        h('dt', null, '候选键'), h('dd', null, (m.candidateKeys || []).join(', ') || '—'),
-        h('dt', null, 'join 覆盖'), h('dd', null, (m.joinCoverage || []).map(function (j) { return j.from + ' → ' + j.to + ' ' + j.coverage }).join('；') || '—')
-      ),
-      columns.length ? h('div', null,
-        h('div', { className: 'do-label' }, '列画像'),
-        h('div', { className: 'do-grid' }, columns.slice(0, 6).map(function (c, i) {
-          return h(React.Fragment, { key: 'c' + i },
-            h('dt', null, c.name),
-            h('dd', null, (c.type || '') + ' · 空值 ' + (c.nullRate || '—') + ' · distinct ' + (c.distinct === undefined ? '—' : c.distinct)))
-        }))
-      ) : null,
-      (m.findings || []).length ? h('div', { style: { marginTop: '7px' } },
-        h('div', { className: 'do-label' }, '发现'),
-        m.findings.map(function (finding, i) {
-          return h('div', { key: i, className: 'do-task' }, h('span', { className: 'do-dot', 'data-tone': 'brand' }), h('span', { className: 'do-task-name' }, finding))
-        })
-      ) : null,
-      h(Gaps, { gaps: m.gaps })
+      h('div', { className: 'do-sum-lead' }, h('b', null, m.table || '数据画像'), h('span', null, [m.grain, m.asOf].filter(Boolean).join(' · ') || '画像待补充')),
+      h('div', { className: 'do-sum-metrics' },
+        h('div', null, h('b', null, m.rowCount === null || m.rowCount === undefined ? '待补充' : String(m.rowCount)), h('span', null, 'rows')),
+        h('div', null, h('b', null, columns.length ? String(columns.length) : '待补充'), h('span', null, 'columns')),
+        h('div', null, h('b', null, findings.length ? String(findings.length) : '0'), h('span', null, 'findings'))),
+      h('div', { className: 'do-sum-note' }, '候选键 ' + ((m.candidateKeys || []).join(', ') || '待补充') + ' · 完整列画像在 DataOps 资产里查看。'),
+      h(Gaps, { gaps: gaps })
     )
   }
 

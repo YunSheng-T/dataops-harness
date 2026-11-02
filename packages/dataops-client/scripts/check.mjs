@@ -109,7 +109,28 @@ check('requirement card renders source, owner and gaps', () => {
   assert(body.includes('devops'), 'missing source')
 })
 
-check('table card renders metadata and columns', () => {
+check('DataOps panel accepts a table deep-link focus', () => {
+  ContextStore.ingest('s-focus', {
+    kind: 'table',
+    table: 'dwd.orders',
+    owner: '交易组',
+    layer: 'dwd',
+    grain: '订单',
+    partition: 'dt',
+    columns: [{ name: 'order_id', type: 'string' }]
+  })
+  const previous = globalThis.window
+  globalThis.window = { __dataopsPanelSection: 'assets', __dataopsPanelFocus: { table: 'dwd.orders' } }
+  try {
+    const body = text(Tabs._internals.DataOpsPanelBody({ sessionId: 's-focus' }))
+    assert(body.includes('定位') && body.includes('dwd.orders'), 'asset focus banner')
+  } finally {
+    if (previous === undefined) delete globalThis.window
+    else globalThis.window = previous
+  }
+})
+
+check('table card renders summary without columns', () => {
   const body = text(Cards.TableCard({
     block: block({
       kind: 'table', table: 'dwd.orders', owner: '交易组', layer: 'dwd', grain: '订单',
@@ -119,7 +140,8 @@ check('table card renders metadata and columns', () => {
     })
   }))
   assert(body.includes('dwd.orders') && body.includes('2000000'), 'table meta')
-  assert(body.includes('order_id') && body.includes('订单号'), 'columns')
+  assert(!body.includes('order_id') && !body.includes('订单号'), 'columns must not render in summary')
+  assert(body.includes('在 DataOps 资产里打开'), 'asset CTA')
 })
 
 check('lineage card renders direction and nodes', () => {
@@ -135,7 +157,7 @@ check('lineage card renders direction and nodes', () => {
   assert(body.includes('ads.channel_report'), 'downstream node')
 })
 
-check('evidence card keeps query, cost and provenance', () => {
+check('evidence card keeps claim and cost without SQL', () => {
   const body = text(Cards.EvidenceCard({
     block: block({
       kind: 'evidence', claim: '日均 200 万行', env: 'prod 只读',
@@ -143,16 +165,17 @@ check('evidence card keeps query, cost and provenance', () => {
       asOf: '2026-10-25 09:28', cost: '1.2 GB · 3.4s', source: 'mock'
     })
   }))
-  assert(body.includes('SELECT count(*)'), 'missing query')
-  assert(body.includes('1.2 GB'), 'missing cost')
+  assert(!body.includes('SELECT count(*)'), 'SQL must not render in summary')
+  assert(body.includes('1.2 GB') && body.includes('在 DataOps 证据里打开'), 'cost and evidence CTA')
 })
 
-check('profile card renders keys and join coverage', () => {
+check('profile card keeps candidate key without column profile', () => {
   const body = text(Cards.ProfileCard({
     block: block({ kind: 'profile', table: 'dwd.orders', grain: '订单', rowCount: 2000000, candidateKeys: ['order_id'], joinCoverage: [{ from: 'dwd.orders.channel_id', to: 'dim.channel.channel_id', coverage: '99.98%' }], columns: [{ name: 'order_id', type: 'string', nullRate: '0%', distinct: 1980000 }], findings: ['order_id 唯一'], source: 'mock', asOf: '2026-10-26 10:00' })
   }))
   assert(body.includes('数据画像') && body.includes('订单'), 'profile basics')
-  assert(body.includes('order_id') && body.includes('99.98%'), 'profile keys/join')
+  assert(body.includes('order_id') && !body.includes('99.98%'), 'candidate key only')
+  assert(body.includes('在 DataOps 资产里打开'), 'asset CTA')
 })
 
 check('solution card tolerates string option pros from 3b payload', () => {

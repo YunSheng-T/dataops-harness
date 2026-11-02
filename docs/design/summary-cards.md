@@ -1,6 +1,6 @@
 # Summary Cards
 
-> 状态：设计稿，待评审。
+> 状态：第一版已实现；三张 summary 卡与 DataOps focus CTA 已接入。
 > 关联：OPEN-011 · [Stage Artifact Ledger](stage-artifact-ledger.md) · [Artifact Evidence Links](artifact-evidence-links.md)
 > 蓝图：[全量](../../prototype/summary-cards-blueprint.html) · [增量](../../prototype/summary-cards-blueprint-delta.html)
 > 目标：对话里的 Table / Evidence / Profile 只保留判断摘要，完整内容回到 DataOps 资产和证据。
@@ -147,7 +147,13 @@ Evidence        → DataOps 证据
 7. 空值/partial 不丢失。
 8. 卡片高度受限，连续多卡不形成长墙。
 
-## 9. 待确认
+## 9. 已确认
+
+- EvidenceCard 不保留复制 SQL；完整 SQL 在 DataOps 证据里复制。
+- CTA 带表名 / evidence id，通过 `dataops:panel-focus` 定位到对应 section。
+- ProfileCard 保留候选键。
+
+## 10. 待确认
 
 - EvidenceCard 是否保留一个“复制 SQL”小动作，还是只提供跳转
 - 深链是否带表名/证据 ID，还是先打开 section
