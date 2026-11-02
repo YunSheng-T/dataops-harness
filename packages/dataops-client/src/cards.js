@@ -2001,7 +2001,15 @@ export function createDataopsCards(React, LineageFlow) {
     },
       h('div', { className: 'do-muted' }, '问题：' + displayValue(m.question, '—')),
       dm.path || dm.assets ? h('div', null, h('div', { className: 'do-label' }, 'DataMap 寻源'), h(DataMapPath, { path: dm.path || [] }), h(AssetCards, { assets: dm.assets || [] })) : null,
-      (m.questions || []).length ? h('div', null, h('div', { className: 'do-label' }, '分析问题'), m.questions.map(function (q, i) { return h('div', { key: i, className: 'do-task' }, h('span', { className: 'do-dot', 'data-tone': q.status === 'blocked' ? 'warn' : 'pass' }), h('span', { className: 'do-task-name' }, q.id ? q.id + ' · ' + q.text : q.text), h('span', { className: 'do-task-meta' }, statusText(q.status))) })) : null,
+      (function () {
+        var questions = (m.questions || []).map(function (q) { return typeof q === 'string' ? { text: q, status: 'pending' } : (q || {}) }).filter(function (q) { return q.text || q.question || q.title || q.name || q.claim || q.summary || q.id })
+        if (!questions.length) return null
+        return h('div', null, h('div', { className: 'do-label' }, '分析问题'), questions.map(function (q, i) {
+          var text = q.text || q.question || q.title || q.name || q.claim || q.summary || q.id
+          var status = q.status || q.state || 'pending'
+          return h('div', { key: q.id || i, className: 'do-task' }, h('span', { className: 'do-dot', 'data-tone': status === 'blocked' ? 'warn' : 'pass' }), h('span', { className: 'do-task-name' }, (q.id && String(text).indexOf(q.id) !== 0 ? q.id + ' · ' : '') + text), h('span', { className: 'do-task-meta' }, statusText(status)))
+        }))
+      })(),
       (m.findings || []).length ? h('div', null, h('div', { className: 'do-label' }, '发现'),
         m.findings.map(function (f, i) { return h('div', { key: i, className: 'do-ev' }, h('span', { className: 'do-dot', 'data-tone': f.severity === 'blocking' ? 'fail' : f.severity === 'warning' ? 'warn' : 'pass' }), h('div', null, h('div', { className: 'do-et' }, displayValue(f.title || f.claim, '—')), h('div', { className: 'do-es' }, displayValue(f.claim || f.detail, '')), evidenceChips(f.evidence || (f.evidenceId ? [f.evidenceId] : null)))) })) : null,
       (m.baseline || []).length ? h('div', null, h('div', { className: 'do-label' }, '基线 / 对账'), h('div', { className: 'do-cols' }, m.baseline.map(function (b, i) { return h('div', { key: i, className: 'do-task' }, h('span', { className: 'do-dot', 'data-tone': b.status === 'blocked' ? 'warn' : 'pass' }), h('span', { className: 'do-task-name' }, b.metric + ' · ' + (b.old || b.before || '—') + ' → ' + (b.new || b.after || '—')), h('span', { className: 'do-task-meta' }, b.status === 'blocked' ? 'blocked' : (b.delta || 'measured'))) }))) : null,

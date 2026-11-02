@@ -564,6 +564,22 @@ check('intake card shows US to workitem handoff', () => {
   assert(body.includes('US-3821') && body.includes('wi-3821') && body.includes('新建'), 'intake handoff')
 })
 
+check('analysis card does not render blank questions', () => {
+  const body = text(Cards.AnalysisCard({
+    block: block({
+      kind: 'analysis', status: 'blocked', question: '口径差异',
+      questions: [
+        { id: 'Q1', question: '支付时间能否唯一归属', status: 'blocked' },
+        { title: '状态枚举是否一致', status: 'pending' },
+        { id: 'Q3' }
+      ],
+      findings: [], gaps: []
+    })
+  }))
+  assert(body.includes('支付时间能否唯一归属') && body.includes('状态枚举是否一致'), 'question fallback')
+  assert(!body.includes('Q3 · —'), 'empty question filtered')
+})
+
 check('analysis card tolerates string candidate pros from 3a payload', () => {
   const body = text(Cards.AnalysisCard({
     block: block({
