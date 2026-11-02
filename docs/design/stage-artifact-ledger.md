@@ -216,8 +216,15 @@ DataOps
 7. 旧 deliverables 可迁移为 rev-0001。
 8. 悬浮窗可关闭、可重开，不丢状态。
 
-## 13. 待确认
+## 13. 已确认
 
-- 悬浮窗用 DSH 原生 Popover 还是自有 portal 浮层
-- DataOps 交付物是否放在现有 DataOps 面板，还是单独 Workitem 面板
-- 旧 deliverables 迁移的触发时机
+- 悬浮窗先用 DSH 原生 Popover，不先做自有 portal 浮层。原生 Popover 负责定位、关闭、焦点和窗口边缘处理；如果宽度或放置能力不足，再单独评审升级。
+- DataOps 交付物放在现有 DataOps 面板，不新增 Workitem 面板。
+- 旧 deliverables 迁移到 rev-0001 的触发时机在 P3.1 实现时再定，默认随 artifact 首次读取迁移。
+
+## 14. 原生 Popover 的边界
+
+- 宽度优先控制在 420–480
+- 内容超过高度时内部滚动
+- 不允许自己的浮层绕过 DSH 的关闭和焦点行为
+- 如果原生 Popover 无法满足 stage 展开/历史切换，再提增量设计，不直接换实现
