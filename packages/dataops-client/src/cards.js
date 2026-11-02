@@ -872,6 +872,35 @@ export function createDataopsCards(React, LineageFlow) {
     return 'ui-' + n
   }
 
+  function signoffAllowed(m) {
+    return m && (m.canSignoff === true || typeof window === 'undefined')
+  }
+
+  function gateOfWorkitem(workitem) {
+    if (!workitem) return null
+    var stage = workitem.stage
+    var substage = workitem.substage || (workitem.stages && workitem.stages.scheme && workitem.stages.scheme.substage)
+    if (stage === 'scheme') {
+      if (substage === 'solution') return 'scheme.solution'
+      if (substage === 'tech_plan') return 'scheme.tech_plan'
+      return 'scheme.analysis'
+    }
+    if (stage === 'develop') {
+      var approvals = Array.isArray(workitem.approvals) ? workitem.approvals : []
+      var review = approvals.filter(function (item) { return item && item.gate === 'develop.code_review' })[0]
+      return review && review.status === 'approved' ? 'develop.merge' : 'develop.code_review'
+    }
+    return stage || null
+  }
+
+  function gateIsActive(gate) {
+    if (typeof window === 'undefined') return true
+    var active = window.__dataopsActiveGate
+    if (!active) return false
+    if (gate === 'develop.code_review' || gate === 'develop.merge') return String(active).indexOf('develop.') === 0
+    return active === gate
+  }
+
   function signoff(gate, role, actor, comment) {
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
       window.dispatchEvent(new CustomEvent('dataops:signoff-request', { detail: { gate: gate, role: role, actor: actor || role, comment: comment || null } }))
@@ -913,6 +942,25 @@ export function createDataopsCards(React, LineageFlow) {
     var gate = props.gate
     var roles = props.roles || []
     if (!roles.length) return null
+    var liveState = React.useState(null)
+    var checkedState = React.useState(typeof window === 'undefined' || !m.workitemId)
+    React.useEffect(function () {
+      if (typeof window === 'undefined' || !m.workitemId || typeof fetch !== 'function') { checkedState[1](true); return }
+      var alive = true
+      fetch('/api/dataops/signoff?workitemId=' + encodeURIComponent(m.workitemId)).then(function (response) {
+        return response.ok ? response.json() : null
+      }).then(function (body) {
+        if (!alive) return
+        liveState[1](body && body.workitem ? body.workitem : null)
+        checkedState[1](true)
+      }).catch(function () { if (alive) checkedState[1](true) })
+      return function () { alive = false }
+    }, [m.workitemId])
+    if (!signoffAllowed(m)) return h('div', { className: 'do-signoff do-signoff-inactive' }, h('span', { className: 'do-signoff-title' }, '签收'), h('span', { className: 'do-muted' }, '历史卡 · 请在当前阶段卡签收'))
+    if (!checkedState[0]) return h('div', { className: 'do-signoff do-signoff-inactive' }, h('span', { className: 'do-signoff-title' }, '签收'), h('span', { className: 'do-muted' }, '正在校验当前阶段…'))
+    var liveGate = liveState[0] ? gateOfWorkitem(liveState[0]) : null
+    if (liveGate && liveGate !== gate) return h('div', { className: 'do-signoff do-signoff-inactive' }, h('span', { className: 'do-signoff-title' }, '签收'), h('span', { className: 'do-muted' }, '历史卡 · 当前门禁是 ' + liveGate + '，请在当前阶段卡操作'))
+    if (!gateIsActive(gate)) return h('div', { className: 'do-signoff do-signoff-inactive' }, h('span', { className: 'do-signoff-title' }, '签收'), h('span', { className: 'do-muted' }, '历史卡 · 当前门禁已切换，请在当前阶段卡操作'))
     var pending = roles.filter(function (role) {
       var current = review[role.key]
       var st = typeof current === 'string' ? current : (current && current.status) || (role.key === 'se' || role.key === 'dev' ? 'deferred' : 'pending')
@@ -1348,8 +1396,7 @@ export function createDataopsCards(React, LineageFlow) {
         h(Btn, { key: 'artifact', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看交付物'),
         h(Btn, { key: 'canvas', variant: 'ghost', onClick: function () { canvas[1](true) } }, '打开画布'),
         h(Btn, { key: 'lineage', variant: 'ghost', onClick: function () { openDataOps('lineage', { table: m.target && m.target.table, lineageKind: 'table_lineage' }) } }, '查看表血缘'),
-        h(Btn, { key: 'sign', variant: 'primary', onClick: function () { signoff('design', 'ba', (review.ba && review.ba.approver) || m.owner || '陈璐') } }, '确认设计'),
-        h(Btn, { key: 'back', variant: 'ghost', onClick: function () { returnGate('design', 'ba', '设计需要修改') } }, '退回修改')
+
       ]
     },
       h('div', { className: 'do-design-lead' }, h('b', null, headline), h('span', null, lead)),
@@ -1645,7 +1692,7 @@ export function createDataopsCards(React, LineageFlow) {
         h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'tech-plan.yaml')),
         h(Btn, { key: 'open', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看交付物'),
         lineage ? h(Btn, { key: 'lineage', variant: 'ghost', onClick: function () { openDataOps('lineage', { table: m.target && typeof m.target === 'object' ? m.target.table : m.target, lineageKind: 'data_flow' }) } }, '查看数据链路') : null,
-        h(Btn, { key: 'sign', variant: 'primary', onClick: function () { signoff('scheme.tech_plan', 'se', (review.se && review.se.approver) || '王工') } }, 'SE 确认')
+
       ]
     },
       h('dl', { className: 'do-grid' },
@@ -1761,11 +1808,11 @@ export function createDataopsCards(React, LineageFlow) {
         h('div', { className: 'do-dev-gate-row' },
           h(Pill, { key: 'se', tone: (review.se && review.se.status === 'approved') ? 'pass' : 'warn' }, 'SE 评审 · ' + statusText((review.se && review.se.status) || 'pending')),
           gateReady && (!review.se || review.se.status !== 'approved')
-            ? h(Btn, { key: 'se-action', variant: 'ghost', onClick: function () { signoff('develop.code_review', 'se', (review.se && review.se.approver) || '王工') } }, 'SE 通过')
+            ? gateIsActive('develop.code_review') && signoffAllowed(m) ? h(Btn, { key: 'se-action', variant: 'ghost', onClick: function () { signoff('develop.code_review', 'se', (review.se && review.se.approver) || '王工') } }, 'SE 通过') : null
             : null,
           h(Pill, { key: 'committer', tone: merge.status === 'merged' ? 'pass' : 'warn' }, 'Committer · ' + statusText(merge.status || (review.committer && review.committer.status) || 'waiting')),
           gateReady && (!merge.status || merge.status === 'pending') && (!review.committer || ['pending', 'waiting'].includes(review.committer.status))
-            ? h(Btn, { key: 'merge-action', variant: 'primary', onClick: function () { signoff('develop.merge', 'committer', (review.committer && review.committer.approver) || '代码平台') } }, '记录合入')
+            ? gateIsActive('develop.merge') && signoffAllowed(m) ? h(Btn, { key: 'merge-action', variant: 'primary', onClick: function () { signoff('develop.merge', 'committer', (review.committer && review.committer.approver) || '代码平台') } }, '记录合入') : null
             : null,
           merge.commit ? h('span', { className: 'do-muted do-meta' }, merge.commit) : null
         ),

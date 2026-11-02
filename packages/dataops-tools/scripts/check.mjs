@@ -103,6 +103,10 @@ check('host signoff HTTP route persists a UI confirmation', async () => {
     const store = createWorkitemStore(normalizeConfig({ workitemsDir: dir }))
     store.create({ id: 'route-item', source: { system: 'edevops', id: 'US-ROUTE' }, title: 'route', initialStage: 'requirement' })
     const route = createSignoffRoute({ store })
+    const current = await route(new Request('http://localhost/api/dataops/signoff?workitemId=route-item'))
+    assert(current.status === 200, 'current workitem status')
+    const currentBody = await current.json()
+    assert(currentBody.ok === true && currentBody.workitem.id === 'route-item', 'current workitem body')
     const response = await route(new Request('http://localhost/api/dataops/signoff', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

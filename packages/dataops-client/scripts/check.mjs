@@ -621,7 +621,7 @@ check('tech plan tolerates object target and estimate from 3c payload', () => {
 
 check('tech plan renders task and embedded lineage', () => {
   const body = text(Cards.TechPlanCard({ block: block({ kind: 'tech_plan', stage: 'scheme', target: 'dws.trade_channel_daily', status: 'draft', tasks: [{ id: 'T1', name: '支付口径聚合', platform: 'spark', owner: '交易组' }], estimate: '2 人日', risks: [], gaps: [], review: { se: 'pending', dev: 'deferred' }, lineage: { table: 'dws.trade_channel_daily', graph: { nodes: [{ id: 'table:dws.trade_channel_daily', type: 'physical_table', label: 'dws.trade_channel_daily' }], edges: [] }, timeband: { upstreamReadyAt: '03:12', sla: '05:00', buffer: '22m', points: [] } } }) }))
-  assert(body.includes('支付口径聚合') && body.includes('设计血缘') && body.includes('SE 确认'), 'tech plan preview')
+  assert(body.includes('支付口径聚合') && body.includes('设计血缘'), 'tech plan preview')
 })
 
 
@@ -678,11 +678,24 @@ check('stage result and stage navigator expose the current iteration', () => {
 })
 
 check('requirement card exposes BA and requester signoff actions', () => {
-  const tree = Cards.RequirementCard({ block: block({ kind: 'requirement', stage: 'requirement', title: '需求', goal: '目标', status: 'draft', review: { ba: { approver: '陈璐', status: 'pending' }, requester: { approver: '渠道运营', status: 'pending' } }, gaps: [] }) })
+  const tree = Cards.RequirementCard({ block: block({ kind: 'requirement', stage: 'requirement', title: '需求', goal: '目标', status: 'draft', canSignoff: true, workitemId: 's1', review: { ba: { approver: '陈璐', status: 'pending' }, requester: { approver: '渠道运营', status: 'pending' } }, gaps: [] }) })
   const body = text(tree)
   assert(body.includes('BA · 待处理') && body.includes('需求方 · 待处理') && body.includes('确认并继续'), 'one-click signoff exists')
 })
 
+
+check('historical design card cannot sign when analysis is current', () => {
+  const previous = globalThis.window
+  globalThis.window = { __dataopsActiveGate: 'scheme.analysis' }
+  try {
+    const body = text(Cards.DesignCard({ block: block({ kind: 'design', target: { table: 'dws.trade_channel_daily', grain: '渠道 × 日期' }, sources: [], impact: { count: 0 }, gaps: [] }) }))
+    assert(!body.includes('确认设计'), 'historical design card must not expose signoff')
+    assert(body.includes('历史卡'), 'historical card should explain why')
+  } finally {
+    if (previous === undefined) delete globalThis.window
+    else globalThis.window = previous
+  }
+})
 
 check('turn tail exposes the current gate summary and stage brief', () => {
   const requirement = { kind: 'requirement', status: 'draft', title: '需求', goal: '支付口径', review: { ba: { status: 'pending', approver: '陈璐' }, requester: { status: 'pending', approver: '渠道运营' } }, gaps: [] }

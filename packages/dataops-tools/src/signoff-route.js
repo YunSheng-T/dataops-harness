@@ -16,6 +16,17 @@ function json(status, body) {
 export function createSignoffRoute(options) {
   const service = createSignoffService(options)
   return async function fetch(request) {
+    if (request.method === 'GET') {
+      const url = new URL(request.url)
+      const id = url.searchParams.get('workitemId')
+      if (!id) return json(400, { ok: false, error: 'WORKITEM_REQUIRED' })
+      try {
+        const workitem = options.store.get(id)
+        return json(200, { ok: true, workitem })
+      } catch (error) {
+        return json(404, { ok: false, error: 'WORKITEM_NOT_FOUND' })
+      }
+    }
     if (request.method !== 'POST') return json(405, { ok: false, error: 'METHOD' })
     const type = request.headers.get('content-type') || ''
     if (!type.includes('application/json')) return json(415, { ok: false, error: 'CONTENT_TYPE' })
@@ -62,7 +73,7 @@ export function registerSignoffRoute(ctx, config, store, identity) {
   const identityRoute = createIdentityRoute({ identity })
   const dispose = connection.fetch.register({
     path: '/api/dataops/signoff',
-    methods: ['POST'],
+    methods: ['GET', 'POST'],
     requestBody: 'buffered',
     fetch: route
   })

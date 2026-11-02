@@ -234,6 +234,8 @@ export function createStageBrief(React, store, contextStore) {
       review[role] = Object.assign({}, typeof current === 'object' && current ? current : { status: current }, { status: 'approved', approver: signed[role].actor || (current && current.approver) })
     })
     payload.review = review
+    payload.canSignoff = true
+    payload.workitemId = action.workitem && action.workitem.id ? action.workitem.id : null
     return payload
   }
 
@@ -441,6 +443,7 @@ export function createStageBrief(React, store, contextStore) {
     var action = buildAction(payloads, sessionId)
     var refreshState = React.useState(0)
     if (typeof window !== 'undefined' && action && action.workitem && action.workitem.id) window.__dataopsActiveWorkitemId = action.workitem.id
+    if (typeof window !== 'undefined') window.__dataopsActiveGate = action ? action.spec.gate : null
     if (typeof React.useEffect === 'function' && typeof window !== 'undefined') {
       React.useEffect(function () {
         var onRecorded = function (event) {
