@@ -499,8 +499,8 @@ check('lineage tab uses embedded three-view surface when available', () => {
 })
 
 check('DataOps panel sections read the context store', () => {
-  assert(Tabs.definitions.length === 4, 'expected 3 legacy tabs + DataOps')
-  assert(Tabs.definitions.some(item => item.kind === 'dataops'), 'DataOps tab kind')
+  assert(Tabs.definitions.length === 1, 'expected one aggregated DataOps tab')
+  assert(Tabs.definitions[0].kind === 'dataops', 'DataOps tab kind')
   const empty = text(Tabs._internals.AssetBody({ sessionId: 's-empty' }))
   assert(empty.includes('还没有资产上下文'), 'empty state')
   const populated = text(Tabs._internals.AssetBody({ sessionId: 's1' }))
@@ -575,7 +575,7 @@ check('Repo Doctor panel exposes its three sections and read-only boundary', () 
   const body = text(Tabs._internals.DataOpsPanelBody({ sessionId: 's-repo-doctor' }))
   assert(body.includes('DATAOPS / REPO DOCTOR'), 'missing eyebrow')
   assert(body.includes('仓库体检'), 'missing title')
-  assert(body.includes('概览') && body.includes('仓库') && body.includes('检查'), 'missing sections')
+  assert(body.includes('概览') && body.includes('仓库') && body.includes('资产') && body.includes('血缘') && body.includes('证据') && body.includes('检查'), 'missing sections')
   assert(body.includes('运行检查'), 'missing check action')
 })
 

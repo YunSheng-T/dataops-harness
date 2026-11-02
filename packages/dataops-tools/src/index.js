@@ -885,8 +885,10 @@ export function apply(ctx, config) {
         effect: root && typeof root.effect === 'function' ? root.effect.bind(root) : undefined
       }
       const dispose = registerRepoDoctorRoute(routeCtx)
-      if (!dispose && root && typeof root.logger?.warn === 'function') {
-        root.logger.warn('[dataops] repo doctor route not registered: connection/agents/workingDirectory unavailable')
+      if (!dispose) {
+        const message = '[dataops] repo doctor route not registered: connection/agents/workingDirectory unavailable'
+        if (root && typeof root.logger?.warn === 'function') root.logger.warn(message)
+        else console.warn(message)
       }
     } catch (error) {
       if (ctx && typeof ctx.logger?.warn === 'function') ctx.logger.warn('[dataops] repo doctor route failed: ' + (error && error.message ? error.message : String(error)))

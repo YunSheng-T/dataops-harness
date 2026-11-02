@@ -341,6 +341,9 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   var PANEL_SECTIONS = [
     ['overview', '概览'],
     ['repo', '仓库'],
+    ['assets', '资产'],
+    ['lineage', '血缘'],
+    ['evidence', '证据'],
     ['checks', '检查']
   ]
 
@@ -397,6 +400,12 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     }, [])
 
     React.useEffect(function () {
+      if (section !== 'overview' && section !== 'repo' && section !== 'checks') {
+        dataState[1](null)
+        errorState[1](null)
+        loadingState[1](false)
+        return
+      }
       if (!props.sessionId || typeof fetch !== 'function') {
         errorState[1]({ code: 'SESSION_REQUIRED', message: '当前 Session 还没有可用的工作区' })
         return
@@ -500,16 +509,19 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
         findings.length ? findings.map(function (item, index) { return h(RepoFinding, { key: index, finding: item }) }) : h('div', { className: 'rd-empty' }, h('b', null, '当前没有发现问题'), h('p', null, '规则全部通过。')))
     }
 
-    var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : h(Overview)
+    var isRepoSection = section === 'overview' || section === 'repo' || section === 'checks'
+    var sectionTitle = section === 'assets' ? '资产' : section === 'lineage' ? '血缘' : section === 'evidence' ? '证据' : '仓库体检'
+    var sectionSub = section === 'assets' ? '当前 Session 的目标表与字段。' : section === 'lineage' ? '当前 Session 的上下游影响面。' : section === 'evidence' ? '当前 Session 的查询、时间范围与证据。' : '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。'
+    var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId })) : section === 'evidence' ? h('div', { className: 'rd-legacy' }, h(EvidenceBody, { sessionId: props.sessionId })) : h(Overview)
     return h('div', { className: 'rd-panel' },
       h('div', { className: 'rd-head' },
         h('div', { className: 'rd-head-main' },
-          h('span', { className: 'rd-eyebrow' }, 'DATAOPS / REPO DOCTOR'),
-          h('h2', { className: 'rd-title' }, '仓库体检'),
-          h('div', { className: 'rd-sub' }, '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。')),
-        h('div', { className: 'rd-head-actions' },
+          h('span', { className: 'rd-eyebrow' }, isRepoSection ? 'DATAOPS / REPO DOCTOR' : 'DATAOPS / SESSION CONTEXT'),
+          h('h2', { className: 'rd-title' }, sectionTitle),
+          h('div', { className: 'rd-sub' }, sectionSub)),
+        isRepoSection ? h('div', { className: 'rd-head-actions' },
           h('button', { type: 'button', className: 'rd-btn', onClick: retry }, '刷新'),
-          h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: function () { go('checks') } }, '运行检查'))),
+          h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: function () { go('checks') } }, '运行检查')) : null),
       h('div', { className: 'rd-nav', role: 'tablist' }, PANEL_SECTIONS.map(function (item) {
         return h('button', { key: item[0], type: 'button', className: 'rd-tab', 'data-active': String(section === item[0]), onClick: function () { sectionState[1](item[0]) } }, item[1])
       })),
@@ -529,10 +541,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   }
 
   var tabs = [
-    tab('asset', 'dataops-asset', '资产', '目标表与字段', 10, AssetBody),
-    tab('lineage', 'dataops-lineage', '血缘', '上下游影响面', 20, LineageBody),
-    tab('evidence', 'dataops-evidence', '证据', '结论背后的查询', 30, EvidenceBody),
-    tab('dataops', 'dataops', 'DataOps', '仓库体检与检查', 40, DataOpsPanelBody)
+    tab('dataops', 'dataops', 'DataOps', '仓库、资产、血缘、证据与检查', 10, DataOpsPanelBody)
   ]
 
   return {
