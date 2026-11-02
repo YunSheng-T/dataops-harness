@@ -1,6 +1,6 @@
 # Repo Doctor 详细设计
 
-> 状态：P0-B 蓝图完成，待实现验收；只做 Repo Doctor。
+> 状态：P0-B 实现中，待真机验收；只做 Repo Doctor。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
 > 聚合方案：`docs/design/dataops-plugin-surface.md`
 > P0-B 全量蓝图：[dataops-repo-doctor-blueprint.html](../../prototype/dataops-repo-doctor-blueprint.html)

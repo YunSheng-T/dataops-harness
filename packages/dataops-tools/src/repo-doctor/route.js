@@ -29,9 +29,10 @@ export function createRepoDoctorRoute(ctx) {
     if (!sessionId) return json(400, { ok: false, error: 'SESSION_REQUIRED' })
     if (!['scan', 'validate', 'check'].includes(mode)) return json(400, { ok: false, error: 'MODE_INVALID' })
     const agent = typeof agents.get === 'function' ? agents.get(sessionId) : null
-    if (!agent) return json(404, { ok: false, error: 'SESSION_NOT_FOUND' })
+    if (!agent) return json(404, { ok: false, error: 'SESSION_NOT_FOUND', stage: 'detect' })
+    let root
     try {
-      const root = await workingDirectory.ensure(agent, request.signal)
+      root = await workingDirectory.ensure(agent, request.signal)
       const result = mode === 'scan'
         ? scanRepository(resolve(root))
         : mode === 'validate'
@@ -39,7 +40,13 @@ export function createRepoDoctorRoute(ctx) {
           : checkRepository(resolve(root))
       return json(200, { ok: result.ok !== false, mode, ...result })
     } catch (error) {
-      return json(422, { ok: false, error: 'REPO_DOCTOR_FAILED', message: error && error.message ? error.message : String(error) })
+      return json(422, {
+        ok: false,
+        error: 'REPO_DOCTOR_FAILED',
+        stage: mode === 'scan' ? 'index' : 'validate',
+        workspace: root || '',
+        message: error && error.message ? error.message : String(error)
+      })
     }
   }
   return connection.fetch.register({ path: '/api/dataops/repo-doctor', methods: ['GET'], requestBody: 'buffered', fetch: handler })

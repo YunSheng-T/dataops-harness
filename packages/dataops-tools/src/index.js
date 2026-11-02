@@ -875,9 +875,24 @@ export function apply(ctx, config) {
   if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountRepo)
   else mountRepo(ctx)
   const mountRepoDoctor = child => {
-    try { registerRepoDoctorRoute(child) } catch { /* optional host service; tools stay usable */ }
+    try {
+      const connection = child && typeof child.get === 'function' ? child.get('connection') : null
+      const root = ctx
+      // Resolve domain services from the root context. The injected child owns
+      // `connection`; service lookup is not guaranteed to be re-exported there.
+      const routeCtx = {
+        get: name => name === 'connection' ? connection : (root && typeof root.get === 'function' ? root.get(name) : null),
+        effect: root && typeof root.effect === 'function' ? root.effect.bind(root) : undefined
+      }
+      const dispose = registerRepoDoctorRoute(routeCtx)
+      if (!dispose && root && typeof root.logger?.warn === 'function') {
+        root.logger.warn('[dataops] repo doctor route not registered: connection/agents/workingDirectory unavailable')
+      }
+    } catch (error) {
+      if (ctx && typeof ctx.logger?.warn === 'function') ctx.logger.warn('[dataops] repo doctor route failed: ' + (error && error.message ? error.message : String(error)))
+    }
   }
-  if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountRepoDoctor)
+  if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents', 'workingDirectory'], mountRepoDoctor)
   else mountRepoDoctor(ctx)
 
   function mountDataopsCommand(child) {

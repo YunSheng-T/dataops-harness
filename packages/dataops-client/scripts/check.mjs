@@ -571,6 +571,14 @@ check('tech plan renders task and embedded lineage', () => {
 })
 
 
+check('Repo Doctor panel exposes its three sections and read-only boundary', () => {
+  const body = text(Tabs._internals.DataOpsPanelBody({ sessionId: 's-repo-doctor' }))
+  assert(body.includes('DATAOPS / REPO DOCTOR'), 'missing eyebrow')
+  assert(body.includes('仓库体检'), 'missing title')
+  assert(body.includes('概览') && body.includes('仓库') && body.includes('检查'), 'missing sections')
+  assert(body.includes('运行检查'), 'missing check action')
+})
+
 check('stage result card routes prepared deliverable payloads', () => {
   const body = text(Cards.StageResultCard({ block: block({ kind: 'requirement', stage: 'requirement', title: '需求', goal: '目标', status: 'draft', gaps: [] }) }))
   assert(body.includes('需求') && body.includes('目标'), 'stage result delegates to deliverable renderer')

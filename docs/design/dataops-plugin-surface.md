@@ -1,6 +1,6 @@
 # DataOps 插件聚合设计
 
-> 状态：P0-B 蓝图完成；只做 Repo Doctor，不迁移旧 tab。
+> 状态：P0-B 实现中；只做 Repo Doctor，不迁移旧 tab。
 > 关联：`docs/design/dataops-plugin-roadmap.md`、`docs/design/repo-doctor.md`
 
 ## 1. 问题
