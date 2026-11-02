@@ -1,6 +1,6 @@
 # Repo Doctor 详细设计
 
-> 状态：P0 已完成；P1 Guard 实现中。
+> 状态：P0 / P1 已完成并验证。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
 > 聚合方案：`docs/design/dataops-plugin-surface.md`
 > P0-B 全量蓝图：[dataops-repo-doctor-blueprint.html](../../prototype/dataops-repo-doctor-blueprint.html)
