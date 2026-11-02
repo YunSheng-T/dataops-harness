@@ -37,7 +37,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 ## 2.1 P0-B 表面原则
 
 - P0 只新增一个 Repo Doctor DataOps tab
-- 旧资产 / 血缘 / 证据 tab 暂不迁移
+- 资产 / 血缘 / 证据 section 继续留在 DataOps
 - 不做对话大卡
 - 一个 `/dataops` 命令命名空间
 - 聚合到单面板放到 P1

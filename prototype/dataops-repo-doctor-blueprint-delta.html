@@ -26,7 +26,7 @@
 <div class="page">
   <header class="top"><div class="brand"><span class="mark">∞</span><span>DataOps</span></div><span class="slash">/</span><span class="crumb">Repo Doctor · P0-B delta</span><span class="spacer"></span><span class="version">2026-11-02</span><button class="theme" id="theme">深色</button></header>
   <section class="hero">
-    <div><div class="eyebrow">P0-B · incremental blueprint</div><h1>不是把旧面板换皮，是先把“仓库体检”做对。</h1><p>这次只增加一个 DataOps tab，里面只放 Repo Doctor。资产 / 血缘 / 证据保持原样，等 P1 再聚合。增量重点不是视觉，而是识别、错误、空状态和边界。</p></div>
+    <div><div class="eyebrow">P0-B · incremental blueprint</div><h1>不是把旧面板换皮，是先把“仓库体检”做对。</h1><p>这次在现有 DataOps 面板里只新增 Repo Doctor。资产 / 血缘 / 证据继续留在 DataOps，P0 只加 Repo Doctor。增量重点不是视觉，而是识别、错误、空状态和边界。</p></div>
     <div class="scope"><b>Before → After</b>旧的 DataOps 壳：识别错误 + 空指标 + 通用“扫描失败”；新的 P0-B：明确识别、可读指标、真实 package 与 findings，错误有 code / stage / workspace / retry。</div>
   </section>
 
@@ -46,7 +46,7 @@
       <div class="side-head"><b>After</b><span>P0-B，只做 Repo Doctor</span></div>
       <div class="panel">
         <div class="panel-title">仓库体检</div><div class="panel-sub">识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。</div>
-        <div class="before-tabs"><span>概览</span><span>仓库</span><span>检查</span><span style="margin-left:auto">DataOps</span></div>
+        <div class="before-tabs"><span>概览</span><span>仓库</span><span>资产</span><span>血缘</span><span>证据</span><span>检查</span><span style="margin-left:auto">DataOps</span></div>
         <div class="detect"><span class="ico">✓</span><div class="main"><b>internal-code-repo</b><span class="path">.dataops/manifest.yaml · build.yaml</span></div><span class="chip green">已识别</span></div>
         <div class="metrics"><div class="metric"><b>5</b><span>packages</span></div><div class="metric"><b>4</b><span>tasks</span></div><div class="metric"><b>13</b><span>jobs</span></div><div class="metric amber"><b>1</b><span>warning</span></div></div>
         <div class="actions"><button class="btn primary">运行检查</button><button class="btn">刷新索引</button><button class="btn">复制摘要</button></div>
@@ -61,17 +61,17 @@
     <div class="eyebrow">CHANGE SET</div><h2>新增 / 保留 / 迁出 / 替换 / 删除</h2>
     <div class="change-grid">
       <div class="change-col"><h3>新增</h3><ul><li>DataOps tab：只含概览 / 仓库 / 检查</li><li>detection：detected / partial / not-detected</li><li>scan / validate 双层状态</li><li>finding 的 code / path / hint</li><li>错误态：code / stage / workspace / retry</li></ul></div>
-      <div class="change-col"><h3>保留</h3><ul><li>资产 / 血缘 / 证据旧 tab</li><li>DSH Files 与源码预览</li><li>只读边界</li><li>Repo Doctor 的 Host tools</li><li>/dataops 命令命名空间</li></ul></div>
-      <div class="change-col"><h3>替换 / 删除</h3><ul><li>删除空指标占位</li><li>删除“扫描失败”通用文案</li><li>删除 P0 对旧 tab 的迁移</li><li>P0 不引入 section registry</li></ul></div>
+      <div class="change-col"><h3>保留</h3><ul><li>资产 / 血缘 / 证据 section</li><li>DSH Files 与源码预览</li><li>只读边界</li><li>Repo Doctor 的 Host tools</li><li>/dataops 命令命名空间</li></ul></div>
+      <div class="change-col"><h3>替换 / 删除</h3><ul><li>删除空指标占位</li><li>删除“扫描失败”通用文案</li><li>P0 不重做其他 section</li><li>P0 不引入 section registry</li></ul></div>
     </div>
-    <div class="invariants"><div class="invariant"><b>不改变文件入口</b>Files tab 仍然负责打开文件、源码和源码分栏。</div><div class="invariant"><b>不改变写入边界</b>Repo Doctor 始终只读，不 build、不 deploy、不自动修。</div><div class="invariant"><b>不改变旧能力</b>资产 / 血缘 / 证据 tab 这次不动，避免 P0 同时做两件事。</div></div>
+    <div class="invariants"><div class="invariant"><b>不改变文件入口</b>Files tab 仍然负责打开文件、源码和源码分栏。</div><div class="invariant"><b>不改变写入边界</b>Repo Doctor 始终只读，不 build、不 deploy、不自动修。</div><div class="invariant"><b>不改变旧能力</b>资产 / 血缘 / 证据 section 这次不动，避免 P0 同时做两件事。</div></div>
   </section>
 
   <section class="phases">
     <div class="eyebrow">SEQUENCE</div><h2>先 B，再谈聚合</h2>
-    <div class="phase-row"><b>P0-B</b><span>Repo Doctor 单 tab + 真实 scan / validate 结果。</span><span>通过：5 packages / 4 tasks / 13 jobs；错误态可诊断；旧 tab 不受影响。</span></div>
+    <div class="phase-row"><b>P0-B</b><span>DataOps 内新增 Repo Doctor section + 真实 scan / validate 结果。</span><span>通过：5 packages / 4 tasks / 13 jobs；错误态可诊断；资产 / 血缘 / 证据 section 不受影响。</span></div>
     <div class="phase-row"><b>P0.1</b><span>修复 Host route / Session cwd / scan 错误。</span><span>所有结果来自当前 Session，不接受任意 root。</span></div>
-    <div class="phase-row"><b>P1</b><span>再把资产 / 血缘 / 证据迁入 DataOps，引入 section registry。</span><span>这时才讨论“单面板替代旧 tab”。</span></div>
+    <div class="phase-row"><b>P1</b><span>保持 DataOps 聚合，补统一 section registry 和视觉收口。</span><span>这时才讨论各 section 的统一布局。</span></div>
     <div class="phase-row"><b>P1.1</b><span>Placeholder / Env Guard、LTS Guard。</span><span>作为同一个 checks section 的规则扩展。</span></div>
   </section>
 

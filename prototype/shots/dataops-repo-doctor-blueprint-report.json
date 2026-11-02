@@ -4,9 +4,9 @@
   "slug": "dataops-repo-doctor-blueprint",
   "file": "prototype/dataops-repo-doctor-blueprint.html",
   "fileUrl": "file:///Users/zhangshu/code/dataops-harness/prototype/dataops-repo-doctor-blueprint.html",
-  "startedAt": "2026-11-02T00:53:41.000Z",
-  "finishedAt": "2026-11-02T00:53:44.270Z",
-  "durationMs": 3269,
+  "startedAt": "2026-11-02T01:27:45.808Z",
+  "finishedAt": "2026-11-02T01:27:49.455Z",
+  "durationMs": 3646,
   "runtime": {
     "node": "v22.22.0",
     "platform": "darwin",
@@ -18,7 +18,7 @@
     "version": "Chrome/156.0.8078.74",
     "protocolVersion": "1.3",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
-    "port": 56398,
+    "port": 64826,
     "headless": true,
     "product": "Chrome/156.0.8078.74"
   },
@@ -46,7 +46,7 @@
   "page": {
     "title": "DataOps Repo Doctor · P0-B 设计蓝图",
     "readyState": "complete",
-    "bodyTextLength": 2379,
+    "bodyTextLength": 2408,
     "bodyChildren": 2,
     "hasThemeButton": true,
     "scrollWidth": 1440,
@@ -230,7 +230,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/dataops-repo-doctor-blueprint.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/dataops-repo-doctor-blueprint.png",
-      "bytes": 159398,
+      "bytes": 161567,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -248,7 +248,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/dataops-repo-doctor-blueprint-full.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/dataops-repo-doctor-blueprint-full.png",
-      "bytes": 323695,
+      "bytes": 327207,
       "width": 1440,
       "height": 1866,
       "expected": {
@@ -266,7 +266,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/dataops-repo-doctor-blueprint-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/dataops-repo-doctor-blueprint-dark.png",
-      "bytes": 163082,
+      "bytes": 165335,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -284,7 +284,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/dataops-repo-doctor-blueprint-full-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/dataops-repo-doctor-blueprint-full-dark.png",
-      "bytes": 332672,
+      "bytes": 336206,
       "width": 1440,
       "height": 1866,
       "expected": {

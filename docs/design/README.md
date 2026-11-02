@@ -40,6 +40,10 @@
 - [Repo Doctor 详细设计](repo-doctor.md)
   - [P0-B 全量蓝图](../../prototype/dataops-repo-doctor-blueprint.html)
   - [P0-B 增量蓝图](../../prototype/dataops-repo-doctor-blueprint-delta.html)
+- [DataOps Dev P2 Agent 共同编辑设计](dataops-dev-agent-collaboration.md)
+  - [ADR 0015](../decisions/0015-dataops-dev-agent-collaboration.md)
+  - [P2 全量蓝图](../../prototype/dataops-dev-agent-collaboration-blueprint.html)
+  - [P1 → P2 增量蓝图](../../prototype/dataops-dev-agent-collaboration-blueprint-delta.html)
 
 ### 架构
 

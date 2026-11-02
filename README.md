@@ -42,6 +42,8 @@ P3 可视化：[0+1 → Stage 3 蓝图](prototype/stage0-3-implementation-bluepr
 
 P0-B Repo Doctor：[全量蓝图](prototype/dataops-repo-doctor-blueprint.html) · [增量](prototype/dataops-repo-doctor-blueprint-delta.html) · [设计](docs/design/repo-doctor.md)。
 
+DataOps Dev P2 Agent 共同编辑：[设计](docs/design/dataops-dev-agent-collaboration.md) · [ADR 0015](docs/decisions/0015-dataops-dev-agent-collaboration.md) · [全量蓝图](prototype/dataops-dev-agent-collaboration-blueprint.html) · [P1 → P2 增量](prototype/dataops-dev-agent-collaboration-blueprint-delta.html)。
+
 验收清单：[P1 + P2 验收](docs/verification/p1-p2-acceptance.md)。
 
 可视化：[Agent 架构全量蓝图](prototype/agent-architecture.html) · [v2 → Agent v1 增量](prototype/agent-architecture-delta.html)。

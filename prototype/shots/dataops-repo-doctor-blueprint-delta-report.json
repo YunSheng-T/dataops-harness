@@ -4,9 +4,9 @@
   "slug": "dataops-repo-doctor-blueprint-delta",
   "file": "prototype/dataops-repo-doctor-blueprint-delta.html",
   "fileUrl": "file:///Users/zhangshu/code/dataops-harness/prototype/dataops-repo-doctor-blueprint-delta.html",
-  "startedAt": "2026-11-02T00:53:44.403Z",
-  "finishedAt": "2026-11-02T00:53:47.284Z",
-  "durationMs": 2879,
+  "startedAt": "2026-11-02T01:27:49.569Z",
+  "finishedAt": "2026-11-02T01:27:52.044Z",
+  "durationMs": 2474,
   "runtime": {
     "node": "v22.22.0",
     "platform": "darwin",
@@ -18,7 +18,7 @@
     "version": "Chrome/156.0.8078.74",
     "protocolVersion": "1.3",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
-    "port": 56444,
+    "port": 64871,
     "headless": true,
     "product": "Chrome/156.0.8078.74"
   },
@@ -46,7 +46,7 @@
   "page": {
     "title": "Repo Doctor · P0-B 增量蓝图",
     "readyState": "complete",
-    "bodyTextLength": 1723,
+    "bodyTextLength": 1780,
     "bodyChildren": 2,
     "hasThemeButton": true,
     "scrollWidth": 1440,
@@ -230,7 +230,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/dataops-repo-doctor-blueprint-delta.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/dataops-repo-doctor-blueprint-delta.png",
-      "bytes": 167757,
+      "bytes": 169301,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -248,7 +248,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/dataops-repo-doctor-blueprint-delta-full.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/dataops-repo-doctor-blueprint-delta-full.png",
-      "bytes": 205975,
+      "bytes": 209127,
       "width": 1440,
       "height": 1251,
       "expected": {
@@ -266,7 +266,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/dataops-repo-doctor-blueprint-delta-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/dataops-repo-doctor-blueprint-delta-dark.png",
-      "bytes": 172475,
+      "bytes": 174246,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -284,7 +284,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/dataops-repo-doctor-blueprint-delta-full-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/dataops-repo-doctor-blueprint-delta-full-dark.png",
-      "bytes": 211362,
+      "bytes": 214557,
       "width": 1440,
       "height": 1251,
       "expected": {

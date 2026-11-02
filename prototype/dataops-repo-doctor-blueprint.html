@@ -272,7 +272,7 @@
       <p class="lede">Repo Doctor 是 DataOps tab 里的仓库体检视图。它只回答：当前 workspace 能不能被识别、有哪些 package 和 task、哪些地方会阻断构建或部署。它不接管文件浏览、源码预览和血缘。</p>
     </div>
     <div class="hero-side">
-      <div class="scope"><b>本轮边界</b>只新增 DataOps tab · 旧资产 / 血缘 / 证据 tab 保持不动 · 不做对话大卡 · 不做 IDE</div>
+      <div class="scope"><b>本轮边界</b>只新增 Repo Doctor 能力 · 资产 / 血缘 / 证据继续留在 DataOps · 不做对话大卡 · 不做 IDE</div>
     </div>
   </section>
 
@@ -317,6 +317,9 @@
         <div class="panel-nav" role="tablist">
           <button data-section="overview" data-active="true">概览</button>
           <button data-section="repo">仓库</button>
+          <button data-section="assets">资产</button>
+          <button data-section="lineage">血缘</button>
+          <button data-section="evidence">证据</button>
           <button data-section="checks">检查</button>
         </div>
         <div class="panel-body" id="overviewBody"></div>
@@ -400,7 +403,7 @@
       <li>未识别时只提示正确 workspace，不递归搜索</li>
       <li>占位符缺失为 warning，不是 blocking</li>
       <li>错误态展示 code / stage / workspace / 重试</li>
-      <li>旧资产 / 血缘 / 证据 tab 不受影响</li>
+      <li>资产 / 血缘 / 证据 section 留在 DataOps 且不受影响</li>
       <li>/dataops 不产生对话大卡</li>
       <li>只读，不执行 build / deploy</li>
     </ol>

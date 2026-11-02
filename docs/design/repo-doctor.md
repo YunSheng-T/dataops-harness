@@ -30,7 +30,7 @@ Repo Doctor 是 DataOps 工作面板里的**仓库体检 section**，不是对�
           └─ 检查
 ```
 
-旧资产 / 血缘 / 证据 tab 在 P0 保持原样。
+资产 / 血缘 / 证据继续作为 DataOps 面板 section 保留；P0 只新增 Repo Doctor，不重做它们。
 
 打开 DataOps 面板，默认显示 `概览`：
 
@@ -352,7 +352,7 @@ P0 的 `check` 是面板/命令层组合，不新增第三个 agent 工具。
 
 ### 资产 / 血缘 / 证据
 
-P0 不迁入、不重做；继续使用旧 tab。P1 再聚合。
+P0 继续作为 DataOps 面板 section 保留，不重做；P1 再统一布局。
 
 ## 8. 交互
 
@@ -424,8 +424,8 @@ dataops-client/
 
 ## 13. 已确认
 
-- P0 只做 Repo Doctor 面板，现有资产 / 血缘 / 证据 tab 保持原样。
-- P1 再决定是否合并成一个 DataOps 面板。
+- P0 只新增 Repo Doctor 能力，现有资产 / 血缘 / 证据 section 继续留在 DataOps，不重做。
+- P0 就保持一个 DataOps 面板；P1 只做 section 统一。
 - P0 一起实现 `/dataops`、`/dataops repo index`、`/dataops repo validate`、`/dataops repo check`。
 - placeholder 缺失统一 warning。
 - 当前 workspace 不是 repo 时只提示打开正确 workspace，不递归搜索，不在 P0 做目录选择器。

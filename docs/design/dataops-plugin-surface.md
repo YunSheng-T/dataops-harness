@@ -1,6 +1,6 @@
 # DataOps 插件聚合设计
 
-> 状态：P0-B 实现中；只做 Repo Doctor，不迁移旧 tab。
+> 状态：P0-B 实现中；新增 Repo Doctor，DataOps 仍聚合资产 / 血缘 / 证据。
 > 关联：`docs/design/dataops-plugin-roadmap.md`、`docs/design/repo-doctor.md`
 
 ## 1. 问题
@@ -16,7 +16,7 @@
 
 ## 2. P0-B 结论
 
-P0 只做一个 **Repo Doctor 面板**，不迁移现有资产/血缘/证据 tab。
+P0 只新增 Repo Doctor 能力；现有资产/血缘/证据仍留在 DataOps 面板，不迁出。
 
 ```text
 DSH Files tab        保持 DSH 文件浏览
@@ -25,10 +25,10 @@ DataOps tab          新增 Repo Doctor
   ├─ 仓库
   └─ 检查
 
-旧 tab               资产 / 血缘 / 证据暂时保留
+DataOps 内已有        资产 / 血缘 / 证据继续保留
 ```
 
-P0 不实现统一 section registry；P1 再把这些 section 合并到一个 DataOps 面板。
+P0 不实现统一 section registry；现有 section 继续共存，P1 再统一。
 
 先把 Repo Doctor 的数据、状态、错误和命令跑通，再谈聚合。
 
@@ -107,7 +107,7 @@ P0 只有一个新 tab：
 概览 / 仓库 / 检查
 ```
 
-旧的资产 / 血缘 / 证据 tab 暂时不动，避免 P0 同时做聚合和仓库能力。
+资产 / 血缘 / 证据 section 继续留在 DataOps，避免 P0 同时重做它们。
 
 ### Composer
 
@@ -180,7 +180,7 @@ section 负责：
 | repo | package、制品、文件覆盖 |
 | checks | findings、扫描结果、警告 |
 
-assets / lineage / evidence 在 P0 不进入这个 tab；迁移到 P1。
+assets / lineage / evidence 继续留在 DataOps；P0 只新增 Repo Doctor。
 
 ## 6. 刷新模型
 
@@ -205,18 +205,18 @@ open panel
 
 ### P0-B：Repo Doctor
 
-- 新增一个独立 DataOps tab
-- 只有概览 / 仓库 / 检查
-- 旧资产 / 血缘 / 证据继续保留
+- 扩展现有 DataOps 面板
+- 新增概览 / 仓库 / 检查三块 Repo Doctor 视图
+- 资产 / 血缘 / 证据 section 继续保留
 - 不做 section registry
 - 不做对话大卡
 - `/dataops` 先服务 Repo Doctor
 
-### P1：聚合
+### P1：统一
 
-- 把旧资产 / 血缘 / 证据迁入 DataOps
+- 保持 DataOps 单面板
 - 引入统一 section registry
-- 再决定是否移除旧 tab
+- 统一各 section 的布局和空状态
 
 ## 8. 设计约束
 
