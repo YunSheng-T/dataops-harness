@@ -962,6 +962,7 @@ export function createDataopsCards(React, LineageFlow) {
       return function () { alive = false }
     }, [m.workitemId])
     if (!signoffAllowed(m)) return h('div', { className: 'do-signoff do-signoff-inactive' }, h('span', { className: 'do-signoff-title' }, '签收'), h('span', { className: 'do-muted' }, '历史卡 · 请在当前阶段卡签收'))
+    if (typeof window !== 'undefined' && !m.workitemId) return h('div', { className: 'do-signoff do-signoff-inactive' }, h('span', { className: 'do-signoff-title' }, '签收'), h('span', { className: 'do-muted' }, '未归档 · 先让 Agent 对当前交付物执行 stage prepare'))
     if (!checkedState[0]) return h('div', { className: 'do-signoff do-signoff-inactive' }, h('span', { className: 'do-signoff-title' }, '签收'), h('span', { className: 'do-muted' }, '正在校验当前阶段…'))
     var liveGate = liveState[0] ? gateOfWorkitem(liveState[0]) : null
     if (liveGate && liveGate !== gate) return h('div', { className: 'do-signoff do-signoff-inactive' }, h('span', { className: 'do-signoff-title' }, '签收'), h('span', { className: 'do-muted' }, '历史卡 · 当前门禁是 ' + liveGate + '，请在当前阶段卡操作'))
