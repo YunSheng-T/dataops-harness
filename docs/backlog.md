@@ -27,7 +27,7 @@
 | OPEN-008 | 卡片按钮写入 compose 时不清草稿，多条回执串成一条 | resolved | 疑似 `insertText` 在光标处追加且不校验已有内容；同轮出现 requester+ba 两条回执粘连 | 下一轮用户面修复 |
 | OPEN-009 | 非 UI 签收没有回退路径，UI 一坏流程即断 | proposed | UI 已修到当前轮可达；仍不放开任意文本签收，降级策略待产品决定 | 产品决策 |
 | OPEN-010 | 阶段卡绑定历史 tool turn，不在当前轮 | resolved | toolview 卡只在调用发生的 turn 渲染；签收后 workitem 更新，但旧卡不会回到当前轮，用户被迫翻历史 | 下一轮用户面修复 |
-| OPEN-011 | 会话卡片与阶段状态 surface 收敛 | proposed | 阶段卡/StageResult/turnTail/Dock 与 Lineage/CICD/详情卡重复；先登记，P1 不混入重做 | 卡片设计专项启动时 |
+| OPEN-011 | 会话卡片与阶段状态 surface 收敛 | proposed | 第一刀并入 Stage Artifact Ledger；Lineage/CICD/详情卡后续 | 卡片设计专项启动时 |
 
 ---
 
