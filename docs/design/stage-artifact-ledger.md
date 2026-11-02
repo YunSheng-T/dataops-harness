@@ -1,6 +1,6 @@
 # Stage Artifact Ledger
 
-> 状态：P3.1 第一版已落地；Ledger、交付物预览、当前迭代 shell overlay 可用；旧产物迁移和 StageStatusCard 入口未完成。
+> 状态：P3.1 第一版通过 headless 闭环验收；Ledger、交付物预览、当前迭代 shell overlay、旧产物迁移、revision diff 可用。
 > 关联：[DataOps 插件聚合设计](dataops-plugin-surface.md) · [用户面设计](user-surface.md)
 > 蓝图：[全量](../../prototype/stage-artifact-ledger-blueprint.html) · [增量](../../prototype/stage-artifact-ledger-blueprint-delta.html)
 > 目标：阶段产物成为 Workitem 的持久事实源；悬浮窗看当前迭代，DataOps 看全量历史。
@@ -216,13 +216,17 @@ DataOps
 7. 旧 deliverables 可迁移为 rev-0001。
 8. 悬浮窗可关闭、可重开，不丢状态。
 
-## 13. 当前实现差异
+## 13. 验收结果
+
+`packages/dataops-tools/scripts/p3-1-acceptance.mjs` 已通过：requirement approved → design rev-0001 approved → design rev-0002 draft / gate pending，旧 revision content 可读。
+
+## 14. 当前实现差异
 
 - 未走 `stage prepare` 的阶段卡 payload 会在 DataOps 交付物中显示为 `draft preview · 未归档`，不会伪装成 revision。
 - 只有 `stage prepare` 才生成不可变 revision。
 - 悬浮窗当前从 DataOps 交付物打开；StageStatusCard 入口仍待接。
 
-## 14. 已确认
+## 15. 已确认
 
 - 悬浮窗使用 DSH 原生 `shell.overlay` seat（当前运行时没有通用 Popover primitive）；关闭、层级和 shell 归属由原生 seat 处理，后续有 Popover primitive 时再替换。
 - DataOps 交付物放在现有 DataOps 面板，不新增 Workitem 面板。
@@ -230,7 +234,7 @@ DataOps
 - 当前实现：DataOps `交付物` 读取 session context 中的 workitem；shell overlay 展示选中 artifact 的 currentRevision。
 - 旧 deliverables 迁移到 rev-0001 的触发时机在 P3.1 实现时再定，默认随 artifact 首次读取迁移。
 
-## 15. 原生 Popover 的边界
+## 16. 原生 Popover 的边界
 
 - 宽度优先控制在 420–480
 - 内容超过高度时内部滚动

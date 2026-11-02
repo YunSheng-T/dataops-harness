@@ -421,6 +421,25 @@ function ensureLegacyArtifacts(dir, raw) {
   if (migrated) raw.currentIteration = deriveCurrentIteration(readArtifactSummaries(dir))
 }
 
+function setArtifactGateStatus(dir, gate, status) {
+  const artifact = readArtifactSummaries(dir).find(item => artifactGate(item.kind, item.stage) === gate)
+  if (!artifact || !artifact.currentRevisionId) return
+  const path = join(revisionDir(dir, artifact.artifactId), artifact.currentRevisionId + '.yaml')
+  if (!existsSync(path)) return
+  try {
+    const revision = parseWorkitem(readFileSync(path, 'utf8'))
+    revision.status = status
+    writeFileSync(path, serializeWorkitem(revision), 'utf8')
+    const meta = readArtifactMeta(dir, artifact.artifactId)
+    if (meta && Array.isArray(meta.revisions)) {
+      const item = meta.revisions.find(entry => entry && entry.revisionId === artifact.currentRevisionId)
+      if (item) item.status = status
+      meta.updatedAt = revision.createdAt || meta.updatedAt
+      writeFileSync(artifactMetaPath(dir, artifact.artifactId), serializeWorkitem(meta), 'utf8')
+    }
+  } catch { /* revision status is metadata; never block a signoff */ }
+}
+
 function writeArtifactRevision(dir, raw, input) {
   const id = artifactId(input.kind)
   const base = artifactMetaPath(dir, id)
@@ -910,6 +929,7 @@ function stageSignoffUnlocked(config, args) {
   if (!existing) raw.audit.push({ at: stamp(), userId: args.userId || null, actor: args.actor || role, role, gate, actionId: args.actionId, result: 'signed', sessionId: args.sessionId || null })
   const signedRoles = new Set(approval.signoffs.map(s => s.role))
   approval.status = roles.every(r => signedRoles.has(r)) ? 'approved' : 'awaiting_signoff'
+  setArtifactGateStatus(dir, gate, approval.status === 'approved' ? 'approved' : 'review')
   const advanced = approval.status === 'approved' ? advanceAfterSignoff(raw, gate) : null
   raw.updated_at = stamp()
   writeItem(dir, raw, config, `stage signoff · ${gate}/${role} · ${approval.status}${advanced ? ' · advanced=' + advanced : ''}`)
