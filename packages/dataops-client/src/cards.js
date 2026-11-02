@@ -1541,7 +1541,7 @@ export function createDataopsCards(React, LineageFlow) {
     var m = props.model
     var graph = lineageGraphFromPayload(m)
     if (!LineageFlow || typeof LineageFlow.LineageGraph !== 'function' || !graph.nodes.length) return h(LineageV2Preview, { lineage: m })
-    return h('div', { className: 'do-lineage-card-graph' }, h(LineageFlow.LineageGraph, { graph: graph }))
+    return h('div', { className: 'do-lineage-card-graph' }, h(LineageFlow.LineageGraph, { graph: graph, embedded: true }))
   }
 
   function LineageV2Card(props) {

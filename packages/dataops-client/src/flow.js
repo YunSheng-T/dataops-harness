@@ -830,14 +830,15 @@ function content(info, tab) {
     React.useEffect(function () { nodesState[1](nodes) }, [graph])
     var selected = nodesState[0].filter(function (node) { return node.id === selectedState[0] })[0]
     var info = selected && { title: selected.data.name, kind: selected.data.kind, meta: selected.data.meta, edges: flowEdges.filter(function (edge) { return edge.from === selected.id || edge.to === selected.id }).length }
-    return h('section', { className: 'do-lineage-surface do-lineage-graph', 'data-density': 'compact', 'aria-label': '血缘图' },
-      h('header', { className: 'do-surface-head' },
+    var embedded = props.embedded === true
+    return h('section', { className: 'do-lineage-surface do-lineage-graph' + (embedded ? ' do-lineage-graph-embedded' : ''), 'data-density': 'compact', 'aria-label': '血缘图' },
+      embedded ? null : h('header', { className: 'do-surface-head' },
         h('div', { className: 'do-surface-title' }, h('span', { className: 'do-surface-mark' }, '血缘'), h('div', null, h('strong', null, graph.title || '血缘'), h('span', null, (graph.asOf ? 'as of ' + graph.asOf : '') + (graph.source ? ' · ' + graph.source : '')))),
         h('div', { className: 'do-surface-actions' }, h('span', { className: 'do-surface-kind' }, graph.kind || 'lineage'))),
       h('div', { className: 'do-surface-body do-workbench-overlay' },
         h('div', { className: 'do-surface-canvas' }, h('div', { className: 'do-surface-canvas-note' }, h('span', null, graph.kind || 'lineage'), h('span', null, '点击节点查看详情 · 滚轮缩放')), h(ReactFlow, { nodes: nodesState[0], edges: edges, nodeTypes: { rich: RichNode }, onNodesChange: function (changes) { nodesState[1](applyNodeChanges(changes, nodesState[0])) }, onNodeClick: function (_event, node) { selectedState[1](node.id) }, onPaneClick: function () { selectedState[1](null) }, fitView: true, fitViewOptions: { padding: 0.16 }, minZoom: 0.2, maxZoom: 1.8, nodesDraggable: true, nodesConnectable: false, elementsSelectable: false })),
         h('aside', { className: 'do-surface-detail' }, info ? h('div', { className: 'detail' }, h('div', { className: 'detail-head' }, h('div', { className: 'eyebrow' }, info.kind), h('h2', null, info.title), h('div', { className: 'detail-sub' }, info.meta)), h('div', { className: 'detail-body' }, h('dl', { className: 'kv' }, h('dt', null, '节点'), h('dd', { className: 'mono' }, selected.id), h('dt', null, '关系'), h('dd', null, info.edges + ' 条边')))) : h('div', { className: 'detail' }, h('div', { className: 'detail-head' }, h('div', { className: 'eyebrow' }, 'NODE DETAIL'), h('h2', null, '点击任意节点')), h('div', { className: 'detail-body' }, h('div', { className: 'empty' }, '查看节点类型、owner、上下游关系。'))))),
-      h('div', { className: 'do-surface-foot' }, h('span', null, graph.source === 'mock' ? 'mock · 只读' : '只读'), h('span', null, graph.kind || 'lineage')))
+      embedded ? null : h('div', { className: 'do-surface-foot' }, h('span', null, graph.source === 'mock' ? 'mock · 只读' : '只读'), h('span', null, graph.kind || 'lineage')))
   }
 
   function LineageDialog(props) {
