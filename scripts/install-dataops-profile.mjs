@@ -34,14 +34,62 @@ const packages = [
   { name: '@dataops/dsh-dataops-dev', dir: join(root, 'packages', 'dataops-dev'), entry: 'lib/client.js' }
 ]
 
+function readJsonSafe(path) {
+  try { return JSON.parse(readFileSync(path, 'utf8')) } catch { return null }
+}
+
+const existingManifest = readJsonSafe(join(profileDir, 'package.json')) || {}
+const existingDependencies = existingManifest.dependencies && typeof existingManifest.dependencies === 'object' ? existingManifest.dependencies : {}
+const existingBundles = existingManifest.dsh && existingManifest.dsh.profile && Array.isArray(existingManifest.dsh.profile.bundles)
+  ? existingManifest.dsh.profile.bundles
+  : []
+const dataopsBundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@dataops/dsh-dataops-preset']
 const manifest = {
+  ...existingManifest,
   name: 'dsh-profile-dataops',
   private: true,
-  dependencies: Object.fromEntries(packages.map(item => [item.name, 'file:' + item.dir])),
-  dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@dataops/dsh-dataops-preset'] } }
+  dependencies: { ...existingDependencies, ...Object.fromEntries(packages.map(item => [item.name, 'file:' + item.dir])) },
+  dsh: {
+    ...(existingManifest.dsh || {}),
+    profile: {
+      ...((existingManifest.dsh && existingManifest.dsh.profile) || {}),
+      bundles: Array.from(new Set([...dataopsBundles, ...existingBundles]))
+    }
+  }
 }
 
 const patch = readFileSync(join(root, 'profiles', 'dataops', 'cordis.patch.yml'), 'utf8')
+
+function patchBlocks(text) {
+  const lines = String(text || '').replace(/\r/g, '').split('\n')
+  const prefix = []
+  const blocks = []
+  let current = null
+  for (const line of lines) {
+    if (/^- /.test(line)) {
+      if (current) blocks.push(current.join('\n').trimEnd())
+      current = [line]
+    } else if (current) current.push(line)
+    else prefix.push(line)
+  }
+  if (current) blocks.push(current.join('\n').trimEnd())
+  return { prefix: prefix.join('\n').trimEnd(), blocks }
+}
+
+function mergeProfilePatch(canonical, existing) {
+  if (!existing || existing.trim() === '') return canonical
+  const base = patchBlocks(canonical)
+  const old = patchBlocks(existing)
+  const seen = new Set(base.blocks)
+  const foreign = old.blocks.filter(block => {
+    if (seen.has(block)) return false
+    const id = (block.match(/^- id:\s*([^\s]+)/) || [])[1]
+    if (id && base.blocks.some(item => item.startsWith('- id: ' + id + '\n') || item === '- id: ' + id)) return false
+    return true
+  })
+  if (!foreign.length) return canonical
+  return base.prefix + '\n\n' + base.blocks.join('\n') + '\n\n# Preserved user plugin patch rows\n' + foreign.join('\n') + '\n'
+}
 
 const cordisRoot = `# dsh profile root — an empty entry list. The tree is composed as patches:
 # each bundle in package.json's dsh.profile.bundles, then cordis.patch.yml.
@@ -93,9 +141,14 @@ if (check) {
 }
 
 mkdirSync(profileDir, { recursive: true })
+const existingPatchPath = join(profileDir, 'cordis.patch.yml')
+const existingPatch = existsSync(existingPatchPath) ? readFileSync(existingPatchPath, 'utf8') : ''
+if (existingPatch && existingPatch.trim() !== patch.trim()) {
+  writeFileSync(existingPatchPath + '.user-backup-' + Date.now(), existingPatch)
+}
 writeFileSync(join(profileDir, 'package.json'), JSON.stringify(manifest, null, 2) + '\n')
 writeFileSync(join(profileDir, 'cordis.yml'), cordisRoot)
-writeFileSync(join(profileDir, 'cordis.patch.yml'), patch)
+writeFileSync(join(profileDir, 'cordis.patch.yml'), mergeProfilePatch(patch, existingPatch))
 writeFileSync(join(profileDir, 'pnpm-workspace.yaml'), workspace)
 for (const item of packages) {
   if (!existsSync(join(item.dir, item.entry))) {

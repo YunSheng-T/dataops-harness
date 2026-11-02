@@ -169,6 +169,13 @@ function bundlesOf(manifest) {
     : []
 }
 
+function foreignProfileEntries(manifest) {
+  const deps = Object.keys(manifest && manifest.dependencies || {}).filter(name => !name.startsWith('@dataops/'))
+  const known = new Set(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@dataops/dsh-dataops-preset'])
+  const bundles = bundlesOf(manifest).filter(name => !known.has(name) && !name.startsWith('@dataops/'))
+  return { deps, bundles }
+}
+
 function hasBundle(manifest) {
   const deps = manifest && manifest.dependencies ? manifest.dependencies : {}
   return Boolean(deps[BUNDLE_NAME]) && bundlesOf(manifest).includes(BUNDLE_NAME)
@@ -375,6 +382,12 @@ async function install(options) {
   const tarballs = opts.offline ? offlineTarballs(opts.offline) : null
   if (state.exists && !hasBundle(state.manifest) && !opts.migrate && !opts.reset) {
     die('profile ' + target + ' exists but is not a DataOps bundle profile; use --migrate or --reset')
+  }
+  if (state.exists && opts.reset && !opts.migrate) {
+    const foreign = foreignProfileEntries(state.manifest)
+    if (foreign.deps.length || foreign.bundles.length) {
+      die('refusing --reset: profile has user dependencies/bundles that would be lost: ' + foreign.deps.concat(foreign.bundles).join(', ') + '. Use a normal install (without --reset), or back up and re-add them explicitly.')
+    }
   }
   const skillPlan = collectSkillPlan(opts, home)
   if (skillPlan.conflicts.length > 0) {
