@@ -1,6 +1,7 @@
 # Lineage Surface
 
 > 状态：第一版已实现；右栏内联 + 半屏弹窗可用。
+> 注意：`design/production/schedule` 三视图模型已被 [Lineage Model](lineage-model.md) 取代；本文件只保留半屏窗口布局。
 > 关联：OPEN-011 · [Summary Cards](summary-cards.md)
 > 目标：完整血缘仍可交互，但不再默认占满整个页面。
 
