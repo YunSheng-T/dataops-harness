@@ -83,7 +83,13 @@ node packages/dataops-install/bin/dataops-install.mjs doctor \
   --dsh <path-to-dsh>
 ```
 
-`--reset` 会备份旧 profile 再重装，不会复用旧客户端 bundle。
+`--reset` 会备份旧 profile 再重装，但也会丢掉用户额外安装的插件。当前安装器发现用户依赖/bundle 时会拒绝 `--reset`。
+
+旧 `install-dataops-profile.mjs` 现在会保留：
+
+- 用户额外 dependencies
+- 用户额外 bundles
+- 用户额外 cordis.patch.yml 顶层插件行
 
 ## 4. 启动与刷新
 
