@@ -609,6 +609,20 @@ check('stage result card routes prepared deliverable payloads', () => {
 })
 
 
+check('stage result and stage navigator expose the current iteration', () => {
+  const workitem = {
+    kind: 'workitem', id: 'w-ledger', stage: 'design', status: 'executing',
+    currentIteration: { stage: 'design', artifactId: 'design', revisionId: 'rev-0002' },
+    artifacts: [{ artifactId: 'design', kind: 'design', stage: 'design', revisions: [{ revisionId: 'rev-0001' }, { revisionId: 'rev-0002' }], currentRevision: { revisionId: 'rev-0002', version: 2, status: 'review', content: { target: { table: 'dws.x' } } } }]
+  }
+  const card = text(Cards.StageResultCard({ block: block(workitem) }))
+  assert(card.includes('当前迭代') && card.includes('rev-0002'), 'stage result entry')
+  ContextStore.ingest('s-nav-ledger', workitem)
+  ContextStore.ingest('s-nav-ledger', { kind: 'design', target: { table: 'dws.x' }, status: 'review' })
+  const nav = text(Brief.StageNavigator({ sessionId: 's-nav-ledger', expanded: false }))
+  assert(nav.includes('当前迭代'), 'stage navigator entry')
+})
+
 check('requirement card exposes BA and requester signoff actions', () => {
   const tree = Cards.RequirementCard({ block: block({ kind: 'requirement', stage: 'requirement', title: '需求', goal: '目标', status: 'draft', review: { ba: { approver: '陈璐', status: 'pending' }, requester: { approver: '渠道运营', status: 'pending' } }, gaps: [] }) })
   const body = text(tree)

@@ -325,8 +325,19 @@ export function createStageBrief(React, store, contextStore) {
     var cardLabels = { requirement: '需求', design: '设计', analysis: '3a 分析', solution: '3b 方案', tech_plan: '3c 技术方案', develop: '开发验证', cicd: '数据 CICD' }
     var subDefs = { scheme: ['数据挖掘', '数据分析', '需求方案设计', '技术方案输出'], cicd: ['扫描', '编译构建', '测试', '发布/部署'] }
     var activeCards = stageCards(payloads, selected)
-    return h('div', { className: 'do-stagebar' },
-      h('button', {
+    var currentIteration = workitem && workitem.currentIteration ? workitem.currentIteration : null
+    var ledgerArtifacts = workitem && Array.isArray(workitem.artifacts) ? workitem.artifacts.slice() : []
+    var currentArtifact = currentIteration ? ledgerArtifacts.filter(function (item) { return item && (item.artifactId === currentIteration.artifactId || item.kind === currentIteration.artifactId) })[0] : null
+    if (currentIteration && !currentArtifact) {
+      var live = payloads[currentIteration.artifactId] || payloads[currentIteration.stage]
+      if (live) currentArtifact = { artifactId: currentIteration.artifactId, kind: currentIteration.artifactId, stage: currentIteration.stage, preview: true, revisions: [], currentRevision: { version: 1, status: 'preview', content: live, createdAt: live.asOf || live.updatedAt || '' } }
+    }
+    if (currentArtifact && !ledgerArtifacts.some(function (item) { return item.artifactId === currentArtifact.artifactId })) ledgerArtifacts.push(currentArtifact)
+    function openCurrentIteration() {
+      if (!currentArtifact || typeof window === 'undefined' || typeof window.dispatchEvent !== 'function' || typeof CustomEvent !== 'function') return
+      window.dispatchEvent(new CustomEvent('dataops:artifact-inspector', { detail: { workitem: workitem, artifacts: ledgerArtifacts, artifact: currentArtifact } }))
+    }
+    var header = h('button', {
         type: 'button',
         className: 'do-stagebar-head',
         'aria-expanded': expanded ? 'true' : 'false',
@@ -340,7 +351,9 @@ export function createStageBrief(React, store, contextStore) {
             : '当前门禁 · ' + action.spec.label + (action.blocking ? ' · 待补证' : ' · ' + action.pending.length + ' 个待签'))
           : '当前阶段已完成 · 展开查看阶段卡'),
         h('span', { className: 'do-stagebar-caret', 'data-expanded': expanded ? 'true' : 'false', 'aria-hidden': 'true' }, '⌄')
-      ),
+      )
+    return h('div', { className: 'do-stagebar' },
+      h('div', { className: 'do-stagebar-top' }, header, currentArtifact ? h('button', { type: 'button', className: 'do-stagebar-view do-stagebar-current', onClick: openCurrentIteration }, '当前迭代') : null),
       expanded ? h('div', { className: 'do-stagebar-stages' },
         stageDefs.map(function (def) {
           var cards = stageCards(payloads, def[0])

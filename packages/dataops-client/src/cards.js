@@ -102,6 +102,9 @@ export function createDataopsCards(React) {
     '.do-current-card-body .do-card{border:0;border-radius:0;margin:0}',
     '.do-current-card-foot{padding:5px 11px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06));font-size:9.5px;color:var(--dsw-alias-label-tertiary,#81858c);background:var(--dsw-alias-bg-l2,#f7f8fa);flex:none}',
     '.do-stagebar{width:min(100%,var(--dsh-chat-content-width,920px));margin:6px auto;padding:6px 9px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.08));border-radius:10px;background:var(--dsw-alias-bg-layer-1,#fff);box-sizing:border-box}',
+    '.do-stagebar-top{display:flex;align-items:center;gap:5px;min-width:0}',
+    '.do-stagebar-top .do-stagebar-head{width:auto;flex:1;min-width:0}',
+    '.do-stagebar-top .do-stagebar-current{flex:none;margin-left:0}',
     '.do-stagebar-head{display:flex;align-items:center;gap:7px;min-height:20px;width:100%;border:0;background:transparent;padding:0;font:inherit;text-align:left;color:inherit;cursor:pointer}',
     '.do-stagebar-head:hover .do-stagebar-title{color:var(--dsw-alias-state-business-primary,#4176e6)}',
     '.do-stagebar-title{font-size:11px;font-weight:600;color:var(--dsw-alias-label-primary,#0f1115);flex:none}',
@@ -769,6 +772,11 @@ export function createDataopsCards(React) {
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
       window.dispatchEvent(new CustomEvent('dataops:compose', { detail: { text: String(text) } }))
     }
+  }
+
+  function openArtifactInspector(workitem, artifacts, artifact) {
+    if (!workitem || !artifact || typeof window === 'undefined' || typeof window.dispatchEvent !== 'function' || typeof CustomEvent !== 'function') return
+    window.dispatchEvent(new CustomEvent('dataops:artifact-inspector', { detail: { workitem: workitem, artifacts: artifacts, artifact: artifact } }))
   }
 
   function actionId() {
@@ -2087,11 +2095,15 @@ export function createDataopsCards(React) {
     var m = parseModel(props.block)
     if (!m) return h(Fallback, props)
     if (m.kind === 'workitem') {
+      var artifacts = Array.isArray(m.artifacts) ? m.artifacts : []
+      var current = m.currentIteration || null
+      var currentArtifact = current ? artifacts.filter(function (item) { return item && (item.artifactId === current.artifactId || item.kind === current.artifactId) })[0] : null
       return h(Frame, {
         title: '阶段状态 · ' + (m.stage || '') + (m.substage ? ' / ' + m.substage : ''),
         state: 'done',
         tone: 'pass',
-        pills: [h(Pill, { key: 'id' }, m.id || ''), h(Pill, { key: 'st', tone: 'brand' }, statusText(m.status || ''))]
+        pills: [h(Pill, { key: 'id' }, m.id || ''), h(Pill, { key: 'st', tone: 'brand' }, statusText(m.status || ''))],
+        footer: currentArtifact ? [h('span', { key: 'rev', className: 'do-muted do-meta' }, 'current · ' + current.artifactId + ' / ' + current.revisionId), h(Btn, { key: 'open', variant: 'ghost', onClick: function () { openArtifactInspector(m, artifacts, currentArtifact) } }, '当前迭代')] : undefined
       },
         h('dl', { className: 'do-grid' },
           h('dt', null, '阶段'), h('dd', null, (m.stage || '—') + (m.substage ? ' / ' + m.substage : '')),
