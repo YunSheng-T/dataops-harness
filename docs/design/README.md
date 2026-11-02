@@ -40,6 +40,8 @@
 - [Repo Doctor 详细设计](repo-doctor.md)
 - [Code Scan Integration 设计](code-scan-integration.md)
 - [Change Impact Review（历史，暂停）](change-impact-review.md)
+  - [P2.1 Code Scan Mock 全量](../../prototype/code-scan-integration-blueprint.html)
+  - [P2.1 Code Scan Mock 增量](../../prototype/code-scan-integration-blueprint-delta.html)
   - [P2.1 全量蓝图](../../prototype/change-impact-review-blueprint.html)
   - [P2.1 增量蓝图](../../prototype/change-impact-review-blueprint-delta.html)
   - [P0-B 全量蓝图](../../prototype/dataops-repo-doctor-blueprint.html)

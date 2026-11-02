@@ -4,6 +4,18 @@
 > 单一入口：`dataops_code_scan`
 > 扫描服务负责执行、规则、结果存储；DataOps 只触发和展示。
 > 旧命名：`dataops_cicd_scan` 进入兼容/迁移期，不能成为第二个入口。
+> Mock 边界：当前只做设计 / fixture；真实 CLI 调用和契约变更由内部对接。
+> 蓝图：[Mock 全量](../../prototype/code-scan-integration-blueprint.html) · [Mock 增量](../../prototype/code-scan-integration-blueprint-delta.html)
+
+## 0. Mock 边界
+
+P2.1 先设计 DataOps 侧：
+
+- 使用 mock `scanId` / `ScanResult` 夹具
+- UI 不依赖真实 CLI
+- 扫描触发、鉴权、服务地址、结果存储由内部后续提供
+- CLI 的命令名、JSON 字段和错误码由内部对接时再定稿
+- DataOps 只固定 `scanId`、状态、findings、impacts 的消费方式
 
 ## 1. 边界
 
