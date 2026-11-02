@@ -890,11 +890,26 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
       var changed = keys.filter(function (key) {
         try { return JSON.stringify(before[key]) !== JSON.stringify(after[key]) } catch (error) { return false }
       }).slice(0, 4)
-      if (!changed.length) return null
-      return h('div', { className: 'rd-rev-diff' }, h('b', null, 'diff v' + revisions[index - 1].version + ' → v' + revision.version), changed.map(function (key) {
-        var tone = !(key in before) ? 'add' : !(key in after) ? 'rem' : 'chg'
-        return h('span', { key: key, 'data-tone': tone }, tone === 'add' ? '+' : tone === 'rem' ? '−' : '~', ' ', key)
-      }))
+      function evidenceKey(evidence) {
+        try { return (evidence.kind || '') + ':' + JSON.stringify(evidence.ref || {}) } catch (error) { return evidence.kind || '' }
+      }
+      var beforeEvidence = Array.isArray(revisions[index - 1] && revisions[index - 1].evidenceRefs) ? revisions[index - 1].evidenceRefs : []
+      var afterEvidence = Array.isArray(revision && revision.evidenceRefs) ? revision.evidenceRefs : []
+      var beforeKeys = beforeEvidence.map(evidenceKey)
+      var afterKeys = afterEvidence.map(evidenceKey)
+      var evidenceAdded = afterEvidence.filter(function (evidence) { return beforeKeys.indexOf(evidenceKey(evidence)) < 0 })
+      var evidenceRemoved = beforeEvidence.filter(function (evidence) { return afterKeys.indexOf(evidenceKey(evidence)) < 0 })
+      if (!changed.length && !evidenceAdded.length && !evidenceRemoved.length) return null
+      return h('div', { className: 'rd-rev-diff' },
+        h('b', null, 'diff v' + revisions[index - 1].version + ' → v' + revision.version),
+        changed.map(function (key) {
+          var tone = !(key in before) ? 'add' : !(key in after) ? 'rem' : 'chg'
+          return h('span', { key: key, 'data-tone': tone }, tone === 'add' ? '+' : tone === 'rem' ? '−' : '~', ' ', key)
+        }),
+        evidenceAdded.length || evidenceRemoved.length ? h('div', { className: 'rd-rev-ev' },
+          h('b', null, 'evidence'),
+          evidenceAdded.map(function (evidence) { return h('span', { key: evidenceKey(evidence), 'data-tone': 'add' }, '+ ', evidenceLabel(evidence)) }),
+          evidenceRemoved.map(function (evidence) { return h('span', { key: evidenceKey(evidence), 'data-tone': 'rem' }, '− ', evidenceLabel(evidence)) })) : null)
     }
     function evidenceRefsOf(revision) {
       return revision && Array.isArray(revision.evidenceRefs) ? revision.evidenceRefs : []

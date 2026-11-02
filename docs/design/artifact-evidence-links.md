@@ -1,6 +1,6 @@
 # Artifact Evidence Links
 
-> 状态：P3.2 第一版实现中；Stage prepare、DataOps 交付物、当前迭代浮层已接入 evidenceRefs。
+> 状态：P3.2 第一版已实现；evidenceRefs、DataOps chips、当前迭代 chips、revision evidence diff 已接入。
 > 关联：[Stage Artifact Ledger](stage-artifact-ledger.md) · [Run Timeline](run-timeline.md)
 > 蓝图：[全量](../../prototype/artifact-evidence-blueprint.html) · [增量](../../prototype/artifact-evidence-blueprint-delta.html)
 > 目标：让每个 ArtifactRevision 能回答“依据是什么”，但不把证据正文塞进 revision。
@@ -77,7 +77,18 @@ Agent 生成阶段 payload 时带：
 - 不安全 URL / 内嵌凭据拒绝
 - 不自动补证据，不把 `unknown` 当成 `pass`
 
-## 5. UI
+## 5. Revision diff
+
+切换 vN / vN-1 时，除了内容字段，还显示 evidence 变化：
+
+```text
+evidence + scan-7f2
+         − deploy-old
+```
+
+证据增删与内容变更分开显示，避免把“内容没变”误判成“这一版没有变化”。
+
+## 6. UI
 
 ### DataOps 交付物
 
@@ -113,7 +124,7 @@ Agent 生成阶段 payload 时带：
 让 Agent 在下一次 revision 里补充。
 ```
 
-## 6. 和现有能力的关系
+## 7. 和现有能力的关系
 
 - code scan：引用 `scanId`，不复制 findings
 - deploy log：引用 `deploymentId`，不复制 events
@@ -121,13 +132,13 @@ Agent 生成阶段 payload 时带：
 - query/catalog：引用查询/表坐标，不复制正文
 - 审批 gate：本版不强制 evidence 数量；先展示，后加门禁
 
-## 7. 迁移
+## 8. 迁移
 
 - 旧 revision 没有 `evidenceRefs`：显示“未关联证据”，不判失败
 - 旧 deliverables 迁移成 rev-0001 时也不伪造证据
 - 下一次 revision 由 Agent 显式关联
 
-## 8. 非目标
+## 9. 非目标
 
 - 不把日志正文嵌入 revision
 - 不自动把最近一次部署/运行当成该 revision 的证据
@@ -136,7 +147,7 @@ Agent 生成阶段 payload 时带：
 - 不做证据自动过期/重算（只显示 asOf）
 - 不改变现有 code scan / deploy / runtime 契约
 
-## 9. 验收
+## 10. 验收
 
 1. revision 可保存 0–20 条 evidenceRefs。
 2. refs 非法时 stage prepare 拒绝。
@@ -147,7 +158,7 @@ Agent 生成阶段 payload 时带：
 7. 旧 revision 无 evidence 显示“未关联证据”。
 8. code scan / deploy / runtime 的坐标规则不变。
 
-## 10. 待确认
+## 11. 待确认
 
 - evidence 详情用浮层内联展开，还是跳转 DataOps「证据」section
 - gate 是否在下一版要求最少证据类型
