@@ -55,7 +55,6 @@ const taskNodes = [
 const taskEdges = [
   { from: 'task:channel_daily_mixed', to: 'job:load_check', kind: 'depends_on' },
   { from: 'task:channel_daily_mixed', to: 'job:G_1006', kind: 'depends_on' },
-  { from: 'task:channel_daily_mixed', to: 'job:wait_upstream', kind: 'depends_on' },
   { from: 'job:G_1006', to: 'job:calc_sql', kind: 'depends_on' },
   { from: 'job:G_1006', to: 'job:export_shell', kind: 'depends_on' },
   { from: 'job:load_check', to: 'job:wait_upstream', kind: 'depends_on' },
