@@ -279,7 +279,9 @@ function nodeData(def) {
 function RichNode(props) {
   const data = props.data;
   return h('div', { className: 'rf-card' + (props.selected ? ' selected' : '') + (data.target ? ' target' : '') },
-    h('div', { className: 'rf-icon', style: { background: data.iconBg } }, h('img', { src: data.icon, alt: '' })),
+    h('div', { className: 'rf-icon', style: { background: data.iconBg } }, data.icon
+      ? h('img', { src: data.icon, alt: '', onError: function (event) { event.currentTarget.style.display = 'none' } })
+      : h('span', { className: 'rf-icon-fallback' }, String(data.kind || '?').slice(0, 2))),
     h('div', { className: 'rf-main' },
       h('div', { className: 'rf-title' }, data.name),
       h('div', { className: 'rf-sub' }, data.meta)),
@@ -813,14 +815,14 @@ function content(info, tab) {
       var level = depth[node.id] || 0
       var same = buckets[level] || []
       return {
-        id: node.id, type: 'rich', draggable: false,
+        id: node.id, type: 'rich', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left,
         position: { x: 26 + level * 270, y: 28 + same.indexOf(node) * 92 },
         data: { name: node.label || node.id, kind: String(node.type || 'table').toUpperCase(), meta: node.meta || node.owner || '', icon: iconFor(node.type), iconBg: palette.table, target: node.id === graph.focus },
         selected: node.id === graph.focus
       }
     })
     var edges = flowEdges.map(function (edge) {
-      return { id: edge.from + '>' + edge.to, source: edge.from, target: edge.to, type: 'smoothstep', label: edge.label || edge.kind, markerEnd: { type: MarkerType.ArrowClosed, color: '#7d99ea' }, style: { stroke: '#7d99ea', strokeWidth: 1.2 }, labelStyle: { fontSize: 8, fill: '#7b8494' }, labelBgStyle: { fill: '#f7f7f8', fillOpacity: 1 }, labelBgPadding: [3, 2], labelBgBorderRadius: 3 }
+      return { id: edge.from + '>' + edge.to, source: edge.from, target: edge.to, sourceHandle: 'right-out', targetHandle: 'left-in', type: 'smoothstep', label: edge.label || edge.kind, markerEnd: { type: MarkerType.ArrowClosed, color: '#7d99ea' }, style: { stroke: '#7d99ea', strokeWidth: 1.2 }, labelStyle: { fontSize: 8, fill: '#7b8494' }, labelBgStyle: { fill: '#f7f7f8', fillOpacity: 1 }, labelBgPadding: [3, 2], labelBgBorderRadius: 3 }
     })
     var selectedState = React.useState(graph.focus || null)
     var selected = nodes.filter(function (node) { return node.id === selectedState[0] })[0]
