@@ -341,9 +341,6 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   var PANEL_SECTIONS = [
     ['overview', '概览'],
     ['repo', '仓库'],
-    ['assets', '资产'],
-    ['lineage', '血缘'],
-    ['evidence', '证据'],
     ['checks', '检查']
   ]
 
@@ -450,12 +447,6 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
               h('div', null, h('b', null, pkg.packageName), h('span', { className: 'do-panel-path' }, pkg.platform || pkg.toolChain || '')),
               h('div', { className: 'do-panel-path' }, (pkg.files || []).length + ' files' + (pkg.missing && pkg.missing.length ? ' · ' + pkg.missing.length + ' missing' : '')))
           }) : h('div', { className: 'do-panel-empty' }, '没有 package')) : null)
-    } else if (section === 'assets') {
-      content = h('div', { className: 'do-panel-content' }, h(AssetBody, { sessionId: props.sessionId }))
-    } else if (section === 'lineage') {
-      content = h('div', { className: 'do-panel-content' }, h(LineageBody, { sessionId: props.sessionId }))
-    } else if (section === 'evidence') {
-      content = h('div', { className: 'do-panel-content' }, h(EvidenceBody, { sessionId: props.sessionId }))
     }
     return h('div', { className: 'do-panel' },
       h('div', { className: 'do-panel-head' }, h('span', { className: 'do-panel-mark' }, 'DataOps'), h('b', null, '数据工作台')),
@@ -478,7 +469,10 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   }
 
   var tabs = [
-    tab('dataops', 'dataops', 'DataOps', '仓库、资产、血缘、证据与检查', 10, DataOpsPanelBody)
+    tab('asset', 'dataops-asset', '资产', '目标表与字段', 10, AssetBody),
+    tab('lineage', 'dataops-lineage', '血缘', '上下游影响面', 20, LineageBody),
+    tab('evidence', 'dataops-evidence', '证据', '结论背后的查询', 30, EvidenceBody),
+    tab('dataops', 'dataops', 'DataOps', '仓库体检与检查', 40, DataOpsPanelBody)
   ]
 
   return {

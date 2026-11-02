@@ -499,8 +499,8 @@ check('lineage tab uses embedded three-view surface when available', () => {
 })
 
 check('DataOps panel sections read the context store', () => {
-  assert(Tabs.definitions.length === 1, 'expected one aggregated DataOps tab')
-  assert(Tabs.definitions[0].kind === 'dataops', 'DataOps tab kind')
+  assert(Tabs.definitions.length === 4, 'expected 3 legacy tabs + DataOps')
+  assert(Tabs.definitions.some(item => item.kind === 'dataops'), 'DataOps tab kind')
   const empty = text(Tabs._internals.AssetBody({ sessionId: 's-empty' }))
   assert(empty.includes('还没有资产上下文'), 'empty state')
   const populated = text(Tabs._internals.AssetBody({ sessionId: 's1' }))

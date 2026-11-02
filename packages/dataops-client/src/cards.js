@@ -798,12 +798,9 @@ export function createDataopsCards(React) {
 
   function openTab(kind) {
     if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return
-    var section = kind === 'dataops-lineage' ? 'lineage' : kind === 'dataops-evidence' ? 'evidence' : kind === 'dataops-asset' ? 'assets' : 'overview'
-    if (kind && String(kind).indexOf('dataops') === 0) {
-      try { window.__dataopsPanelSection = section } catch (error) { /* ignore */ }
-      try { window.dispatchEvent(new CustomEvent('dataops:panel-section', { detail: { section: section } })) } catch (error) { /* ignore */ }
-    }
-    window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: kind && String(kind).indexOf('dataops') === 0 ? 'dataops' : kind } }))
+    // P0-B: existing asset/lineage/evidence tabs stay in place. Only the new
+    // DataOps tab is a Repo Doctor surface.
+    window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: kind } }))
   }
 
   function Modal(props) {
