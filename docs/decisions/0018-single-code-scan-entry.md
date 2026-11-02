@@ -35,4 +35,5 @@ dataops_code_scan({ scenario: "...", mode: "cicd" })
 
 - 活动工具数从 22 回到 21
 - 客户端 toolview key 从 `dataops_cicd_scan` 改为 `dataops_code_scan`
+- 历史 transcript 仍保留 `dataops_cicd_scan -> CicdCard` 的 view alias；这不是工具注册
 - 旧 CICD 调用必须迁移到 `scenario` 兼容模式

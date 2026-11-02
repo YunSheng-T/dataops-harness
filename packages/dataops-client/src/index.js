@@ -22,7 +22,9 @@ var TOOL_VIEWS = [
   ['dataops_cicd_release', 'ReleaseCard'],
   ['dataops_cicd_pipeline', 'PipelineCard'],
   ['dataops_shared_present_deliverable', 'DeliverableRenderer'],
-  ['dataops_shared_stage', 'StageResultCard']
+  ['dataops_shared_stage', 'StageResultCard'],
+  // Historical transcript compatibility only. This is not a registered tool.
+  ['dataops_cicd_scan', 'CicdCard']
 ]
 
 function apply(ctx) {
