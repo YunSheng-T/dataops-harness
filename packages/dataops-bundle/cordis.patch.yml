@@ -30,6 +30,8 @@
       name: '@dataops/dsh-dataops-brand'
     - id: dataops-client
       name: '@dataops/dsh-dataops-client'
+    - id: dataops-dev
+      name: '@dataops/dsh-dataops-dev'
 
 # DataOps profile: make the DataOps Lead the default agent composition.
 # Users can still switch presets; explicit selection is stored in settings.
