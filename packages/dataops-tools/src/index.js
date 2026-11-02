@@ -990,7 +990,7 @@ export function apply(ctx, config) {
       if (ctx && typeof ctx.logger?.warn === 'function') ctx.logger.warn('[dataops] lineage route failed: ' + (error && error.message ? error.message : String(error)))
     }
   }
-  if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents'], mountLineage)
+  if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents', 'workingDirectory'], mountLineage)
   else mountLineage(ctx)
 
   function mountDataopsCommand(child) {

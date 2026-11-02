@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { createMockLineageProvider } from '../src/lineage/mock.js'
 import { createLineageRoute } from '../src/lineage/route.js'
+import { scanRepository } from '../src/repo-doctor/index.js'
+import { resolve } from 'node:path'
 
 const checks = []
 const check = (name, fn) => checks.push([name, fn])
@@ -19,6 +21,17 @@ check('mock lineage index and graphs are coherent', () => {
   const task = provider.graph('task_dag', 'task:channel_daily_mixed')
   assert(task.ok && task.graph.nodes.some(node => node.type === 'job'), 'task dag graph')
   assert(task.graph.source === 'mock' && task.graph.asOf, 'source/asOf')
+})
+
+check('repo task index comes from real task.yaml', () => {
+  const scan = scanRepository(resolve('samples/internal-code-repo'))
+  const provider = createMockLineageProvider()
+  const index = provider.index({ tasks: scan.tasks })
+  assert(index.source === 'mock+repo', 'repo source')
+  assert(index.objects.some(item => item.kind === 'task_dag' && item.label === 'channel_daily_mixed'), 'repo task object')
+  const graph = provider.graph('task_dag', 'channel_daily_mixed', { tasks: scan.tasks })
+  assert(graph.ok && graph.graph.source === 'repo' && graph.graph.nodes.some(node => node.label === 'G_1006'), 'repo task graph')
+  assert(graph.graph.edges.length >= 6, 'repo task edges')
 })
 
 check('lineage route exposes index and graph', async () => {

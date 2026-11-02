@@ -198,7 +198,14 @@ CTA 文案：
 7. 旧 payload 能适配。
 8. 半屏弹窗只渲染当前 graph。
 
-## 12. 待确认
+## 12. 实现状态
+
+- 会话血缘卡：已接 `LineageGraph`，直接渲染 tool payload。
+- v1 血缘 payload：已适配为 `table_lineage`。
+- repo task index：已从真实 `task.yaml` 解析 Task/Job DAG。
+- table_lineage / data_flow：仍由 mock provider 提供，待内网 HTTP 接口。
+
+## 13. 待确认
 
 - 数据链路的 ETL/调度关系由哪个现有服务提供
 - DataOps 血缘对象列表是否需要按 package 分组

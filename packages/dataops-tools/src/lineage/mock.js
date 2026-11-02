@@ -66,13 +66,52 @@ function graph(kind, focus) {
   if (kind === 'task_dag') return { graphId: 'task:channel_daily_mixed', kind, title: 'channel_daily_mixed · 调度 DAG', focus: focus || 'task:channel_daily_mixed', nodes: taskNodes, edges: taskEdges, source: 'mock', asOf: AS_OF, partial: false, gaps: [] }
   return { graphId: 'table:dws.trade_channel_daily', kind: 'table_lineage', title: 'dws.trade_channel_daily · 表血缘', focus: focus || 'table:dws.trade_channel_daily', nodes: tableNodes, edges: tableEdges, source: 'mock', asOf: AS_OF, partial: false, gaps: [] }
 }
+function repoTaskObjects(tasks) {
+  return (Array.isArray(tasks) ? tasks : []).map(task => ({
+    id: 'task:' + task.name,
+    kind: 'task_dag',
+    label: task.name,
+    group: '调度 DAG',
+    sub: (task.path || 'task.yaml') + ' · ' + ((task.jobs || []).length) + ' jobs' + (task.cronExp ? ' · ' + task.cronExp : ''),
+    focus: task.name
+  }))
+}
+
+function repoTaskGraph(tasks, focus) {
+  const list = Array.isArray(tasks) ? tasks : []
+  const task = list.filter(item => item.name === focus || 'task:' + item.name === focus)[0] || list[0]
+  if (!task) return null
+  const taskId = 'task:' + task.name
+  const nodes = [{ id: taskId, type: 'schedule_task', label: task.name, meta: (task.cronExp || 'trigger') + ' · ' + ((task.jobs || []).length) + ' jobs', owner: task.owner }]
+  const edges = []
+  const jobNames = new Set()
+  for (const job of task.jobs || []) {
+    const id = 'job:' + task.name + ':' + job.name
+    jobNames.add(job.name)
+    nodes.push({ id, type: 'job', label: job.name, meta: [job.type, (job.parents || []).join(' / ')].filter(Boolean).join(' · '), owner: task.owner })
+  }
+  for (const job of task.jobs || []) {
+    const id = 'job:' + task.name + ':' + job.name
+    const parents = (job.parents || []).filter(parent => parent && parent !== 'start' && jobNames.has(parent))
+    if (!parents.length) edges.push({ from: taskId, to: id, kind: 'depends_on', label: 'start' })
+    else parents.forEach(parent => edges.push({ from: 'job:' + task.name + ':' + parent, to: id, kind: 'depends_on', label: 'depends_on' }))
+  }
+  return { graphId: taskId, kind: 'task_dag', title: task.name + ' · 调度 DAG', focus: taskId, nodes, edges, source: 'repo', asOf: AS_OF, partial: false, gaps: [] }
+}
+
 export function createMockLineageProvider() {
   return {
-    index() {
-      return { ok: true, objects: TABLES.concat(FLOWS, TASKS), counts: { table_lineage: TABLES.length, data_flow: FLOWS.length, task_dag: TASKS.length }, source: 'mock', asOf: AS_OF }
+    index(context) {
+      const tasks = repoTaskObjects(context && context.tasks)
+      const objects = TABLES.concat(FLOWS, tasks.length ? tasks : TASKS)
+      return { ok: true, objects, counts: { table_lineage: TABLES.length, data_flow: FLOWS.length, task_dag: tasks.length || TASKS.length }, source: tasks.length ? 'mock+repo' : 'mock', asOf: AS_OF }
     },
-    graph(kind, focus) {
+    graph(kind, focus, context) {
       if (!['table_lineage', 'data_flow', 'task_dag'].includes(kind)) return { ok: false, error: 'UNSUPPORTED_LINEAGE_KIND' }
+      if (kind === 'task_dag' && context && context.tasks && context.tasks.length) {
+        const repo = repoTaskGraph(context.tasks, focus)
+        if (repo) return { ok: true, graph: repo }
+      }
       return { ok: true, graph: graph(kind, focus) }
     }
   }
