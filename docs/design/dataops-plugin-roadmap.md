@@ -25,7 +25,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 | DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | shipped | DataOps 检查 section | Host + Client | Repo Doctor findings | 已用临时仓验证 |
 | DO-PLUGIN-003 | **LTS Guard** | P1 | shipped | DataOps 检查 section | Host | LTS parser | 已用临时仓验证 |
 | DO-PLUGIN-004 | **Impact Watch** | P2 | idea | DataOps 检查 / 血缘 section | Host + Client | workspaceChanges / fs | 评估事件来源 |
-| DO-PLUGIN-013 | **Change Impact Review** | P2.1 | design | DataOps 变更 section | Host + Client | ChangeSet、RepoIndex、lineage | 评审输入契约 |
+| DO-PLUGIN-013 | **Change Impact Review** | P2.1 | paused | DataOps 影响 section | Host + Client | `dataops_code_scan` 结果 | 暂停；改为 code scan 结果展示 |
 | DO-PLUGIN-005 | **Migration Review** | P2 | idea | DataOps 检查 section | Host + Client | SQL/model parser | 定义 DDL/DML/Rollback 规则 |
 | DO-PLUGIN-006 | **Run Timeline** | P2 | idea | DataOps 证据 / 检查 section | Host + Client | dataops_shared_read_logs | 先做 mock 日志 |
 | DO-PLUGIN-007 | **Data Contract Diff** | P3 | idea | API 预览差异卡 | Host + Client | API YAML / ofl | 定义兼容性规则 |
@@ -43,6 +43,14 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 - 一个 `/dataops` 命令命名空间
 - 统一 section registry 放到 P1
 - 详情见 [DataOps 插件聚合设计](dataops-plugin-surface.md)
+
+## 2.2 单一代码扫描入口
+
+- 代码扫描只有一个入口：`dataops_code_scan`
+- `dataops_cicd_scan` 是旧名字，进入兼容/迁移期后收敛，不能成为第二个独立入口
+- DDL / DML / Rollback、破坏性 SQL、下游影响、criticality 都由这个入口产出
+- DataOps 只展示 code scan 结果，不再拥有 Change Impact Review 规则
+- Change Impact Review 的蓝图保留为展示参考，不进入独立实现
 
 ## 3. 为什么 P0 是 Repo Doctor
 

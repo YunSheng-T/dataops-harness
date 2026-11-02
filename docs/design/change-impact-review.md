@@ -1,8 +1,8 @@
 # Change Impact Review（P2.1）
 
-> 状态：设计稿，待评审。
+> 状态：设计暂停；并入单一 code scan 的结果展示，不再作为独立 P2.1 能力。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
-> 边界：DataOps 不解析 SQL、不实现 code scan；只消费 ChangeSet 和 scan findings。
+> 边界：唯一代码扫描入口是 `dataops_code_scan`；DataOps 只展示其结果，不解析 SQL、不实现扫描。
 > 蓝图：[全量](../../prototype/change-impact-review-blueprint.html) · [增量](../../prototype/change-impact-review-blueprint-delta.html)
 
 ## 1. 一句话
@@ -14,18 +14,22 @@ Change Impact Review 回答：**这次变更会影响哪些 package、资产、�
 ## 2. 分工
 
 ```text
-code scan / CI
+dataops_code_scan（唯一扫描入口）
   ├─ SQL 语法、DDL/DML/Rollback
   ├─ 删表、删字段、改类型、改分区、改索引
   ├─ 破坏性 SQL 变更
-  └─ 输出 changeSet + scanFindings
+  ├─ changed files / changed assets
+  ├─ downstream / criticality（扫描结果的一部分）
+  └─ findings / evidence / asOf
 
-Change Impact Review
-  ├─ changed files -> package ownership
-  ├─ changed assets -> lineage / downstream / owner
-  ├─ scan findings -> 本次变更的发布风险
-  └─ 输出 ImpactReport，不做第二套 SQL 规则
+DataOps（展示层）
+  ├─ 读取 code scan 结果
+  ├─ 按 package / asset / downstream 展示
+  ├─ 展示继承的 findings
+  └─ 不新增扫描规则，不重算影响
 ```
+
+`dataops_cicd_scan` 是旧名字；收敛为 `dataops_code_scan` 别名/迁移期名称，不再作为第二个扫描入口。
 
 ## 3. 用户旅程
 
