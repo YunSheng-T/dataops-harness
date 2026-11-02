@@ -91,6 +91,8 @@ check('mock ltsgen writes lts_code and a zip artifact', async () => {
     assert(parsed.ok && parsed.tasks[0].name === 'channel_pay_daily', 'lts task parse')
     assert(readFileSync(result.artifact.package).subarray(0, 2).toString() === 'PK', 'zip magic')
     assert(result.artifact.digest.startsWith('sha256:'), 'artifact digest')
+    const dev = await configured.find(tool => tool.name === 'dataops_shared_read_develop').execute({ workitemId: 'lts-demo' }, { signal })
+    assert(dev.codeRepo && dev.codeRepo.tasks.length === 1 && dev.codeRepo.outputs.length === 1, 'develop carries lts repo')
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

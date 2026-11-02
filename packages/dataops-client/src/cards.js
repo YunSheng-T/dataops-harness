@@ -1859,6 +1859,12 @@ export function createDataopsCards(React, LineageFlow) {
         artifacts.slice(0, 5).map(function (a, i) { return h('span', { key: i, className: 'do-chip', title: a.path || '' }, (a.type || 'artifact') + ' · ' + (a.path || '').split('/').pop()) }),
         artifacts.length > 5 ? h('span', { className: 'do-muted' }, '+' + (artifacts.length - 5) + ' 个，查看产物') : null
       ) : null,
+      m.codeRepo ? h('div', { className: 'do-dev-artifacts' },
+        h('div', { className: 'do-label' }, '数据代码仓 / LTS 制品'),
+        h('div', { className: 'do-muted', style: { marginBottom: '4px' } }, m.codeRepo.root || 'deliverables/develop/code-repo'),
+        (m.codeRepo.tasks || []).map(function (task, i) { return h('span', { key: 'task-' + i, className: 'do-chip', title: task.task || '' }, task.name + ' · lts_code') }),
+        (m.codeRepo.outputs || []).map(function (output, i) { return h('span', { key: 'out-' + i, className: 'do-chip', title: output.path || '' }, output.name + (output.bytes ? ' · ' + output.bytes + ' B' : '')) })
+      ) : null,
       Object.keys(validation).length ? h('div', { className: 'do-dev-validation' },
         h('div', { className: 'do-label' }, '验证循环'),
         stageRow('build', 'Build'), stageRow('scan', 'Scan'), stageRow('deploy', 'Deploy'), stageRow('test', 'Test'),

@@ -627,6 +627,11 @@ check('tech plan renders legacy string lineage edges', () => {
   assert(body.includes('dwd.orders') && body.includes('etl_target') && body.includes('dws.trade_channel_daily'), 'legacy lineage nodes')
 })
 
+check('develop card shows lts code repo and package', () => {
+  const body = text(Cards.DevelopCard({ block: block({ kind: 'develop', target: 'dws.x', status: 'awaiting_merge', codeRepo: { root: 'deliverables/develop/code-repo', tasks: [{ name: 'channel_pay_daily', task: 'lts_code/channel_pay_daily/task.yaml' }], outputs: [{ name: 'channel_pay_daily.zip', path: 'output/channel_pay_daily.zip', bytes: 512 }] }, artifacts: [], validation: {}, tasks: [], review: {}, merge: {} }) }))
+  assert(body.includes('数据代码仓') && body.includes('channel_pay_daily.zip'), 'develop code repo')
+})
+
 check('tech plan rollback object steps do not leak JSON', () => {
   const body = text(Cards.TechPlanCard({ block: block({ kind: 'tech_plan', stage: 'scheme', target: 'dws.x', status: 'draft', tasks: [], estimate: '1 人日', risks: [], gaps: [], rollback: { steps: [{ step: '切回旧 SQL' }, { description: '恢复调度 v1' }], materials: [{ name: 'rollback.sql' }] } }) }))
   assert(body.includes('切回旧 SQL') && body.includes('恢复调度 v1'), 'rollback step text')

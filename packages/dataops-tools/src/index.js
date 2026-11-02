@@ -5,7 +5,7 @@
  * cards render. Data access lives behind provider seams (mock / cli / http);
  * switching providers never changes the model-facing surface.
  */
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { normalizeConfig } from './config.js'
 import { buildPipelinePackage } from './pipeline-package.js'
@@ -579,6 +579,19 @@ export function createTools(config, deps) {
     return { ...started, kind: 'code_scan', scope }
   }
 
+  function readDevelopCodeRepo(workitemId) {
+    const base = resolve(config.workitemsDir, workitemId, 'deliverables', 'develop', 'code-repo')
+    if (!existsSync(base)) return null
+    const ltsRoot = resolve(base, 'lts_code')
+    const outputRoot = resolve(base, 'output')
+    const tasks = existsSync(ltsRoot)
+      ? readdirSync(ltsRoot, { withFileTypes: true }).filter(item => item.isDirectory()).map(item => ({ name: item.name, task: 'lts_code/' + item.name + '/task.yaml' })).filter(item => existsSync(resolve(base, item.task)))
+      : []
+    const outputs = existsSync(outputRoot) ? readdirSync(outputRoot).filter(name => name.endsWith('.zip')).map(name => ({ name, path: 'output/' + name, bytes: readFileSync(resolve(outputRoot, name)).length })) : []
+    if (!tasks.length && !outputs.length) return null
+    return { root: 'deliverables/develop/code-repo', tasks, outputs, mock: true }
+  }
+
   const tools = [
     textTool({
       name: 'dataops_requirement_extract_spec',
@@ -708,7 +721,14 @@ export function createTools(config, deps) {
       parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：把 mock 多产物写到该 workitem。' }, mode: { type: 'string', enum: ['ok', 'build-failed'], description: '演示分支；build-failed 返回第一次编译失败。' } }),
       execute: async args => {
         const value = { ...(args.mode === 'build-failed' ? DEVELOP_BUILD_FAILED : DEVELOP), workitemMode: 'mock' }
-        if (args.workitemId) value.materialized = buildDevelopArtifacts(resolve(config.workitemsDir), args.workitemId)
+        if (args.workitemId) {
+          value.materialized = buildDevelopArtifacts(resolve(config.workitemsDir), args.workitemId)
+          const codeRepo = readDevelopCodeRepo(args.workitemId)
+          if (codeRepo) {
+            value.codeRepo = codeRepo
+            value.artifact = codeRepo.outputs[0] || null
+          }
+        }
         return value
       },
       summary: value => '开发验证：' + value.target + '｜' + value.artifacts.length + ' 个产物'
