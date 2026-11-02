@@ -956,6 +956,10 @@ function stageSignoffUnlocked(config, args) {
   if (!existing) raw.audit.push({ at: stamp(), userId: args.userId || null, actor: args.actor || role, role, gate, actionId: args.actionId, result: 'signed', sessionId: args.sessionId || null })
   const signedRoles = new Set(approval.signoffs.map(s => s.role))
   approval.status = roles.every(r => signedRoles.has(r)) ? 'approved' : 'awaiting_signoff'
+  if (approval.status === 'approved') {
+    delete approval.invalidatedByRevision
+    delete approval.invalidatedAt
+  }
   setArtifactGateStatus(dir, gate, approval.status === 'approved' ? 'approved' : 'review')
   const advanced = approval.status === 'approved' ? advanceAfterSignoff(raw, gate) : null
   raw.updated_at = stamp()
