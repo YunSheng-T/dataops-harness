@@ -1842,7 +1842,7 @@ export function createDataopsCards(React, LineageFlow) {
             ? gateIsActive('develop.code_review') && signoffAllowed(m) ? h(Btn, { key: 'se-action', variant: 'ghost', onClick: function () { signoff('develop.code_review', 'se', (review.se && review.se.approver) || '王工') } }, 'SE 通过') : null
             : null,
           h(Pill, { key: 'committer', tone: merge.status === 'merged' ? 'pass' : 'warn' }, 'Committer · ' + statusText(merge.status || (review.committer && review.committer.status) || 'waiting')),
-          gateReady && (!merge.status || merge.status === 'pending') && (!review.committer || ['pending', 'waiting'].includes(review.committer.status))
+          gateReady && review.se && review.se.status === 'approved' && (!merge.status || merge.status === 'pending') && (!review.committer || ['pending', 'waiting'].includes(review.committer.status))
             ? gateIsActive('develop.merge') && signoffAllowed(m) ? h(Btn, { key: 'merge-action', variant: 'primary', onClick: function () { signoff('develop.merge', 'committer', (review.committer && review.committer.approver) || '代码平台') } }, '记录合入') : null
             : null,
           merge.commit ? h('span', { className: 'do-muted do-meta' }, merge.commit) : null
