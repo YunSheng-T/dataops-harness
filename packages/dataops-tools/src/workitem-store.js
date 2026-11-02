@@ -679,7 +679,14 @@ function validatePatch(patch) {
         if (!Array.isArray(approval.signoffs)) throw new Error('workitem: approval signoffs must be an array')
         for (const signoff of approval.signoffs) {
           if (!signoff || typeof signoff !== 'object' || typeof signoff.role !== 'string') throw new Error('workitem: signoff needs role')
-          if (signoff.via !== 'ui' || typeof signoff.actionId !== 'string' || !/^ui-[a-z0-9-]+$/i.test(signoff.actionId)) throw new Error('workitem: signoff must come from a UI action')
+          if (signoff.via === 'ui') {
+            if (typeof signoff.actionId !== 'string' || !/^ui-[a-z0-9-]+$/i.test(signoff.actionId)) throw new Error('workitem: UI signoff needs ui- actionId')
+          } else if (signoff.via === 'agent') {
+            if (typeof signoff.actionId !== 'string' || !/^agent-[a-z0-9-]+$/i.test(signoff.actionId)) throw new Error('workitem: agent signoff needs agent- actionId')
+            if (typeof signoff.instruction !== 'string' || !/签收|确认|同意|通过/.test(signoff.instruction)) throw new Error('workitem: agent signoff needs user instruction')
+          } else {
+            throw new Error('workitem: signoff must come from UI or explicit user instruction')
+          }
         }
       }
     }
@@ -921,7 +928,10 @@ function stageSignoffUnlocked(config, args) {
   const roles = GATE_ROLES[gate]
   if (!roles) throw new Error('stage: unknown gate ' + gate)
   if (!roles.includes(role)) throw new Error('stage: role ' + role + ' cannot sign ' + gate)
-  if (args.via !== 'ui' || typeof args.actionId !== 'string' || !/^ui-[a-z0-9-]+$/i.test(args.actionId)) throw new Error('stage: signoff must come from a UI action')
+  const via = args.via === 'agent' ? 'agent' : 'ui'
+  if (via === 'ui' && (typeof args.actionId !== 'string' || !/^ui-[a-z0-9-]+$/i.test(args.actionId))) throw new Error('stage: UI signoff needs a ui- actionId')
+  if (via === 'agent' && (typeof args.agentInstruction !== 'string' || !/签收|确认|同意|通过/.test(args.agentInstruction))) throw new Error('stage: Agent signoff requires an explicit user instruction')
+  const signoffActionId = args.actionId || (via === 'agent' ? 'agent-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7) : null)
   const root = rootDir(config)
   const dir = itemDir(root, id)
   const raw = readRaw(root, id)
@@ -963,10 +973,10 @@ function stageSignoffUnlocked(config, args) {
     approval.revisionContentHash = boundArtifact.currentRevision.contentHash
   }
   approval.signoffs = Array.isArray(approval.signoffs) ? approval.signoffs : []
-  const existing = approval.signoffs.find(s => s.actionId === args.actionId)
-  if (!existing) approval.signoffs.push({ role, approver: args.actor || role, at: stamp(), via: 'ui', actionId: args.actionId, ...(args.comment ? { comment: args.comment } : {}) })
+  const existing = approval.signoffs.find(s => s.actionId === signoffActionId)
+  if (!existing) approval.signoffs.push({ role, approver: args.actor || (via === 'agent' ? 'Agent（用户指令）' : role), at: stamp(), via, actionId: signoffActionId, ...(via === 'agent' ? { instruction: args.agentInstruction } : {}), ...(args.comment ? { comment: args.comment } : {}) })
   raw.audit = Array.isArray(raw.audit) ? raw.audit : []
-  if (!existing) raw.audit.push({ at: stamp(), userId: args.userId || null, actor: args.actor || role, role, gate, actionId: args.actionId, result: 'signed', sessionId: args.sessionId || null })
+  if (!existing) raw.audit.push({ at: stamp(), userId: args.userId || null, actor: args.actor || (via === 'agent' ? 'Agent（用户指令）' : role), role, gate, actionId: signoffActionId, via, ...(via === 'agent' ? { instruction: args.agentInstruction } : {}), result: 'signed', sessionId: args.sessionId || null })
   const signedRoles = new Set(approval.signoffs.map(s => s.role))
   approval.status = roles.every(r => signedRoles.has(r)) ? 'approved' : 'awaiting_signoff'
   if (approval.status === 'approved') {

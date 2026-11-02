@@ -870,7 +870,7 @@ export function createTools(config, deps) {
     }),
     textTool({
       name: 'dataops_shared_stage',
-      description: '阶段运行时：prepare 写交付物、ArtifactRevision 与 evidenceRefs；signoff 记录 UI 签收并推进 stage；status 读取工作项。',
+      description: '阶段运行时：prepare 写交付物、ArtifactRevision 与 evidenceRefs；signoff 记录 UI 签收或用户明确授权的 Agent 签收并推进 stage；status 读取工作项。',
       parameters: parameterRoot({
         action: { type: 'string', enum: ['prepare', 'signoff', 'status', 'complete'] },
         id: { type: 'string' },
@@ -886,8 +886,9 @@ export function createTools(config, deps) {
         gate: { type: 'string', enum: ['requirement', 'design', 'scheme.analysis', 'scheme.solution', 'scheme.tech_plan', 'develop.code_review', 'develop.merge'] },
         role: { type: 'string', enum: ['BA', 'requester', 'SE', 'Dev', 'Committer'] },
         actor: { type: 'string' },
-        via: { type: 'string', enum: ['ui'] },
+        via: { type: 'string', enum: ['ui', 'agent'] },
         actionId: { type: 'string' },
+        agentInstruction: { type: 'string', description: 'Agent 签收时必须记录的用户明确指令，例如“帮我签收需求”；不允许空。' },
         comment: { type: 'string' }
       }),
       execute: runStage,

@@ -150,6 +150,23 @@ check('identity route exposes the current signoff identity', async () => {
   assert(body.ok === true && body.user.name === '陈璐' && body.user.roles.includes('BA'), 'identity route body')
 })
 
+check('agent signoff requires an explicit user instruction and records via=agent', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-agent-signoff-'))
+  try {
+    const store = createWorkitemStore(normalizeConfig({ workitemsDir: dir }))
+    store.create({ id: 'agent-item', source: { system: 'edevops', id: 'US-AGENT' }, title: 'agent', initialStage: 'requirement' })
+    store.prepare({ id: 'agent-item', kind: 'requirement', stage: 'requirement', deliverable: 'deliverables/requirement/requirement.yaml', payload: { kind: 'requirement', title: '需求', goal: '目标', status: 'draft' } })
+    let failed = false
+    try { store.signoff({ id: 'agent-item', gate: 'requirement', role: 'BA', via: 'agent', actionId: 'agent-no-instruction', agentInstruction: '' }) } catch { failed = true }
+    assert(failed, 'agent signoff without instruction must fail')
+    const signed = store.signoff({ id: 'agent-item', gate: 'requirement', role: 'BA', via: 'agent', actionId: 'agent-with-instruction', agentInstruction: '帮我签收需求' })
+    assert(signed.gateStatus === 'awaiting_signoff', 'agent signoff status')
+    const item = store.get('agent-item')
+    const signoff = item.approvals.find(a => a.gate === 'requirement').signoffs[0]
+    assert(signoff.via === 'agent' && signoff.instruction === '帮我签收需求', 'agent audit')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 check('host signoff HTTP route persists a UI confirmation', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'dataops-signoff-route-'))
   try {
