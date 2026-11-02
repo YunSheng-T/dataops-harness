@@ -698,7 +698,7 @@ function content(info, tab) {
     var kind = props.kind || (schedule ? 'task_dag' : (props.initialView === 'production' ? 'data_flow' : props.initialView === 'schedule' ? 'task_dag' : 'table_lineage'))
     var initial = schedule ? 'schedule' : (KIND_VIEW[kind] || (props.initialView || 'schedule'))
     var view = VIEWS[initial] ? initial : 'table'
-    var selectedState = React.useState(schedule ? 'task:current' : null)
+    var selectedState = React.useState(props.focus || (schedule ? 'task:current' : null))
     var selectedTab = React.useState('overview')
     var densityState = React.useState('compact')
     var selectedId = selectedState[0]
@@ -765,7 +765,7 @@ function content(info, tab) {
         h('div', { className: 'do-surface-title' },
           h('span', { className: 'do-surface-mark' }, '血缘'),
           h('div', null,
-            h('strong', null, viewDef.title),
+            h('strong', null, props.title || viewDef.title),
             h('span', null, viewDef.summary))),
         h('div', { className: 'do-surface-actions' },
           h('div', { className: 'do-surface-kinds' }, h('span', { className: 'do-surface-kind' }, viewDef.tabs || viewDef.tag || '血缘')),
@@ -808,7 +808,7 @@ function content(info, tab) {
             h('div', null, h('span', { className: 'do-lineage-dialog-kicker' }, 'LINEAGE'), h('b', null, '血缘半屏视图')),
             h('button', { type: 'button', className: 'do-lineage-dialog-close', 'aria-label': '关闭血缘', onClick: props.onClose }, '关闭')),
           h('div', { className: 'do-lineage-dialog-body' },
-            h(LineageSurface, { kind: props.kind, initialView: props.initialView || 'schedule', schedule: props.schedule })))),
+            h(LineageSurface, { kind: props.kind, title: props.title, focus: props.focus, initialView: props.initialView || 'schedule', schedule: props.schedule })))),
       document.body
     )
   }

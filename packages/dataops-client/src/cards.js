@@ -521,7 +521,7 @@ export function createDataopsCards(React) {
     '.do-lineage-obj-main{min-width:0;flex:1}.do-lineage-obj-main b{display:block;font-size:8px;line-height:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.do-lineage-obj-main small{display:block;font-size:7px;line-height:10px;color:var(--dsw-alias-label-tertiary,#8b93a2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.do-lineage-empty{font-size:8px;color:var(--dsw-alias-label-tertiary,#8b93a2);padding:10px 8px}',
     '.do-lineage-stage{min-width:0;min-height:430px}',
-    '.do-lineage-stage-head{display:flex;align-items:center;gap:5px;margin:0 0 6px;min-width:0}.do-lineage-stage-head b{font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.do-lineage-stage-head .rd-badge{margin-left:auto}',
+    '.do-lineage-stage-head{display:flex;align-items:center;gap:5px;margin:0 0 6px;min-width:0}.do-lineage-stage-head b{font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.do-lineage-stage-head .rd-badge{margin-left:auto}.do-lineage-mock{font-size:7.5px;color:var(--dsw-alias-label-tertiary,#8b93a2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}',
     '.do-lineage-stage .do-lineage-surface{width:100%;height:460px;min-height:0;max-height:460px;margin:0}',
     '.do-lineage-stage .do-surface-body{grid-template-columns:1fr}.do-lineage-stage .do-surface-detail{display:none}',
     '.do-lineage-flow-preview{border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.08));border-radius:8px;background:var(--dsw-alias-bg-layer-1,#fff);padding:28px 20px;min-height:300px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}',

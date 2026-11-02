@@ -1,6 +1,6 @@
 # Lineage Model
 
-> 状态：第一版实现中；三类 graph、代码仓对象列表、半屏图已接入。
+> 状态：第一版实现；当前使用 `samples/internal-code-repo` 的自洽 mock inventory（4 表 / 2 链路 / 1 调度任务），真实 repo 血缘索引未接。
 > 关联：OPEN-011 · [Lineage Surface](lineage-surface.md) · [Summary Cards](summary-cards.md)
 > 蓝图：[全量](../../prototype/lineage-browser-blueprint.html) · [增量](../../prototype/lineage-browser-blueprint-delta.html)
 > 目标：把“三种视图”改成三种业务血缘，把 DataOps 血缘做成代码仓浏览器。
