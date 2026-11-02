@@ -1,6 +1,6 @@
 # Run Timeline（P2.2）
 
-> 状态：设计稿，待评审。
+> 状态：Mock 实现完成，等待真实 CLI。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
 > 数据来源：现有 `dataops_shared_read_logs`；P2.2 先做 mock timeline，不接真实日志服务。
 > 蓝图：[全量](../../prototype/run-timeline-blueprint.html) · [增量](../../prototype/run-timeline-blueprint-delta.html)

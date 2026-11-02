@@ -17,6 +17,8 @@ import { checkRepository, scanRepository, validateRepository } from './repo-doct
 import { registerRepoDoctorRoute } from './repo-doctor/route.js'
 import { createMockCodeScanService } from './code-scan/mock.js'
 import { registerCodeScanRoute } from './code-scan/route.js'
+import { createMockRuntimeLogService } from './runtime-log/mock.js'
+import { registerRuntimeLogRoute } from './runtime-log/route.js'
 import { createAdapterIdentity } from './signoff-service.js'
 import { createDomainAdapters } from './providers/domain-adapters.js'
 import { buildDevelopArtifacts } from './develop-package.js'
@@ -883,6 +885,7 @@ export const TOOLS = createTools(normalizeConfig({}), {})
 export function apply(ctx, config) {
   const normalized = normalizeConfig(config)
   const codeScan = createMockCodeScanService()
+  const runtimeLog = createMockRuntimeLogService()
   const tools = createTools(normalized, { ctx, codeScan })
   for (const tool of tools) ctx.tools.register(tool)
   const store = createWorkitemStore(normalized)
@@ -937,6 +940,21 @@ export function apply(ctx, config) {
   }
   if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents'], mountCodeScan)
   else mountCodeScan(ctx)
+  const mountRuntimeLog = child => {
+    try {
+      const connection = child && typeof child.get === 'function' ? child.get('connection') : null
+      const root = ctx
+      const routeCtx = {
+        get: name => name === 'connection' ? connection : (root && typeof root.get === 'function' ? root.get(name) : null),
+        effect: root && typeof root.effect === 'function' ? root.effect.bind(root) : undefined
+      }
+      registerRuntimeLogRoute(routeCtx, runtimeLog)
+    } catch (error) {
+      if (ctx && typeof ctx.logger?.warn === 'function') ctx.logger.warn('[dataops] runtime log route failed: ' + (error && error.message ? error.message : String(error)))
+    }
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents'], mountRuntimeLog)
+  else mountRuntimeLog(ctx)
 
   function mountDataopsCommand(child) {
     const commands = child && child.commands ? child.commands : (child && typeof child.get === 'function' ? child.get('commands') : null)
