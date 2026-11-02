@@ -474,9 +474,16 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
           h(RepoMetric, { value: metrics.jobs || 0, label: 'jobs' }),
           h(RepoMetric, { value: findingCount, label: 'findings', attention: Boolean(metrics.warning || metrics.blocking) })),
         detection.partial ? h('div', { className: 'rd-notice' }, detection.reasons && detection.reasons.length ? detection.reasons.join(' · ') : '仓库识别不完整，validate 结果可能不完整') : null,
-        h('div', { className: 'rd-actions' }, h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: function () { go('checks') } }, '运行检查'), h('button', { type: 'button', className: 'rd-btn', onClick: retry }, '刷新索引')),
-        recent.length ? h('div', { className: 'rd-section-label' }, '最近发现') : null,
-        recent.map(function (item, index) { return h(RepoFinding, { key: index, finding: item }) }))
+        h('div', { className: 'rd-section-label' }, '识别范围'),
+        h('div', { className: 'rd-scope' }, (detection.signals || []).slice(0, 5).map(function (signal, index) { return h('code', { key: index, className: 'rd-chip' }, signal) })),
+        packages.length ? h('div', { className: 'rd-section-label' }, 'Packages', h('button', { type: 'button', className: 'rd-link', onClick: function () { go('repo') } }, '查看全部 ' + packages.length)) : null,
+        packages.slice(0, 3).map(function (pkg) {
+          return h('div', { className: 'rd-package', key: pkg.packageName },
+            h('div', { className: 'rd-package-main' }, h('b', null, pkg.packageName), h('span', null, pkg.platform || pkg.toolChain || pkg.serviceType || 'unknown')),
+            h('div', { className: 'rd-package-meta' }, h('span', null, (pkg.files || []).length + ' files')))
+        }),
+        h('div', { className: 'rd-section-label' }, '最近发现'),
+        recent.length ? recent.map(function (item, index) { return h(RepoFinding, { key: index, finding: item }) }) : h('div', { className: 'rd-inline-empty' }, h('b', null, '还没有规则结果'), h('p', null, '扫描只建立索引；运行检查后在这里显示 warning / blocking。'), h('button', { type: 'button', className: 'rd-btn', onClick: function () { go('checks') } }, '运行检查')))
     }
 
     function Repo() {
@@ -514,12 +521,12 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var sectionSub = section === 'assets' ? '当前 Session 的目标表与字段。' : section === 'lineage' ? '当前 Session 的上下游影响面。' : section === 'evidence' ? '当前 Session 的查询、时间范围与证据。' : '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。'
     var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId })) : section === 'evidence' ? h('div', { className: 'rd-legacy' }, h(EvidenceBody, { sessionId: props.sessionId })) : h(Overview)
     return h('div', { className: 'rd-panel' },
-      h('div', { className: 'rd-head' },
-        h('div', { className: 'rd-head-main' },
+      h('div', { className: 'rd-head', style: { display: 'flex', alignItems: 'flex-start' } },
+        h('div', { className: 'rd-head-main', style: { flex: '1 1 auto', minWidth: 0 } },
           h('span', { className: 'rd-eyebrow' }, isRepoSection ? 'DATAOPS / REPO DOCTOR' : 'DATAOPS / SESSION CONTEXT'),
           h('h2', { className: 'rd-title' }, sectionTitle),
           h('div', { className: 'rd-sub' }, sectionSub)),
-        isRepoSection ? h('div', { className: 'rd-head-actions' },
+        isRepoSection ? h('div', { className: 'rd-head-actions', style: { display: 'flex', flex: '0 0 auto', gap: 4 } },
           h('button', { type: 'button', className: 'rd-btn', onClick: retry }, '刷新'),
           h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: function () { go('checks') } }, '运行检查')) : null),
       h('div', { className: 'rd-nav', role: 'tablist' }, PANEL_SECTIONS.map(function (item) {
