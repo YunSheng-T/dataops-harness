@@ -30,8 +30,9 @@ DataOps
 ## 2.1 对象模型
 
 ```text
-LTS task 定义
-  lts_code/<dir>/task.yaml
+RunTarget（运行对象）
+  kind: lts_task | etl_job
+  ref: 调度 task / LTS task / ETL job
         │ 1:N
         ▼
 run 运行实例
@@ -39,35 +40,69 @@ run 运行实例
         │ 1:N
         ▼
 job / group / dependency 事件
-  job、phase、level、code
 ```
 
 主键是 **runId**，不是 LTS task 定义。
 
-- `taskRef` 是上下文，指向 LTS task / 调度 task
-- `runId` 才是时间线的归属对象
+- `RunTarget` 是时间线的入口
+- `runId` 才是一次运行的归属对象
 - `job` 是 run 内的事件维度
-- 同一 task 的多次运行各自独立，不合并成一条“任务时间线”
+- LTS task 和 ETL job 是两种不同对象，不能混成一个“task list”
+- 同一对象的多次运行各自独立，不合并
 - P2.2 不做跨 run 聚合；跨 run 汇总属于后续 Task Health
 
 ```text
-taskRef
-  id: 调度任务 ID
-  name: LTS task name
+RunTarget
+  kind: lts_task | etl_job
+  id: 调度 task / ETL job ID
+  name: LTS task name / ETL job name
   path?: lts_code/.../task.yaml
+  package?: packageName
+  owner?
 runId
 bizDate?
 ```
 
-调度 task ID 和 LTS task name 可能不同，不能用其中一个假装另一个；映射不到时保留 `taskRef` 和 gap。
+调度 task ID 和 LTS task name 可能不同；ETL job 也可能不属于 LTS。映射不到时保留 `RunTarget` 和 gap，不伪造。
+
+## 2.2 切换运行对象
+
+时间线顶部必须有“运行对象”选择器，而不只是当前 task 的 recentRuns：
+
+```text
+运行对象
+  [LTS Task] [ETL Job]
+  搜索 task / job
+  最近失败
+  channel_daily_mixed       LTS
+  order_daily_serial        LTS
+  etl_channel_sync          ETL
+  etl_channel_bds           ETL
+```
+
+选择后：
+
+```text
+RunTarget
+→ 查询该对象的 recentRuns
+→ 选择一个 runId
+→ 展示 RunTimeline
+```
+
+约束：
+
+- 切换 RunTarget 不是切换 section，不新增面板
+- recentRuns 只属于当前 RunTarget
+- LTS 和 ETL 的日志源不同，selector 只发起查询，不伪造数据
+- 某个对象没有日志适配时显示“日志源未配置”，不显示空时间线为正常
 
 ## 3. 输入
 
-沿用 `dataops_shared_read_logs` 的输出，补充一个稳定的时间线视图：
+沿用 `dataops_shared_read_logs` 的输出，补充 RunTarget 和时间线视图。`dataops_shared_read_logs` 的 `taskId` 兼容参数继续保留，新调用建议传 `target`。
 
 ```text
 RunTimeline
-  taskRef { id, name, path? }
+  target { kind, id, name, path?, package? }
   runId
   bizDate?
   status: success | failed | running | partial
