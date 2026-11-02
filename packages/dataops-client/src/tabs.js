@@ -384,10 +384,20 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var loadingState = React.useState(false)
     var errorState = React.useState(null)
     var refreshState = React.useState(0)
+    var checksTabState = React.useState('rules')
+    var scanIdState = React.useState(null)
+    var scanState = React.useState(null)
+    var scanLoadingState = React.useState(false)
+    var scanErrorState = React.useState(null)
     var section = sectionState[0]
     var data = dataState[0]
     var loading = loadingState[0]
     var error = errorState[0]
+    var checksTab = checksTabState[0]
+    var scanId = scanIdState[0]
+    var scanResult = scanState[0]
+    var scanLoading = scanLoadingState[0]
+    var scanError = scanErrorState[0]
 
     React.useEffect(function () {
       if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
@@ -398,6 +408,33 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
       window.addEventListener('dataops:panel-section', onSection)
       return function () { window.removeEventListener('dataops:panel-section', onSection) }
     }, [])
+
+    React.useEffect(function () {
+      if (section !== 'checks' || checksTab !== 'scan' || !scanId) return
+      if (scanResult && (scanResult.phase === 'complete' || scanResult.phase === 'error')) return
+      var cancelled = false
+      var timer = null
+      function poll() {
+        if (cancelled) return
+        fetch('/api/dataops/code-scan?sessionId=' + encodeURIComponent(props.sessionId) + '&scanId=' + encodeURIComponent(scanId), { headers: { accept: 'application/json' } })
+          .then(function (response) {
+            return response.json().then(function (body) {
+              if (!response.ok) throw Object.assign(new Error(body.message || body.error || 'scan failed'), { body: body })
+              return body
+            })
+          })
+          .then(function (body) {
+            if (cancelled) return
+            scanState[1](body)
+            if (body.phase !== 'complete' && body.phase !== 'error') timer = setTimeout(poll, 700)
+          })
+          .catch(function (reason) {
+            if (!cancelled) scanErrorState[1](readPanelError(reason))
+          })
+      }
+      poll()
+      return function () { cancelled = true; if (timer) clearTimeout(timer) }
+    }, [section, checksTab, scanId])
 
     React.useEffect(function () {
       if (section !== 'overview' && section !== 'repo' && section !== 'checks') {
@@ -436,6 +473,63 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
 
     function go(next) { sectionState[1](next) }
     function retry() { refreshState[1](refreshState[0] + 1) }
+    function startScan() {
+      if (scanLoading || typeof fetch !== 'function' || !props.sessionId) return
+      scanLoadingState[1](true)
+      scanErrorState[1](null)
+      scanState[1](null)
+      scanIdState[1](null)
+      fetch('/api/dataops/code-scan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ sessionId: props.sessionId, scope: { kind: 'workspace' }, source: 'panel' })
+      })
+        .then(function (response) {
+          return response.json().then(function (body) {
+            if (!response.ok) throw Object.assign(new Error(body.message || body.error || 'scan trigger failed'), { body: body })
+            return body
+          })
+        })
+        .then(function (body) { scanIdState[1](body.scanId); scanState[1](body) })
+        .catch(function (reason) { scanErrorState[1](readPanelError(reason)) })
+        .finally(function () { scanLoadingState[1](false) })
+    }
+
+    function CodeScan() {
+      if (scanError) return h('div', { className: 'rd-content-inner' }, h('div', { className: 'rd-error' },
+        h('div', { className: 'rd-error-head' }, h('b', null, '扫描失败'), h('code', null, scanError.code || 'SCAN_FAILED')),
+        h('p', null, scanError.message || '扫描服务不可用'),
+        h('button', { type: 'button', className: 'rd-btn', onClick: startScan }, '重试')))
+      if (!scanId && !scanLoading) return h('div', { className: 'rd-content-inner' }, h('div', { className: 'rd-empty' },
+        h('div', { className: 'rd-empty-mark' }, '∅'),
+        h('b', null, '尚未运行代码扫描'),
+        h('p', null, '扫描由 code scan 服务执行；DataOps 只保存 scanId 和展示结果。'),
+        h('div', { className: 'rd-actions' }, h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: startScan }, '运行扫描'))))
+      if (scanLoading && !scanResult) return h('div', { className: 'rd-content-inner' }, h('div', { className: 'rd-skeletons' }, h('div', { className: 'rd-skeleton rd-skeleton-wide' }), h('div', { className: 'rd-skeleton' }), h('div', { className: 'rd-skeleton rd-skeleton-short' })))
+      var result = scanResult || {}
+      var phase = result.phase || 'queued'
+      if (phase === 'queued' || phase === 'running') {
+        return h('div', { className: 'rd-content-inner' },
+          h('div', { className: 'rd-scan-meta' }, h('i', { className: 'rd-scan-dot' }), h('code', null, scanId), h('span', null, phase === 'queued' ? '排队中' : '扫描中'), h('span', { className: 'rd-badge', 'data-tone': 'warn' }, '运行中')),
+          h('div', { className: 'rd-skeletons' }, h('div', { className: 'rd-skeleton rd-skeleton-wide' }), h('div', { className: 'rd-skeleton' }), h('div', { className: 'rd-skeleton rd-skeleton-short' })))
+      }
+      var sm = result.metrics || {}
+      var resultFindings = result.findings || []
+      var impacts = result.impacts || {}
+      return h('div', { className: 'rd-content-inner' },
+        h('div', { className: 'rd-scan-meta' }, h('i', { className: 'rd-scan-dot' }), h('code', null, result.scanId || scanId), h('span', null, 'dataops CLI · mock'), h('span', null, (result.scope && result.scope.files ? result.scope.files.length : sm.files || 0) + ' files'), h('span', { className: 'rd-badge', 'data-tone': result.status === 'warn' ? 'warn' : 'pass' }, result.status === 'warn' ? '警告' : '完成')),
+        h('div', { className: 'rd-scan-note' }, 'Mock 结果；真实 CLI 返回 scanId 和 ScanResult 后替换。'),
+        h('div', { className: 'rd-scan-summary' },
+          h('div', null, h('b', null, String(sm.files || 0)), h('span', null, 'files')),
+          h('div', null, h('b', null, String(sm.packages || 0)), h('span', null, 'packages')),
+          h('div', null, h('b', null, String(resultFindings.length)), h('span', null, 'findings')),
+          h('div', { className: sm.warnings ? 'rd-scan-attention' : '' }, h('b', null, String(sm.warnings || 0)), h('span', null, 'warnings'))),
+        h('div', { className: 'rd-section-label' }, 'Findings', h('span', { className: 'rd-scan-source' }, '来自 scanning service')),
+        resultFindings.length ? resultFindings.map(function (item, index) { return h(RepoFinding, { key: index, finding: { severity: item.severity, code: item.ruleId, message: item.message, path: item.location && item.location.path } }) }) : h('div', { className: 'rd-inline-empty' }, h('b', null, '扫描没有返回 findings'), h('p', null, '没有结果不等于通过；请以 scanning service 的状态为准。')),
+        h('div', { className: 'rd-section-label' }, 'Impacts', h('span', { className: 'rd-scan-source' }, '来自 scanning service')),
+        (impacts.assets || []).map(function (asset) { return h('div', { className: 'rd-package', key: asset.id }, h('div', { className: 'rd-package-main' }, h('b', null, asset.id), h('span', null, asset.kind + ' · ' + (asset.package || 'unknown package'))), h('div', { className: 'rd-package-meta' }, h('span', null, String(asset.downstream || 0) + ' downstream'))) }),
+        (impacts.downstream || []).map(function (down) { return h('div', { className: 'rd-package', key: down.id }, h('div', { className: 'rd-package-main' }, h('b', null, down.id), h('span', null, down.kind + ' · ' + down.criticality)), h('div', { className: 'rd-package-meta' }, h('span', null, String(down.distance || 1) + ' hops'))) }))
+    }
 
     function ErrorCard() {
       return h('div', { className: 'rd-error' },
@@ -503,33 +597,40 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     }
 
     function Checks() {
-      if (loading && !data) return h('div', { className: 'rd-skeletons' }, h('div', { className: 'rd-skeleton' }), h('div', { className: 'rd-skeleton rd-skeleton-short' }))
-      if (error) return h(ErrorCard)
-      if (!detection || !detection.detected) return h('div', { className: 'rd-empty' }, h('b', null, '当前 workspace 不是 DataOps 代码仓'), h('p', null, '检查只对可识别的仓库运行。'))
+      var tabs = h('div', { className: 'rd-subtabs', role: 'tablist' },
+        h('button', { type: 'button', className: checksTab === 'rules' ? 'on' : '', onClick: function () { checksTabState[1]('rules') } }, '仓库规则'),
+        h('button', { type: 'button', className: checksTab === 'scan' ? 'on' : '', onClick: function () { checksTabState[1]('scan') } }, '代码扫描'))
+      if (checksTab === 'scan') return h(React.Fragment, null, tabs, h(CodeScan))
+      if (loading && !data) return h(React.Fragment, null, tabs, h('div', { className: 'rd-skeletons' }, h('div', { className: 'rd-skeleton' }), h('div', { className: 'rd-skeleton rd-skeleton-short' })))
+      if (error) return h(React.Fragment, null, tabs, h(ErrorCard))
+      if (!detection || !detection.detected) return h(React.Fragment, null, tabs, h('div', { className: 'rd-empty' }, h('b', null, '当前 workspace 不是 DataOps 代码仓'), h('p', null, '检查只对可识别的仓库运行。')))
       var status = data && data.status === 'pass' ? '通过' : data && data.status === 'block' ? '阻断' : '警告'
       var tone = data && data.status === 'pass' ? 'pass' : data && data.status === 'block' ? 'fail' : 'warn'
-      return h(React.Fragment, null,
+      return h(React.Fragment, null, tabs,
         h('div', { className: 'rd-check-head' },
-          h('div', null, h('b', null, '仓库检查'), h('span', { className: 'rd-meta-line' }, '只读 · ' + String(metrics.blocking || 0) + ' blocking · ' + String(metrics.warning || 0) + ' warning')),
+          h('div', null, h('b', null, '仓库规则'), h('span', { className: 'rd-meta-line' }, '只读 · ' + String(metrics.blocking || 0) + ' blocking · ' + String(metrics.warning || 0) + ' warning')),
           h('span', { className: 'rd-badge', 'data-tone': tone }, status)),
         h('div', { className: 'rd-actions' }, h('button', { type: 'button', className: 'rd-btn', onClick: retry }, '重新检查')),
         findings.length ? findings.map(function (item, index) { return h(RepoFinding, { key: index, finding: item }) }) : h('div', { className: 'rd-empty' }, h('b', null, '当前没有发现问题'), h('p', null, '规则全部通过。')))
     }
 
     var isRepoSection = section === 'overview' || section === 'repo' || section === 'checks'
-    var sectionTitle = section === 'assets' ? '资产' : section === 'lineage' ? '血缘' : section === 'evidence' ? '证据' : '仓库体检'
-    var sectionSub = section === 'assets' ? '当前 Session 的目标表与字段。' : section === 'lineage' ? '当前 Session 的上下游影响面。' : section === 'evidence' ? '当前 Session 的查询、时间范围与证据。' : '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。'
+    var scanView = section === 'checks' && checksTab === 'scan'
+    var sectionTitle = scanView ? '代码扫描' : section === 'assets' ? '资产' : section === 'lineage' ? '血缘' : section === 'evidence' ? '证据' : '仓库体检'
+    var sectionSub = scanView ? '代码扫描结果由 scanning service 提供，只按 scanId 读取。' : section === 'assets' ? '当前 Session 的目标表与字段。' : section === 'lineage' ? '当前 Session 的上下游影响面。' : section === 'evidence' ? '当前 Session 的查询、时间范围与证据。' : '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。'
     var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId })) : section === 'evidence' ? h('div', { className: 'rd-legacy' }, h(EvidenceBody, { sessionId: props.sessionId })) : h(Overview)
     return h('div', { className: 'rd-panel' },
       h('div', { className: 'rd-inner' },
       h('div', { className: 'rd-head', style: { display: 'flex', alignItems: 'flex-start' } },
         h('div', { className: 'rd-head-main', style: { flex: '1 1 auto', minWidth: 0 } },
-          h('span', { className: 'rd-eyebrow' }, isRepoSection ? 'DATAOPS / REPO DOCTOR' : 'DATAOPS / SESSION CONTEXT'),
+          h('span', { className: 'rd-eyebrow' }, scanView ? 'DATAOPS / CODE SCAN' : isRepoSection ? 'DATAOPS / REPO DOCTOR' : 'DATAOPS / SESSION CONTEXT'),
           h('h2', { className: 'rd-title' }, sectionTitle),
           h('div', { className: 'rd-sub' }, sectionSub)),
         isRepoSection ? h('div', { className: 'rd-head-actions', style: { display: 'flex', flex: '0 0 auto', gap: 4 } },
-          h('button', { type: 'button', className: 'rd-btn', onClick: retry }, '刷新'),
-          h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: function () { go('checks') } }, '运行检查')) : null),
+          h('button', { type: 'button', className: 'rd-btn', onClick: scanView ? startScan : retry }, scanView ? '刷新' : '刷新'),
+          scanView
+            ? h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: startScan }, '运行扫描')
+            : h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: function () { go('checks') } }, '运行检查')) : null),
       h('div', { className: 'rd-nav', role: 'tablist' }, PANEL_SECTIONS.map(function (item) {
         return h('button', { key: item[0], type: 'button', className: 'rd-tab', 'data-active': String(section === item[0]), onClick: function () { sectionState[1](item[0]) } }, item[1])
       })),

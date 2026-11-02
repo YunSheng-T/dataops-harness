@@ -1,6 +1,6 @@
 # Code Scan Integration（P2.1）
 
-> 状态：设计稿，待评审。
+> 状态：Mock 实现完成，等待真实 CLI 对接。
 > 单一入口：`dataops_code_scan`
 > 扫描服务负责执行、规则、结果存储；DataOps 只触发和展示。
 > 旧命名：`dataops_cicd_scan` 进入兼容/迁移期，不能成为第二个入口。

@@ -18,7 +18,7 @@ apply(ctx, { disabledTools: LEGACY_CONTENT_TOOL_NAMES, workitemsDir: temp })
 const failures = []
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 
-expect(registered.length === 21, 'expected 21 active tool registrations, got ' + registered.length)
+expect(registered.length === 22, 'expected 22 active tool registrations, got ' + registered.length)
 expect(registered.every(tool => TOOLS.some(base => base.name === tool.name)), 'registered tool missing from base fixtures')
 
 const ARGS = {
@@ -51,7 +51,8 @@ const ARGS = {
   dataops_shared_read_develop: {},
   dataops_cicd_pipeline: {},
   dataops_shared_read_stage: { id: 'smoke-item', stage: 'requirement' },
-  dataops_shared_stage: { action: 'status', id: 'smoke-item' }
+  dataops_shared_stage: { action: 'status', id: 'smoke-item' },
+  dataops_code_scan: {}
 }
 
 for (const tool of registered) {

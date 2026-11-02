@@ -15,6 +15,8 @@ import { registerSignoffRoute } from './signoff-route.js'
 import { registerRepoRoute } from './repo/route.js'
 import { checkRepository, scanRepository, validateRepository } from './repo-doctor/index.js'
 import { registerRepoDoctorRoute } from './repo-doctor/route.js'
+import { createMockCodeScanService } from './code-scan/mock.js'
+import { registerCodeScanRoute } from './code-scan/route.js'
 import { createAdapterIdentity } from './signoff-service.js'
 import { createDomainAdapters } from './providers/domain-adapters.js'
 import { buildDevelopArtifacts } from './develop-package.js'
@@ -121,6 +123,7 @@ function firstImpactTable(ticket) {
 export function createTools(config, deps) {
   const options = deps || {}
   const mock = createMockProvider()
+  const codeScan = options.codeScan || createMockCodeScanService()
   const resolveSecret = async ref => {
     if (!ref) return undefined
     const credentials = options.ctx && typeof options.ctx.get === 'function' ? options.ctx.get('credentials') : undefined
@@ -554,6 +557,18 @@ export function createTools(config, deps) {
     return validation
   }
 
+  async function runCodeScan(args, exec) {
+    const input = args || {}
+    const scope = input.scope && input.scope.kind ? input.scope : { kind: 'workspace' }
+    const started = codeScan.start({
+      sessionId: exec && exec.agent && exec.agent.id,
+      scope,
+      profile: input.profile,
+      source: 'agent'
+    })
+    return { ...started, kind: 'code_scan', scope }
+  }
+
   const tools = [
     textTool({
       name: 'dataops_requirement_extract_spec',
@@ -847,6 +862,16 @@ export function createTools(config, deps) {
       parameters: parameterRoot({}),
       execute: runRepoValidate,
       summary: value => '仓库检查：' + value.status + ' · ' + value.findings.length + ' findings'
+    }),
+    textTool({
+      name: 'dataops_code_scan',
+      description: '通过 dataops CLI 触发代码扫描并返回 scanId；扫描结果由 code scan 服务管理，DataOps 只按 scanId 读取。Mock 阶段只验证 scanId 契约。',
+      parameters: parameterRoot({
+        scope: { type: 'object', description: '扫描范围；当前支持 workspace 或 files，package 后续扩展。' },
+        profile: { type: 'string' }
+      }),
+      execute: runCodeScan,
+      summary: value => '代码扫描：' + value.scanId + ' · ' + value.phase
     })
   ]
   const disabled = new Set(config.disabledTools || [])
@@ -857,7 +882,8 @@ export const TOOLS = createTools(normalizeConfig({}), {})
 
 export function apply(ctx, config) {
   const normalized = normalizeConfig(config)
-  const tools = createTools(normalized, { ctx })
+  const codeScan = createMockCodeScanService()
+  const tools = createTools(normalized, { ctx, codeScan })
   for (const tool of tools) ctx.tools.register(tool)
   const store = createWorkitemStore(normalized)
   const adapters = createDomainAdapters(normalized, { timeoutMs: normalized.timeoutMs, retry: normalized.retry })
@@ -896,6 +922,21 @@ export function apply(ctx, config) {
   }
   if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents', 'workingDirectory'], mountRepoDoctor)
   else mountRepoDoctor(ctx)
+  const mountCodeScan = child => {
+    try {
+      const connection = child && typeof child.get === 'function' ? child.get('connection') : null
+      const root = ctx
+      const routeCtx = {
+        get: name => name === 'connection' ? connection : (root && typeof root.get === 'function' ? root.get(name) : null),
+        effect: root && typeof root.effect === 'function' ? root.effect.bind(root) : undefined
+      }
+      registerCodeScanRoute(routeCtx, codeScan)
+    } catch (error) {
+      if (ctx && typeof ctx.logger?.warn === 'function') ctx.logger.warn('[dataops] code scan route failed: ' + (error && error.message ? error.message : String(error)))
+    }
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents'], mountCodeScan)
+  else mountCodeScan(ctx)
 
   function mountDataopsCommand(child) {
     const commands = child && child.commands ? child.commands : (child && typeof child.get === 'function' ? child.get('commands') : null)
