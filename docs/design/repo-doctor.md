@@ -1,6 +1,6 @@
 # Repo Doctor 详细设计
 
-> 状态：P0-B 实现中，待真机验收；只做 Repo Doctor。
+> 状态：P0 已完成；P1 Guard 实现中。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
 > 聚合方案：`docs/design/dataops-plugin-surface.md`
 > P0-B 全量蓝图：[dataops-repo-doctor-blueprint.html](../../prototype/dataops-repo-doctor-blueprint.html)
@@ -294,7 +294,7 @@ P0 的 `check` 是面板/命令层组合，不新增第三个 agent 工具。
 - 该 key 被标记为 required
 - validate 明确运行在 deploy-ready 模式
 
-## 6. P0 规则
+## 6. P0/P1 规则
 
 ### 仓库
 
@@ -322,6 +322,22 @@ P0 的 `check` 是面板/命令层组合，不新增第三个 agent 工具。
 - SQL/ETL/DataService 文件至少属于一个 package
 - package 不混平台
 - 文件路径不逃逸 root
+### P1 Env / Placeholder Guard
+
+- `parameters.properties` 存在时，被 `$$KEY$$` 引用的 key 必须非空
+- `parameters.properties` 缺失但 task 有占位符：warning `PLACEHOLDER_FILE_MISSING`
+- properties 声明为空：warning `PLACEHOLDER_VALUE_EMPTY`
+- SQL / ETL / DataService 中出现 `$$KEY$$`，但仓库内没有任何 properties 声明：warning `PLACEHOLDER_ARTIFACT_UNDECLARED`
+- 占位符缺失默认 warning，不升级 blocking；只有显式 deploy-ready 模式才升级
+
+### P1 LTS Guard
+
+- 跨 task.yaml 的 task name 唯一：blocking `LTS_TASK_DUPLICATE`
+- job 的 `path` 带 group 前缀时，前缀必须等于父 group job：
+  blocking `LTS_PATH_GROUP_MISMATCH`
+- 父 job 是 group 时，子 job 的 path 必须带该 group 前缀
+- 已有规则继续保留：parent 存在、无 cycle、jobType、cron、tskdep、URL、数字字段
+
 
 ## 7. 面板布局
 

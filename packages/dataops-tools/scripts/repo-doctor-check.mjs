@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { detectRepository, scanRepository, validateRepository } from '../src/repo-doctor/index.js'
@@ -55,6 +55,47 @@ check('missing task parent is blocking', () => {
     const validation = validateRepository(scan)
     assert(validation.status === 'block', 'missing parent should block')
     assert(validation.findings.some(item => item.code === 'LTS_JOB_PARENT_MISSING'), 'parent finding')
+  } finally { rmSync(temp, { recursive: true, force: true }) }
+})
+
+check('P1 guards find placeholder gaps without turning them into blocking', () => {
+  const temp = mkdtempSync(join(tmpdir(), 'dataops-p1-placeholder-'))
+  try {
+    cpSync(sample, temp, { recursive: true })
+    rmSync(join(temp, 'lts_code', 'channel_daily', 'parameters.properties'))
+    writeFileSync(join(temp, 'code', 'sql', 'unknown.sql'), 'select * from t where dt = $$MISSING$$;\n')
+    const validation = validateRepository(scanRepository(temp))
+    assert(validation.status === 'warn', 'placeholder gaps must be warnings')
+    assert(validation.findings.some(item => item.code === 'PLACEHOLDER_FILE_MISSING'), 'missing properties file')
+    assert(validation.findings.some(item => item.code === 'PLACEHOLDER_ARTIFACT_UNDECLARED'), 'undeclared artifact placeholder')
+  } finally { rmSync(temp, { recursive: true, force: true }) }
+})
+
+check('P1 guards find duplicate task names and group path mismatch', () => {
+  const temp = mkdtempSync(join(tmpdir(), 'dataops-p1-lts-'))
+  try {
+    cpSync(sample, temp, { recursive: true })
+    const daily = join(temp, 'lts_code', 'channel_daily', 'task.yaml')
+    const changed = readFileSync(daily, 'utf8')
+      .replace('name: "channel_daily_mixed"', 'name: "channel_backfill"')
+      .replace('path: "G_1006|calc_sql"', 'path: "BAD_GROUP|calc_sql"')
+    writeFileSync(daily, changed)
+    const validation = validateRepository(scanRepository(temp))
+    assert(validation.status === 'block', 'LTS guard should block structural errors')
+    assert(validation.findings.some(item => item.code === 'LTS_TASK_DUPLICATE'), 'duplicate task')
+    assert(validation.findings.some(item => item.code === 'LTS_PATH_GROUP_MISMATCH'), 'group path')
+  } finally { rmSync(temp, { recursive: true, force: true }) }
+})
+
+check('P1 guards report empty declared properties', () => {
+  const temp = mkdtempSync(join(tmpdir(), 'dataops-p1-empty-'))
+  try {
+    cpSync(sample, temp, { recursive: true })
+    const props = join(temp, 'lts_code', 'channel_daily', 'parameters.properties')
+    const changed = readFileSync(props, 'utf8').replace('DB_EXEC = <DB_EXEC>', 'DB_EXEC =')
+    writeFileSync(props, changed)
+    const validation = validateRepository(scanRepository(temp))
+    assert(validation.findings.some(item => item.code === 'PLACEHOLDER_VALUE_EMPTY'), 'empty property')
   } finally { rmSync(temp, { recursive: true, force: true }) }
 })
 

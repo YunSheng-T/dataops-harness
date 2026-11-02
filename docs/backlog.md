@@ -27,6 +27,7 @@
 | OPEN-008 | 卡片按钮写入 compose 时不清草稿，多条回执串成一条 | resolved | 疑似 `insertText` 在光标处追加且不校验已有内容；同轮出现 requester+ba 两条回执粘连 | 下一轮用户面修复 |
 | OPEN-009 | 非 UI 签收没有回退路径，UI 一坏流程即断 | proposed | UI 已修到当前轮可达；仍不放开任意文本签收，降级策略待产品决定 | 产品决策 |
 | OPEN-010 | 阶段卡绑定历史 tool turn，不在当前轮 | resolved | toolview 卡只在调用发生的 turn 渲染；签收后 workitem 更新，但旧卡不会回到当前轮，用户被迫翻历史 | 下一轮用户面修复 |
+| OPEN-011 | 会话卡片与阶段状态 surface 收敛 | proposed | 阶段卡/StageResult/turnTail/Dock 与 Lineage/CICD/详情卡重复；先登记，P1 不混入重做 | 卡片设计专项启动时 |
 
 ---
 
@@ -264,3 +265,18 @@
 - **关联**：
 - **关闭日期/结论**（resolved 时填）：
 ```
+
+## OPEN-011 · 会话卡片与阶段状态 surface 收敛
+
+- **状态**：proposed
+- **优先级**：P2/P3
+- **背景**：当前 `dataops-client` 有 21 个卡片函数、14 个 toolview，而 `user-surface.md` 的目标是 7 个追加项。阶段状态有 `StageResultCard` / `DeliverableRenderer` / turnTail 阶段简报 / 底部 StageNavigator 四套表达；Lineage 有 v1、v2、TechPlan 内嵌和 DataOps section；CICD 有 5 张独立卡。
+- **当前结论**：先不动运行时。P1 只做 Repo Doctor 规则，不和卡片重做混在一个提交里。
+- **重做候选**：
+  1. 阶段状态统一成一个 Stage Card，其他入口只做摘要和展开。
+  2. Lineage 统一成一个 `LineageSurface`，卡片只放摘要和“查看血缘”。
+  3. CICD 五张卡合成一个阶段结果卡（scan / compile / test / release / pipeline）。
+  4. Table / Evidence / Profile 改成 summary card + DataOps deep link。
+  5. USPicker / Intake 共用 selection / summary 组件。
+- **触发条件**：P1 规则稳定后，单独立项做卡片设计专项；先出全量/增量蓝图再改代码。
+- **关联**：[用户面设计](design/user-surface.md) · [DataOps 插件聚合设计](design/dataops-plugin-surface.md)

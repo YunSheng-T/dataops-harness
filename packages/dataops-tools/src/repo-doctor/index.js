@@ -8,6 +8,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { indexRepository, parseBuildConfig, parseManifest } from '../repo/index.js'
 import { parseLtsTask, parseProperties } from '../lts.js'
+import { guardRepository } from './guards.js'
 
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'output', 'dist', '.pnpm-store'])
 const MANIFEST_PATH = '.dataops/manifest.yaml'
@@ -142,7 +143,8 @@ export function scanRepository(root) {
     try {
       const source = readFileSync(join(base, path), 'utf8')
       const propsPath = join(base, path, '..', 'parameters.properties')
-      const parameters = existsSync(propsPath) ? parseProperties(readFileSync(propsPath, 'utf8')) : {}
+      const parametersFile = existsSync(propsPath)
+      const parameters = parametersFile ? parseProperties(readFileSync(propsPath, 'utf8')) : {}
       const parsed = parseLtsTask(source, { parameters })
       for (const item of parsed.tasks || []) {
         tasks.push({
@@ -150,10 +152,22 @@ export function scanRepository(root) {
           type: item.type,
           cronExp: item.cronExp || null,
           path,
-          jobs: (item.jobs || []).map(job => ({ name: job.name, type: job.jobType, parents: Array.isArray(job.parentJobName) ? job.parentJobName : [job.parentJobName].filter(Boolean) }))
+          placeholders: Array.isArray(parsed.placeholders) ? parsed.placeholders : [],
+          parametersFile,
+          parameterKeys: Object.keys(parameters),
+          emptyParameters: Object.keys(parameters).filter(key => !String(parameters[key] || '').trim()),
+          jobs: (item.jobs || []).map(job => ({
+            name: job.name,
+            type: job.jobType,
+            path: job.path || '',
+            parents: Array.isArray(job.parentJobName) ? job.parentJobName : [job.parentJobName].filter(Boolean)
+          }))
         })
       }
-      diagnostics.push(...(parsed.findings || []).map(item => ({ ...item, path })))
+      const parsedFindings = parametersFile
+        ? (parsed.findings || [])
+        : (parsed.findings || []).filter(item => item.code !== 'LTS_PLACEHOLDER')
+      diagnostics.push(...parsedFindings.map(item => ({ ...item, path })))
     } catch (error) {
       diagnostics.push(finding('blocking', 'LTS_PARSE_FAILED', errorMessage(error), { path }))
     }
@@ -199,6 +213,7 @@ export function validateRepository(scan) {
       findings.push(finding('warning', 'ARTIFACT_UNCLAIMED', '制品没有被任何 package 覆盖', { path: artifact.path }))
     }
   }
+  findings.push(...guardRepository(scan))
   const status = findings.some(item => item.severity === 'blocking') ? 'block' : findings.some(item => item.severity === 'warning') ? 'warn' : 'pass'
   return {
     ok: status !== 'block',

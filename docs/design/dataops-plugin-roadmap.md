@@ -1,6 +1,6 @@
 # DataOps 插件路线图
 
-> 状态：维护中。P0 已选定，尚未实现。
+> 状态：维护中。P0 已完成，P1 实现中。
 > 工作项：`workitems/2026-11-01-dataops-plugin-roadmap/`
 > 聚合入口：[DataOps 插件聚合设计](dataops-plugin-surface.md)
 > 维护规则：新方向先进入本表，P0/P1 才能写详细设计；状态变化同时更新 `plan.md` 和本表底部的变更记录。
@@ -21,9 +21,9 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 
 | ID | 名称 | 优先级 | 状态 | 用户入口 | Host / Client | 依赖 | 下一步 |
 |---|---|---|---|---|---|---|---|
-| DO-PLUGIN-001 | **Repo Doctor** | P0 | building | 独立 DataOps tab「概览 / 仓库 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 真机验收 + 错误态修复 |
-| DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | idea | DataOps 检查 section | Host + Client | Repo Doctor findings | 合并进 Repo Doctor P0 |
-| DO-PLUGIN-003 | **LTS Guard** | P1 | idea | DataOps 检查 section | Host | LTS parser | 定义 parent/path 规则 |
+| DO-PLUGIN-001 | **Repo Doctor** | P0 | shipped | 独立 DataOps tab「概览 / 仓库 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 进入 P1 |
+| DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | building | DataOps 检查 section | Host + Client | Repo Doctor findings | 实现 properties / artifact 占位符规则 |
+| DO-PLUGIN-003 | **LTS Guard** | P1 | building | DataOps 检查 section | Host | LTS parser | 实现 group/path 与跨文件唯一性规则 |
 | DO-PLUGIN-004 | **Impact Watch** | P2 | idea | DataOps 检查 / 血缘 section | Host + Client | workspaceChanges / fs | 评估事件来源 |
 | DO-PLUGIN-005 | **Migration Review** | P2 | idea | DataOps 检查 section | Host + Client | SQL/model parser | 定义 DDL/DML/Rollback 规则 |
 | DO-PLUGIN-006 | **Run Timeline** | P2 | idea | DataOps 证据 / 检查 section | Host + Client | dataops_shared_read_logs | 先做 mock 日志 |
@@ -40,7 +40,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 - 资产 / 血缘 / 证据 section 继续留在 DataOps
 - 不做对话大卡
 - 一个 `/dataops` 命令命名空间
-- 聚合到单面板放到 P1
+- 统一 section registry 放到 P1
 - 详情见 [DataOps 插件聚合设计](dataops-plugin-surface.md)
 
 ## 3. 为什么 P0 是 Repo Doctor
