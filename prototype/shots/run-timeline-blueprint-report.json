@@ -4,9 +4,9 @@
   "slug": "run-timeline-blueprint",
   "file": "prototype/run-timeline-blueprint.html",
   "fileUrl": "file:///Users/zhangshu/code/dataops-harness/prototype/run-timeline-blueprint.html",
-  "startedAt": "2026-11-02T06:29:06.900Z",
-  "finishedAt": "2026-11-02T06:29:10.671Z",
-  "durationMs": 3770,
+  "startedAt": "2026-11-02T06:46:04.756Z",
+  "finishedAt": "2026-11-02T06:46:08.063Z",
+  "durationMs": 3306,
   "runtime": {
     "node": "v22.22.0",
     "platform": "darwin",
@@ -18,7 +18,7 @@
     "version": "Chrome/156.0.8078.74",
     "protocolVersion": "1.3",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
-    "port": 53447,
+    "port": 60859,
     "headless": true,
     "product": "Chrome/156.0.8078.74"
   },
@@ -46,7 +46,7 @@
   "page": {
     "title": "Run Timeline · P2.2 全量蓝图",
     "readyState": "complete",
-    "bodyTextLength": 1899,
+    "bodyTextLength": 1905,
     "bodyChildren": 2,
     "hasThemeButton": true,
     "scrollWidth": 1440,
@@ -230,7 +230,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/run-timeline-blueprint.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/run-timeline-blueprint.png",
-      "bytes": 124461,
+      "bytes": 124752,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -248,7 +248,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/run-timeline-blueprint-full.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/run-timeline-blueprint-full.png",
-      "bytes": 243267,
+      "bytes": 243534,
       "width": 1440,
       "height": 1845,
       "expected": {
@@ -266,7 +266,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/run-timeline-blueprint-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/run-timeline-blueprint-dark.png",
-      "bytes": 127169,
+      "bytes": 127429,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -284,7 +284,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/run-timeline-blueprint-full-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/run-timeline-blueprint-full-dark.png",
-      "bytes": 250063,
+      "bytes": 250229,
       "width": 1440,
       "height": 1845,
       "expected": {

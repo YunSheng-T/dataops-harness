@@ -4,9 +4,9 @@
   "slug": "run-timeline-blueprint-delta",
   "file": "prototype/run-timeline-blueprint-delta.html",
   "fileUrl": "file:///Users/zhangshu/code/dataops-harness/prototype/run-timeline-blueprint-delta.html",
-  "startedAt": "2026-11-02T06:29:10.788Z",
-  "finishedAt": "2026-11-02T06:29:13.362Z",
-  "durationMs": 2573,
+  "startedAt": "2026-11-02T06:46:08.191Z",
+  "finishedAt": "2026-11-02T06:46:10.730Z",
+  "durationMs": 2538,
   "runtime": {
     "node": "v22.22.0",
     "platform": "darwin",
@@ -18,7 +18,7 @@
     "version": "Chrome/156.0.8078.74",
     "protocolVersion": "1.3",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
-    "port": 53489,
+    "port": 60917,
     "headless": true,
     "product": "Chrome/156.0.8078.74"
   },
@@ -46,7 +46,7 @@
   "page": {
     "title": "Run Timeline · P2.2 增量蓝图",
     "readyState": "complete",
-    "bodyTextLength": 1448,
+    "bodyTextLength": 1459,
     "bodyChildren": 2,
     "hasThemeButton": true,
     "scrollWidth": 1440,
@@ -230,7 +230,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/run-timeline-blueprint-delta.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/run-timeline-blueprint-delta.png",
-      "bytes": 144693,
+      "bytes": 145609,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -248,7 +248,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/run-timeline-blueprint-delta-full.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/run-timeline-blueprint-delta-full.png",
-      "bytes": 188710,
+      "bytes": 189475,
       "width": 1440,
       "height": 1271,
       "expected": {
@@ -266,7 +266,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/run-timeline-blueprint-delta-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/run-timeline-blueprint-delta-dark.png",
-      "bytes": 149312,
+      "bytes": 150240,
       "width": 1440,
       "height": 900,
       "expected": {
@@ -284,7 +284,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/run-timeline-blueprint-delta-full-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/run-timeline-blueprint-delta-full-dark.png",
-      "bytes": 194407,
+      "bytes": 195318,
       "width": 1440,
       "height": 1271,
       "expected": {

@@ -29,80 +29,102 @@ DataOps
 
 ## 2.1 对象模型
 
+RuntimeLog 不从 package 查。它属于平台运行维度：
+
 ```text
-RunTarget（运行对象）
-  kind: lts_task | etl_job
-  ref: 调度 task / LTS task / ETL job
-        │ 1:N
+代码中的平台坐标
+  platform
+  project
+  taskGroup
+  task
+  job?
+        │
         ▼
-run 运行实例
-  runId + bizDate + status
-        │ 1:N
+RuntimeLocator
+        │  清单查询
         ▼
-job / group / dependency 事件
+RuntimeRef[]  platformRunId / status / startedAt
+        │  详情查询
+        ▼
+RuntimeRun  events / errorCodes / asOf
 ```
 
-主键是 **runId**，不是 LTS task 定义。
-
-- `RunTarget` 是时间线的入口
-- `runId` 才是一次运行的归属对象
-- `job` 是 run 内的事件维度
-- LTS task 和 ETL job 是两种不同对象，不能混成一个“task list”
-- 同一对象的多次运行各自独立，不合并
-- P2.2 不做跨 run 聚合；跨 run 汇总属于后续 Task Health
+主键是一次平台运行实例：
 
 ```text
-RunTarget
-  kind: lts_task | etl_job
-  id: 调度 task / ETL job ID
-  name: LTS task name / ETL job name
-  path?: lts_code/.../task.yaml
-  package?: packageName
-  owner?
-runId
-bizDate?
+RuntimeRef
+  platform
+  runId
+  status
+  startedAt
+  finishedAt
+  durationMs
 ```
 
-调度 task ID 和 LTS task name 可能不同；ETL job 也可能不属于 LTS。映射不到时保留 `RunTarget` 和 gap，不伪造。
-
-## 2.2 切换运行对象
-
-时间线顶部必须有“运行对象”选择器，而不只是当前 task 的 recentRuns：
+坐标来自代码 / RepoIndex：
 
 ```text
-运行对象
-  [LTS Task] [ETL Job]
-  搜索 task / job
-  最近失败
-  channel_daily_mixed       LTS
-  order_daily_serial        LTS
-  etl_channel_sync          ETL
-  etl_channel_bds           ETL
+RuntimeLocator
+  platform: lts | etl
+  project
+  group
+  task
+  job?
+  sourcePath
 ```
 
-选择后：
+- LTS：项目 / 任务组 / task name
+- ETL：平台 / 项目 / 作业 / job
+- 坐标不完整时显示 gap，不猜
+- 不按 package 查 RuntimeLog
+- 不把多个平台的 run 合成一个时间线
+
+## 2.2 查询流程
 
 ```text
-RunTarget
-→ 查询该对象的 recentRuns
-→ 选择一个 runId
-→ 展示 RunTimeline
+1. 从代码或仓库对象拿到 RuntimeLocator
+2. runtime list(locator, timeRange)
+   → 最近运行列表
+3. 选择 platformRunId
+4. runtime detail(platform, runId)
+   → 单次运行时间线
 ```
 
-约束：
+面板顶部显示坐标：
 
-- 切换 RunTarget 不是切换 section，不新增面板
-- recentRuns 只属于当前 RunTarget
-- LTS 和 ETL 的日志源不同，selector 只发起查询，不伪造数据
-- 某个对象没有日志适配时显示“日志源未配置”，不显示空时间线为正常
+```text
+lts · project-a · channel_daily · channel_daily_mixed
+```
+
+不是 package/version。
+
+## 2.3 DeployLog 与 RuntimeLog
+
+```text
+DeployLog
+  deploymentId
+  package / version / environment
+  build / upload / activate / health
+
+RuntimeLog
+  RuntimeLocator
+  platform run list
+  platform run detail
+```
+
+两者没有统一 ID：
+
+- 部署日志按统一 `deploymentId` 查询
+- 运行日志按平台坐标 + 平台 runId 查询
+- 可以在 UI 上做“从部署查看关联运行”，但不合并时间线
 
 ## 3. 输入
 
-沿用 `dataops_shared_read_logs` 的输出，补充 RunTarget 和时间线视图。`dataops_shared_read_logs` 的 `taskId` 兼容参数继续保留，新调用建议传 `target`。
+沿用 `dataops_shared_read_logs` 的输出，补充 RuntimeLocator、运行列表和单次运行详情。`dataops_shared_read_logs` 的 `taskId` 兼容参数继续保留，新调用传平台坐标。
 
 ```text
-RunTimeline
-  target { kind, id, name, path?, package? }
+RuntimeRun
+  locator { platform, project, group, task, job?, sourcePath }
   runId
   bizDate?
   status: success | failed | running | partial
