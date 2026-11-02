@@ -56,31 +56,52 @@ node scripts/seed-dataops-demo.mjs --stage cicd
 
 ---
 
-## 2. 创建演示工作项
+## 2. US 接单
 
 **输入**：
 
 ```text
-创建一个 DataOps 演示工作项：
-source.system=edevops
-source.id=DEMO-STAGEFLOW-001
-标题：渠道日报支付口径端到端演示
-初始阶段：requirement
-
-只创建/恢复工作项，不要生成交付物。
+查看待处理 US
 ```
 
 **预期**：
 
-- 返回 workitem ID
-- 阶段：`requirement`
-- 没有交付物、没有当前 revision
-- DataOps `交付物` 显示空态
+- 出现 `USPickerCard`
+- 看到 `US-3821 · 渠道日报从下单口径改为支付口径`
+- 显示目标、验收、影响资产、初始阶段
+- 没有选中 US 前不要创建 workitem
 
-**讲述**：
+**操作**：
 
-> 工作项先建立，不代表阶段已经开始。  
-> 这样后面每个阶段产物都能挂到同一个 Workitem 上。
+```text
+选中 US-3821
+→ 点 开始处理
+```
+
+**Agent 接单**：
+
+1. 调 `dataops_shared_read_us({ id: 'US-3821' })`
+2. 按 `source.system + source.id` 调 `dataops_shared_ensure_workitem`
+3. 返回创建的 Workitem ID
+4. 调 `dataops_shared_present_deliverable` 展示 `IntakeCard`
+
+**必须记下**：
+
+```text
+workitemId = Agent 返回的工作项 ID
+```
+
+后续所有阶段都用这个 `workitemId`，不要把 `US-3821` 或 `DEMO-STAGEFLOW-001` 当工作项 ID。
+
+**兜底**：
+
+如果现场 US 列表不可用，直接输入：
+
+```text
+处理 US-3821
+```
+
+仍走同一条 read_us → ensure_workitem → intake 流程。
 
 ---
 
@@ -90,7 +111,7 @@ source.id=DEMO-STAGEFLOW-001
 
 ```text
 继续需求阶段：
-读取刚创建/恢复的 Workitem ID，生成需求交付物并 stage prepare。
+继续 US-3821 对应的 Workitem，生成需求交付物并 stage prepare。
 目标：渠道日报从下单口径改为支付成功口径。
 范围：dws.trade_channel_daily + 3 个下游。
 验收：自对账容差 0、下游口径一致、05:00 前产出。
@@ -109,6 +130,7 @@ source.id=DEMO-STAGEFLOW-001
 ```text
 DataOps → 交付物
 需求 · v1 · draft
+source = edevops / US-3821
 currentIteration = requirement rev-0001
 ```
 
