@@ -1,6 +1,6 @@
 # Stage Artifact Ledger
 
-> 状态：设计稿，待评审。
+> 状态：P3.1 实现中；Artifact Ledger、DataOps 交付物、当前迭代 shell overlay 已落地。
 > 关联：[DataOps 插件聚合设计](dataops-plugin-surface.md) · [用户面设计](user-surface.md)
 > 蓝图：[全量](../../prototype/stage-artifact-ledger-blueprint.html) · [增量](../../prototype/stage-artifact-ledger-blueprint-delta.html)
 > 目标：阶段产物成为 Workitem 的持久事实源；悬浮窗看当前迭代，DataOps 看全量历史。
@@ -218,8 +218,10 @@ DataOps
 
 ## 13. 已确认
 
-- 悬浮窗先用 DSH 原生 Popover，不先做自有 portal 浮层。原生 Popover 负责定位、关闭、焦点和窗口边缘处理；如果宽度或放置能力不足，再单独评审升级。
+- 悬浮窗使用 DSH 原生 `shell.overlay` seat（当前运行时没有通用 Popover primitive）；关闭、层级和 shell 归属由原生 seat 处理，后续有 Popover primitive 时再替换。
 - DataOps 交付物放在现有 DataOps 面板，不新增 Workitem 面板。
+- Agent 生成 revision，用户不直接编辑；gate 绑定 revision。
+- 当前实现：DataOps `交付物` 读取 session context 中的 workitem；shell overlay 展示选中 artifact 的 currentRevision。
 - 旧 deliverables 迁移到 rev-0001 的触发时机在 P3.1 实现时再定，默认随 artifact 首次读取迁移。
 
 ## 14. 原生 Popover 的边界

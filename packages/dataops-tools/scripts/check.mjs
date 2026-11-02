@@ -545,6 +545,33 @@ check('stage runtime prepares deliverables and advances on UI signoff', async ()
   }
 })
 
+check('artifact ledger creates immutable revisions and binds gates', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-artifact-ledger-'))
+  try {
+    const scoped = createTools(normalizeConfig({ workitemsDir: dir }), {})
+    const by = name => scoped.find(tool => tool.name === name)
+    const created = await by('dataops_shared_ensure_workitem').execute({ source: { system: 'edevops', id: 'US-LEDGER' }, title: 'ledger', initialStage: 'requirement' }, { signal })
+    const id = created.workitem.id
+    const first = await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'requirement', stage: 'requirement', deliverable: 'deliverables/requirement/requirement.yaml', payload: { title: 'v1', goal: 'first' } }, { signal })
+    assert(first.revisionId === 'rev-0001', 'first revision')
+    const one = await by('dataops_shared_read_workitem').execute({ id }, { signal })
+    assert(one.currentIteration && one.currentIteration.artifactId === 'requirement', 'current iteration')
+    assert(one.artifacts.length === 1 && one.artifacts[0].revisions.length === 1, 'artifact summary')
+    const second = await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'requirement', stage: 'requirement', deliverable: 'deliverables/requirement/requirement.yaml', payload: { title: 'v2', goal: 'second' } }, { signal })
+    assert(second.revisionId === 'rev-0002', 'second revision')
+    const two = await by('dataops_shared_read_workitem').execute({ id }, { signal })
+    assert(two.artifacts[0].revisions[0].status === 'superseded', 'old revision superseded')
+    const signed = await by('dataops_shared_stage').execute({ action: 'signoff', id, gate: 'requirement', role: 'ba', via: 'ui', actionId: 'ui-ledger-ba', actor: '陈璐' }, { signal })
+    assert(signed.approvals.find(item => item.gate === 'requirement').revisionId === 'rev-0002', 'gate bound to revision')
+    const third = await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'requirement', stage: 'requirement', deliverable: 'deliverables/requirement/requirement.yaml', payload: { title: 'v3', goal: 'third' } }, { signal })
+    assert(third.revisionId === 'rev-0003', 'third revision')
+    const post = await by('dataops_shared_read_workitem').execute({ id }, { signal })
+    assert(post.approvals.find(item => item.gate === 'requirement').status === 'pending', 'approval invalidated by new revision')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 check('stage 4 and stage 5 gates advance without DSH release approval', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'dataops-stage45-'))
   try {
@@ -570,6 +597,8 @@ check('stage 4 and stage 5 gates advance without DSH release approval', async ()
     } catch (error) { console.log('BUILD BLOCK ERROR:', error.message); buildBlocked = /build must pass/.test(error.message) }
     assert(buildBlocked, 'failed build blocks Committer merge')
     await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'develop', stage: 'develop', deliverable: 'deliverables/develop/develop.yaml', payload: { ...materialized, validation: { ...materialized.validation } } }, { signal })
+    // A new develop revision invalidates the previous SE review; re-review it before merge.
+    await by('dataops_shared_stage').execute({ action: 'signoff', id, gate: 'develop.code_review', role: 'se', via: 'ui', actionId: 'ui-dev-se-rework', actor: '王工' }, { signal })
     const merge = await by('dataops_shared_stage').execute({ action: 'signoff', id, gate: 'develop.merge', role: 'committer', via: 'ui', actionId: 'ui-dev-merge', actor: '代码平台' }, { signal })
     assert(merge.gateStatus === 'approved' && merge.stage === 'cicd', 'committer merge advances to cicd')
     const cicd = await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'cicd', stage: 'cicd', deliverable: 'deliverables/cicd/cicd.yaml', payload: { pipelineRunId: 'run-1', status: 'succeeded' } }, { signal })

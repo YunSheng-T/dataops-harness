@@ -342,6 +342,15 @@ function apply(ctx) {
 
   if (typeof ctx.inject === 'function') ctx.inject(['sidebarRightTabs'], registerTabs)
   else registerTabs({ sidebarRightTabs: typeof ctx.get === 'function' ? ctx.get('sidebarRightTabs') : ctx.sidebarRightTabs, effect: ctx.effect })
+  // Floating artifact inspector uses the native shell overlay seat. It is
+  // opened by the DataOps deliverables section and never creates its own portal.
+  function registerArtifactInspector() {
+    slots.inject('shell.overlay', function () {
+      return slots.register({ name: 'shell.overlay', id: 'dataops-artifact-inspector' }, Tabs._internals.ArtifactInspector)
+    })
+  }
+  registerArtifactInspector()
+
 
   function applyDraft(sessionId, text) {
     try {

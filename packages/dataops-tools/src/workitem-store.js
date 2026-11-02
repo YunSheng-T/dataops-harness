@@ -7,6 +7,7 @@
  * the parser/serializer.
  */
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { dirname, join, resolve, sep } from 'node:path'
 import { GATE_ROLES, STAGE_KINDS, STAGES } from './stage-contract.generated.js'
 export { GATE_ROLES, STAGE_KINDS, STAGES }
@@ -319,7 +320,110 @@ function readRaw(root, id) {
   return parseWorkitem(readFileSync(path, 'utf8'))
 }
 
-function publicItem(raw, id) {
+const ARTIFACT_GATES = {
+  requirement: 'requirement',
+  design: 'design',
+  analysis: 'scheme.analysis',
+  solution: 'scheme.solution',
+  tech_plan: 'scheme.tech_plan',
+  develop: 'develop.code_review'
+}
+
+function artifactId(kind) {
+  return String(kind || '').replace(/[^A-Za-z0-9._-]+/g, '-') || 'artifact'
+}
+
+function artifactGate(kind, stage, substage) {
+  if (kind === 'analysis' || (stage === 'scheme' && substage === 'analysis')) return 'scheme.analysis'
+  if (kind === 'solution' || (stage === 'scheme' && substage === 'solution')) return 'scheme.solution'
+  if (kind === 'tech_plan' || (stage === 'scheme' && substage === 'tech_plan')) return 'scheme.tech_plan'
+  return ARTIFACT_GATES[kind] || null
+}
+
+function artifactMetaPath(dir, id) {
+  return join(dir, 'artifacts', id + '.yaml')
+}
+
+function revisionDir(dir, id) {
+  return join(dir, 'revisions', id)
+}
+
+function readArtifactMeta(dir, id) {
+  const path = artifactMetaPath(dir, id)
+  if (!existsSync(path)) return null
+  try { return parseWorkitem(readFileSync(path, 'utf8')) } catch { return null }
+}
+
+function readArtifactSummaries(dir) {
+  const base = join(dir, 'artifacts')
+  if (!existsSync(base)) return []
+  return readdirSync(base)
+    .filter(name => name.endsWith('.yaml'))
+    .map(name => {
+      try {
+        const meta = parseWorkitem(readFileSync(join(base, name), 'utf8'))
+        const currentPath = meta.currentRevisionId ? join(revisionDir(dir, meta.artifactId), meta.currentRevisionId + '.yaml') : null
+        const current = currentPath && existsSync(currentPath) ? parseWorkitem(readFileSync(currentPath, 'utf8')) : null
+        return { ...meta, currentRevision: current ? { revisionId: current.revisionId, version: current.version, status: current.status, contentHash: current.contentHash, createdAt: current.createdAt, content: current.content } : null }
+      } catch { return null }
+    })
+    .filter(Boolean)
+    .sort((a, b) => String(a.artifactId).localeCompare(String(b.artifactId)))
+}
+
+function writeArtifactRevision(dir, raw, input) {
+  const id = artifactId(input.kind)
+  const base = artifactMetaPath(dir, id)
+  const meta = readArtifactMeta(dir, id) || { artifactId: id, kind: input.kind, stage: input.stage, revisions: [] }
+  const revisions = Array.isArray(meta.revisions) ? meta.revisions : []
+  const version = revisions.length + 1
+  const revisionId = 'rev-' + String(version).padStart(4, '0')
+  const parentRevisionId = meta.currentRevisionId || null
+  const now = stamp()
+  const contentHash = createHash('sha256').update(serializeWorkitem(input.file)).digest('hex')
+  for (const revision of revisions) {
+    if (revision.revisionId === meta.currentRevisionId) revision.status = 'superseded'
+  }
+  const revision = {
+    revisionId,
+    artifactId: id,
+    version,
+    contentHash,
+    parentRevisionId,
+    status: input.file.status === 'reviewed' ? 'review' : input.file.status === 'approved' ? 'approved' : 'draft',
+    author: 'agent',
+    createdAt: now,
+    sourceTurnId: input.sourceTurnId || null,
+    content: input.file
+  }
+  mkdirSync(revisionDir(dir, id), { recursive: true })
+  writeFileSync(join(revisionDir(dir, id), revisionId + '.yaml'), serializeWorkitem(revision), 'utf8')
+  revisions.push({ revisionId, version, status: revision.status, contentHash, createdAt: now, sourceTurnId: revision.sourceTurnId })
+  meta.currentRevisionId = revisionId
+  meta.updatedAt = now
+  meta.revisions = revisions
+  mkdirSync(dirname(base), { recursive: true })
+  writeFileSync(base, serializeWorkitem(meta), 'utf8')
+  raw.currentIteration = { stage: input.stage, artifactId: id, revisionId, gate: artifactGate(input.kind, input.stage, input.substage), updatedAt: now }
+  const gate = artifactGate(input.kind, input.stage, input.substage)
+  if (gate) {
+    raw.approvals = Array.isArray(raw.approvals) ? raw.approvals : []
+    const approval = raw.approvals.find(item => item && item.gate === gate)
+    if (approval) {
+      approval.status = 'pending'
+      approval.signoffs = []
+      approval.invalidatedByRevision = revisionId
+      approval.invalidatedAt = now
+    }
+  }
+  return { revisionId, version, contentHash, artifactId: id }
+}
+
+function currentArtifactForGate(dir, gate) {
+  return readArtifactSummaries(dir).find(item => artifactGate(item.kind, item.stage) === gate) || null
+}
+
+function publicItem(raw, id, dir) {
   const item = normalize(raw, id)
   return {
     kind: 'workitem',
@@ -339,6 +443,8 @@ function publicItem(raw, id) {
     gaps: Array.isArray(item.gaps) ? item.gaps : [],
     approvals: Array.isArray(item.approvals) ? item.approvals : [],
     next: item.next || null,
+    currentIteration: raw.currentIteration || null,
+    artifacts: dir ? readArtifactSummaries(dir) : [],
     audit: Array.isArray(item.audit) ? item.audit : [],
     legacy: item.legacy
   }
@@ -352,7 +458,7 @@ export function findWorkitemBySource(config, source) {
     if (!SAFE_ID.test(id) || id === '_template') continue
     try {
       const raw = readRaw(root, id)
-      if (raw.source && raw.source.system === source.system && raw.source.id === source.id) return publicItem(raw, id)
+      if (raw.source && raw.source.system === source.system && raw.source.id === source.id) return publicItem(raw, id, itemDir(root, id))
     } catch { /* ignore malformed workitems */ }
   }
   return null
@@ -372,6 +478,8 @@ export function ensureWorkitem(config, args) {
   const dir = itemDir(root, id)
   if (existsSync(join(dir, 'item.yaml'))) throw new Error('workitem: already exists ' + id)
   mkdirSync(join(dir, 'deliverables'), { recursive: true })
+  mkdirSync(join(dir, 'artifacts'), { recursive: true })
+  mkdirSync(join(dir, 'revisions'), { recursive: true })
   for (const stage of STAGES) mkdirSync(join(dir, 'deliverables', stage), { recursive: true })
   mkdirSync(join(dir, 'evidence'), { recursive: true })
   const stage = STAGES.includes(args.initialStage) ? args.initialStage : 'requirement'
@@ -409,7 +517,7 @@ export function ensureWorkitem(config, args) {
   writeFileSync(join(dir, 'intent.md'), `# Intent\n\n${source.id} · ${item.title}\n\n来源：${source.system}/${source.id}\n`, 'utf8')
   writeFileSync(join(dir, 'plan.md'), `# Plan\n\n## 阶段\n\n- [ ] 需求\n- [ ] 设计\n- [ ] 方案\n- [ ] 开发\n- [ ] CICD\n- [ ] 复盘\n\n## 日志\n\n- ${stamp()} · 接单 · ${source.system}/${source.id} · 创建 workitem\n`, 'utf8')
   writeFileSync(join(dir, 'decision.md'), '# Decision\n\n> 签收记录由 UI 动作写入；Agent 不自签。\n', 'utf8')
-  return { kind: 'workitem', created: true, workitem: publicItem(item, id), source }
+  return { kind: 'workitem', created: true, workitem: publicItem(item, id, dir), source }
 }
 
 export function listWorkitems(config) {
@@ -434,7 +542,7 @@ export function readWorkitem(config, args) {
   if (!id) {
     return { kind: 'workitem-list', items: listWorkitems(config) }
   }
-  return publicItem(readRaw(root, id), id)
+  return publicItem(readRaw(root, id), id, itemDir(root, id))
 }
 
 function validatePathArray(value, name) {
@@ -562,7 +670,7 @@ function updateWorkitemUnlocked(config, args) {
   const planPath = join(dir, 'plan.md')
   const entry = planLine(args.patch)
   if (args.dryRun === true) {
-    return { ...publicItem(next, id), dryRun: true, previewPlanEntry: entry }
+    return { ...publicItem(next, id, dir), dryRun: true, previewPlanEntry: entry }
   }
   next.revision = Number(next.revision || 0) + 1
   const path = itemPath(root, id)
@@ -571,7 +679,7 @@ function updateWorkitemUnlocked(config, args) {
   renameSync(temp, path)
   if (existsSync(planPath)) appendFileSync(planPath, entry, 'utf8')
   else writeFileSync(planPath, '# Plan\n\n## 日志\n\n' + entry, 'utf8')
-  return publicItem(next, id)
+  return publicItem(next, id, dir)
 }
 
 
@@ -633,8 +741,9 @@ function stagePrepareUnlocked(config, args) {
   if (Array.isArray(args.gaps)) raw.gaps = args.gaps
   if (args.next) raw.next = args.next
   raw.updated_at = stamp()
+  const revision = writeArtifactRevision(dir, raw, { kind, stage, substage: args.substage, file, sourceTurnId: args.sourceTurnId })
   writeItem(dir, raw, config, `stage prepare · ${stage}${args.substage ? '/' + args.substage : ''} · ${deliverable}`)
-  return { ...file, workitemId: id, prepared: true, workitemStage: raw.stage }
+  return { ...file, workitemId: id, prepared: true, workitemStage: raw.stage, artifactId: revision.artifactId, revisionId: revision.revisionId }
 }
 
 function advanceAfterSignoff(raw, gate) {
@@ -734,6 +843,11 @@ function stageSignoffUnlocked(config, args) {
   raw.approvals = Array.isArray(raw.approvals) ? raw.approvals : []
   let approval = raw.approvals.find(a => a && a.gate === gate)
   if (!approval) { approval = { gate, status: 'pending', signoffs: [] }; raw.approvals.push(approval) }
+  const boundArtifact = currentArtifactForGate(dir, gate)
+  if (boundArtifact && boundArtifact.currentRevision) {
+    approval.revisionId = boundArtifact.currentRevisionId
+    approval.revisionContentHash = boundArtifact.currentRevision.contentHash
+  }
   approval.signoffs = Array.isArray(approval.signoffs) ? approval.signoffs : []
   const existing = approval.signoffs.find(s => s.actionId === args.actionId)
   if (!existing) approval.signoffs.push({ role, approver: args.actor || role, at: stamp(), via: 'ui', actionId: args.actionId, ...(args.comment ? { comment: args.comment } : {}) })
@@ -744,7 +858,7 @@ function stageSignoffUnlocked(config, args) {
   const advanced = approval.status === 'approved' ? advanceAfterSignoff(raw, gate) : null
   raw.updated_at = stamp()
   writeItem(dir, raw, config, `stage signoff · ${gate}/${role} · ${approval.status}${advanced ? ' · advanced=' + advanced : ''}`)
-  return { ...publicItem(raw, id), advanced, gateStatus: approval.status }
+  return { ...publicItem(raw, id, dir), advanced, gateStatus: approval.status }
 }
 
 function stageCompleteUnlocked(config, args) {
@@ -760,7 +874,7 @@ function stageCompleteUnlocked(config, args) {
   raw.next = 'Stage 5 完成：pipeline 成功 + 制品包生成；Stage 6 不在本版'
   raw.updated_at = stamp()
   writeItem(dir, raw, config, 'stage complete · cicd · pipeline succeeded + artifact package')
-  return publicItem(raw, id)
+  return publicItem(raw, id, dir)
 }
 
 export const _internals = { parseWorkitem, serializeWorkitem, normalize, validatePatch }

@@ -584,6 +584,25 @@ check('code scan tool card keeps the legacy CICD payload route', () => {
   assert(body.includes('CICD') && body.includes('SQL'), 'legacy CICD card route missing')
 })
 
+check('DataOps deliverables reads the workitem artifact ledger', () => {
+  ContextStore.ingest('s-deliverables', {
+    kind: 'workitem',
+    id: 'wi-deliverables',
+    currentIteration: { stage: 'design', artifactId: 'design', revisionId: 'rev-0002', gate: 'design.review' },
+    artifacts: [{ artifactId: 'design', kind: 'design', stage: 'design', currentRevisionId: 'rev-0002', revisions: [{ revisionId: 'rev-0001' }, { revisionId: 'rev-0002' }], currentRevision: { version: 2, status: 'review', contentHash: 'abc' } }]
+  })
+  const previous = globalThis.window
+  globalThis.window = { __dataopsPanelSection: 'deliverables' }
+  try {
+    const body = text(Tabs._internals.DataOpsPanelBody({ sessionId: 's-deliverables' }))
+    assert(body.includes('交付物') && body.includes('design') && body.includes('v2'), 'deliverables list')
+    assert(body.includes('rev-0002'), 'current iteration')
+  } finally {
+    if (previous === undefined) delete globalThis.window
+    else globalThis.window = previous
+  }
+})
+
 check('stage result card routes prepared deliverable payloads', () => {
   const body = text(Cards.StageResultCard({ block: block({ kind: 'requirement', stage: 'requirement', title: '需求', goal: '目标', status: 'draft', gaps: [] }) }))
   assert(body.includes('需求') && body.includes('目标'), 'stage result delegates to deliverable renderer')

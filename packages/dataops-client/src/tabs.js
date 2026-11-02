@@ -343,6 +343,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     ['repo', '仓库'],
     ['assets', '资产'],
     ['lineage', '血缘'],
+    ['deliverables', '交付物'],
     ['evidence', '证据'],
     ['checks', '检查']
   ]
@@ -400,6 +401,8 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var deployResultState = React.useState(null)
     var deployLoadingState = React.useState(false)
     var deployErrorState = React.useState(null)
+    var context = useContext(props.sessionId)
+    var workitem = context && context.workitem ? context.workitem : null
     var section = sectionState[0]
     var data = dataState[0]
     var loading = loadingState[0]
@@ -727,6 +730,27 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
         ) : null)
     }
 
+    function Deliverables() {
+      var artifacts = workitem && Array.isArray(workitem.artifacts) ? workitem.artifacts : []
+      var current = workitem && workitem.currentIteration ? workitem.currentIteration : null
+      if (!workitem) return h('div', { className: 'rd-content-inner' }, h('div', { className: 'rd-empty' }, h('div', { className: 'rd-empty-mark' }, '∅'), h('b', null, '还没有 Workitem 交付物'), h('p', null, '让 Agent 完成一次阶段 prepare 后，产物会出现在这里。')))
+      return h('div', { className: 'rd-content-inner' },
+        h('div', { className: 'rd-meta' }, h('span', { className: 'rd-status' }, h('i', null), 'Workitem'), h('span', null, workitem.id || ''),
+          current ? h('span', null, 'current · ' + current.artifactId + ' ' + current.revisionId) : null),
+        artifacts.length ? artifacts.map(function (artifact) {
+          var currentRevision = artifact.currentRevision || {}
+          var isCurrent = current && current.artifactId === artifact.artifactId
+          return h('button', { type: 'button', className: 'rd-artifact' + (isCurrent ? ' on' : ''), key: artifact.artifactId, onClick: function () {
+            if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+              window.dispatchEvent(new CustomEvent('dataops:artifact-inspector', { detail: { workitem: workitem, artifact: artifact } }))
+            }
+          } },
+            h('div', { className: 'rd-artifact-main' }, h('b', null, artifact.kind || artifact.artifactId), h('span', null, (artifact.revisions || []).length + ' revisions · ' + (artifact.stage || ''))),
+            h('div', { className: 'rd-artifact-side' }, h('span', { className: 'rd-badge', 'data-tone': currentRevision.status === 'approved' || currentRevision.status === 'review' ? 'pass' : 'warn' }, currentRevision.status || 'draft'), h('code', null, currentRevision.version ? 'v' + currentRevision.version : artifact.currentRevisionId || '')))
+        }) : h('div', { className: 'rd-inline-empty' }, h('b', null, '还没有阶段产物'), h('p', null, 'Agent 阶段 prepare 后会生成 revision，并在这里显示当前版本。')),
+        current ? h('div', { className: 'rd-current-iteration' }, h('span', null, 'currentIteration'), h('code', null, current.stage + ' / ' + current.artifactId + ' / ' + current.revisionId), current.gate ? h('span', { className: 'rd-badge', 'data-tone': 'warn' }, current.gate) : null) : null)
+    }
+
     function EvidencePanel() {
       var tabs = h('div', { className: 'rd-subtabs', role: 'tablist' },
         h('button', { type: 'button', className: evidenceTab === 'evidence' ? 'on' : '', onClick: function () { evidenceTabState[1]('evidence') } }, '证据'),
@@ -760,14 +784,14 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var scanView = section === 'checks' && checksTab === 'scan'
     var runtimeView = section === 'evidence' && evidenceTab === 'runtime'
     var deployView = section === 'evidence' && evidenceTab === 'deploy'
-    var sectionTitle = scanView ? '代码扫描' : runtimeView ? '运行日志' : deployView ? '部署日志' : section === 'assets' ? '资产' : section === 'lineage' ? '血缘' : section === 'evidence' ? '证据' : '仓库体检'
-    var sectionSub = scanView ? '代码扫描结果由 scanning service 提供，只按 scanId 读取。' : runtimeView ? '按平台坐标查询最近运行，再按 runId 查看单次日志。' : deployView ? '按 deploymentId 查询一次制品包部署。' : section === 'assets' ? '当前 Session 的目标表与字段。' : section === 'lineage' ? '当前 Session 的上下游影响面。' : section === 'evidence' ? '当前 Session 的查询、时间范围与证据。' : '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。'
-    var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId })) : section === 'evidence' ? h(EvidencePanel) : h(Overview)
+    var sectionTitle = scanView ? '代码扫描' : runtimeView ? '运行日志' : deployView ? '部署日志' : section === 'deliverables' ? '交付物' : section === 'assets' ? '资产' : section === 'lineage' ? '血缘' : section === 'evidence' ? '证据' : '仓库体检'
+    var sectionSub = scanView ? '代码扫描结果由 scanning service 提供，只按 scanId 读取。' : runtimeView ? '按平台坐标查询最近运行，再按 runId 查看单次日志。' : deployView ? '按 deploymentId 查询一次制品包部署。' : section === 'deliverables' ? 'Workitem 的阶段产物与不可变 revision。' : section === 'assets' ? '当前 Session 的目标表与字段。' : section === 'lineage' ? '当前 Session 的上下游影响面。' : section === 'evidence' ? '当前 Session 的查询、时间范围与证据。' : '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。'
+    var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'deliverables' ? h(Deliverables) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId })) : section === 'evidence' ? h(EvidencePanel) : h(Overview)
     return h('div', { className: 'rd-panel' },
       h('div', { className: 'rd-inner' },
       h('div', { className: 'rd-head', style: { display: 'flex', alignItems: 'flex-start' } },
         h('div', { className: 'rd-head-main', style: { flex: '1 1 auto', minWidth: 0 } },
-          h('span', { className: 'rd-eyebrow' }, scanView ? 'DATAOPS / CODE SCAN' : runtimeView ? 'DATAOPS / RUNTIME LOG' : deployView ? 'DATAOPS / DEPLOY LOG' : isRepoSection ? 'DATAOPS / REPO DOCTOR' : 'DATAOPS / SESSION CONTEXT'),
+          h('span', { className: 'rd-eyebrow' }, scanView ? 'DATAOPS / CODE SCAN' : runtimeView ? 'DATAOPS / RUNTIME LOG' : deployView ? 'DATAOPS / DEPLOY LOG' : section === 'deliverables' ? 'DATAOPS / ARTIFACTS' : isRepoSection ? 'DATAOPS / REPO DOCTOR' : 'DATAOPS / SESSION CONTEXT'),
           h('h2', { className: 'rd-title' }, sectionTitle),
           h('div', { className: 'rd-sub' }, sectionSub)),
         isRepoSection ? h('div', { className: 'rd-head-actions', style: { display: 'flex', flex: '0 0 auto', gap: 4 } },
@@ -779,6 +803,37 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
         return h('button', { key: item[0], type: 'button', className: 'rd-tab', 'data-active': String(section === item[0]), onClick: function () { sectionState[1](item[0]) } }, item[1])
       })),
       h('div', { className: 'rd-content' }, content)))
+  }
+
+  function ArtifactInspector() {
+    var state = React.useState(null)
+    React.useEffect(function () {
+      if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
+      var onOpen = function (event) { if (event && event.detail && event.detail.artifact) state[1](event.detail) }
+      var onKey = function (event) { if (event && event.key === 'Escape') state[1](null) }
+      window.addEventListener('dataops:artifact-inspector', onOpen)
+      window.addEventListener('keydown', onKey)
+      return function () { window.removeEventListener('dataops:artifact-inspector', onOpen); window.removeEventListener('keydown', onKey) }
+    }, [])
+    if (!state[0]) return null
+    var artifact = state[0].artifact
+    var revision = artifact.currentRevision || {}
+    var content = revision.content || {}
+    var fields = ['title', 'goal', 'target', 'grain', 'sources', 'scope', 'metrics']
+    function close() { state[1](null) }
+    function compose() {
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('dataops:compose', { detail: { text: '基于当前 ' + (artifact.kind || artifact.artifactId) + ' ' + (revision.version ? 'v' + revision.version : '') + ' 继续修改：' } }))
+      }
+      close()
+    }
+    return h('div', { className: 'rd-float', role: 'dialog', 'aria-label': '当前迭代' },
+      h('div', { className: 'rd-float-head' }, h('b', null, '当前迭代'), h('span', { className: 'rd-badge', 'data-tone': revision.status === 'approved' ? 'pass' : 'warn' }, (artifact.kind || artifact.artifactId) + ' ' + (revision.version ? 'v' + revision.version : '')), h('button', { type: 'button', className: 'rd-float-x', 'aria-label': '关闭', onClick: close }, '×')),
+      h('div', { className: 'rd-float-body' },
+        h('div', { className: 'rd-float-title' }, h('b', null, artifact.kind || artifact.artifactId), h('span', null, (revision.status || 'draft') + ' · ' + (revision.createdAt || '')),),
+        h('dl', { className: 'rd-float-grid' }, fields.filter(function (key) { return content[key] !== undefined && content[key] !== null }).slice(0, 5).map(function (key) { return h(React.Fragment, { key: key }, h('dt', null, key), h('dd', null, typeof content[key] === 'string' ? content[key] : JSON.stringify(content[key]))) })),
+        h('div', { className: 'rd-float-hash' }, 'revision · ' + (revision.revisionId || '') + ' · ' + String(revision.contentHash || '').slice(0, 12)),
+        h('div', { className: 'rd-float-actions' }, h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: compose }, '在会话继续修改'), h('button', { type: 'button', className: 'rd-btn', onClick: close }, '关闭'))))
   }
 
   function tab(id, kind, label, description, order, Body) {
@@ -800,6 +855,6 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   return {
     tabs: tabs,
     definitions: tabs.map(function (item) { return item.definition }),
-    _internals: { AssetBody: AssetBody, LineageBody: LineageBody, EvidenceBody: EvidenceBody, DataOpsPanelBody: DataOpsPanelBody }
+    _internals: { AssetBody: AssetBody, LineageBody: LineageBody, EvidenceBody: EvidenceBody, DataOpsPanelBody: DataOpsPanelBody, ArtifactInspector: ArtifactInspector }
   }
 }
