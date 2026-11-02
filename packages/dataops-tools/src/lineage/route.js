@@ -6,14 +6,12 @@ function json(status, body) {
 
 export function createLineageRoute(ctx, provider = createMockLineageProvider()) {
   const connection = ctx && typeof ctx.get === 'function' ? ctx.get('connection') : null
-  const agents = ctx && typeof ctx.get === 'function' ? ctx.get('agents') : null
-  if (!connection || !connection.fetch || typeof connection.fetch.register !== 'function' || !agents) return null
+  if (!connection || !connection.fetch || typeof connection.fetch.register !== 'function') return null
   const handler = async request => {
     if (request.method !== 'GET') return json(405, { ok: false, error: 'METHOD' })
     const url = new URL(request.url)
     const sessionId = url.searchParams.get('sessionId')
     if (!sessionId) return json(400, { ok: false, error: 'SESSION_REQUIRED' })
-    if (typeof agents.get === 'function' && !agents.get(sessionId)) return json(404, { ok: false, error: 'SESSION_NOT_FOUND' })
     const mode = url.searchParams.get('mode') || 'index'
     if (mode === 'index') return json(200, provider.index())
     if (mode === 'graph') {
