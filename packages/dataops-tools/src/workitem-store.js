@@ -364,11 +364,61 @@ function readArtifactSummaries(dir) {
         const meta = parseWorkitem(readFileSync(join(base, name), 'utf8'))
         const currentPath = meta.currentRevisionId ? join(revisionDir(dir, meta.artifactId), meta.currentRevisionId + '.yaml') : null
         const current = currentPath && existsSync(currentPath) ? parseWorkitem(readFileSync(currentPath, 'utf8')) : null
-        return { ...meta, currentRevision: current ? { revisionId: current.revisionId, version: current.version, status: current.status, contentHash: current.contentHash, createdAt: current.createdAt, content: current.content } : null }
+        const revisions = (Array.isArray(meta.revisions) ? meta.revisions : []).map(item => {
+          const path = item && item.revisionId ? join(revisionDir(dir, meta.artifactId), item.revisionId + '.yaml') : null
+          if (!path || !existsSync(path)) return item
+          try {
+            const revision = parseWorkitem(readFileSync(path, 'utf8'))
+            return { ...item, content: revision.content, parentRevisionId: revision.parentRevisionId || null, author: revision.author || null }
+          } catch { return item }
+        })
+        return { ...meta, revisions, currentRevision: current ? { revisionId: current.revisionId, version: current.version, status: current.status, contentHash: current.contentHash, createdAt: current.createdAt, content: current.content } : null }
       } catch { return null }
     })
     .filter(Boolean)
     .sort((a, b) => String(a.artifactId).localeCompare(String(b.artifactId)))
+}
+
+function legacyKind(file, path) {
+  if (file && file.kind) return file.kind
+  const name = String(path || '').split('/').pop().replace(/\.yaml$/, '')
+  if (name === 'tech-plan') return 'tech_plan'
+  return name.replace(/-/g, '_')
+}
+
+function deriveCurrentIteration(artifacts) {
+  if (!Array.isArray(artifacts) || !artifacts.length) return null
+  const stageOrder = ['requirement', 'design', 'analysis', 'solution', 'tech_plan', 'develop', 'cicd']
+  const sorted = artifacts.slice().sort((a, b) => {
+    const ai = stageOrder.indexOf(a.stage || a.kind)
+    const bi = stageOrder.indexOf(b.stage || b.kind)
+    return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi)
+  })
+  const latest = sorted[sorted.length - 1]
+  const revision = latest && latest.currentRevision
+  if (!latest || !latest.currentRevisionId) return null
+  return { stage: latest.stage || latest.kind, artifactId: latest.artifactId, revisionId: latest.currentRevisionId, gate: artifactGate(latest.kind, latest.stage), updatedAt: revision && revision.createdAt || latest.updatedAt || null }
+}
+
+function ensureLegacyArtifacts(dir, raw) {
+  if (!Array.isArray(raw.deliverables) || !raw.deliverables.length) return
+  let migrated = false
+  for (const deliverable of raw.deliverables) {
+    if (typeof deliverable !== 'string' || !SAFE_PATH.test(deliverable) || deliverable.includes('..')) continue
+    const path = join(dir, deliverable)
+    if (!existsSync(path)) continue
+    let file
+    try { file = parseWorkitem(readFileSync(path, 'utf8')) } catch { continue }
+    const kind = legacyKind(file, deliverable)
+    if (!STAGE_KINDS[kind]) continue
+    if (readArtifactMeta(dir, artifactId(kind))) continue
+    const stage = file.stage || STAGE_KINDS[kind]
+    try {
+      writeArtifactRevision(dir, raw, { kind, stage, substage: file.substage, file, migrate: true })
+      migrated = true
+    } catch { /* legacy file is best effort; never block a read */ }
+  }
+  if (migrated) raw.currentIteration = deriveCurrentIteration(readArtifactSummaries(dir))
 }
 
 function writeArtifactRevision(dir, raw, input) {
@@ -391,9 +441,9 @@ function writeArtifactRevision(dir, raw, input) {
     contentHash,
     parentRevisionId,
     status: input.file.status === 'reviewed' ? 'review' : input.file.status === 'approved' ? 'approved' : 'draft',
-    author: 'agent',
+    author: input.migrate ? 'migration' : 'agent',
     createdAt: now,
-    sourceTurnId: input.sourceTurnId || null,
+    sourceTurnId: input.sourceTurnId || (input.migrate ? 'legacy-deliverable' : null),
     content: input.file
   }
   mkdirSync(revisionDir(dir, id), { recursive: true })
@@ -404,9 +454,9 @@ function writeArtifactRevision(dir, raw, input) {
   meta.revisions = revisions
   mkdirSync(dirname(base), { recursive: true })
   writeFileSync(base, serializeWorkitem(meta), 'utf8')
-  raw.currentIteration = { stage: input.stage, artifactId: id, revisionId, gate: artifactGate(input.kind, input.stage, input.substage), updatedAt: now }
+  if (!input.migrate || !raw.currentIteration) raw.currentIteration = { stage: input.stage, artifactId: id, revisionId, gate: artifactGate(input.kind, input.stage, input.substage), updatedAt: now }
   const gate = artifactGate(input.kind, input.stage, input.substage)
-  if (gate) {
+  if (gate && !input.migrate) {
     raw.approvals = Array.isArray(raw.approvals) ? raw.approvals : []
     const approval = raw.approvals.find(item => item && item.gate === gate)
     if (approval) {
@@ -443,8 +493,8 @@ function publicItem(raw, id, dir) {
     gaps: Array.isArray(item.gaps) ? item.gaps : [],
     approvals: Array.isArray(item.approvals) ? item.approvals : [],
     next: item.next || null,
-    currentIteration: raw.currentIteration || null,
     artifacts: dir ? readArtifactSummaries(dir) : [],
+    currentIteration: raw.currentIteration || (dir ? deriveCurrentIteration(readArtifactSummaries(dir)) : null),
     audit: Array.isArray(item.audit) ? item.audit : [],
     legacy: item.legacy
   }
@@ -542,7 +592,10 @@ export function readWorkitem(config, args) {
   if (!id) {
     return { kind: 'workitem-list', items: listWorkitems(config) }
   }
-  return publicItem(readRaw(root, id), id, itemDir(root, id))
+  const raw = readRaw(root, id)
+  const dir = itemDir(root, id)
+  ensureLegacyArtifacts(dir, raw)
+  return publicItem(raw, id, dir)
 }
 
 function validatePathArray(value, name) {
@@ -727,6 +780,7 @@ function stagePrepareUnlocked(config, args) {
   const dir = itemDir(root, id)
   const raw = readRaw(root, id)
   ensureStageAllowed(raw, stage, args.substage)
+  ensureLegacyArtifacts(dir, raw)
   const full = join(dir, deliverable)
   mkdirSync(dirname(full), { recursive: true })
   const file = { ...args.payload, kind, stage, ...(args.substage ? { substage: args.substage } : {}), deliverable, status: args.status || args.payload.status || 'draft' }
@@ -812,6 +866,7 @@ function stageSignoffUnlocked(config, args) {
   const root = rootDir(config)
   const dir = itemDir(root, id)
   const raw = readRaw(root, id)
+  ensureLegacyArtifacts(dir, raw)
   const current = raw.stage
   const substage = raw.substage || (raw.stages && raw.stages.scheme && raw.stages.scheme.substage)
   const allowed = gate === 'requirement' ? current === 'requirement'

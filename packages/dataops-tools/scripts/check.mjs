@@ -567,6 +567,26 @@ check('artifact ledger creates immutable revisions and binds gates', async () =>
     assert(third.revisionId === 'rev-0003', 'third revision')
     const post = await by('dataops_shared_read_workitem').execute({ id }, { signal })
     assert(post.approvals.find(item => item.gate === 'requirement').status === 'pending', 'approval invalidated by new revision')
+    assert(post.artifacts[0].revisions.length === 3 && post.artifacts[0].revisions[0].content.goal === 'first', 'revision content for diff')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+check('legacy deliverables migrate to rev-0001 on read', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-legacy-ledger-'))
+  try {
+    const scoped = createTools(normalizeConfig({ workitemsDir: dir }), {})
+    const by = name => scoped.find(tool => tool.name === name)
+    const created = await by('dataops_shared_ensure_workitem').execute({ source: { system: 'edevops', id: 'US-LEGACY' }, title: 'legacy', initialStage: 'requirement' }, { signal })
+    const id = created.workitem.id
+    mkdirSync(join(dir, id, 'deliverables', 'design'), { recursive: true })
+    writeFileSync(join(dir, id, 'deliverables', 'design', 'design.yaml'), 'kind: design\nstage: design\nstatus: reviewed\ntarget:\n  table: dws.legacy\n', 'utf8')
+    await by('dataops_shared_update_workitem').execute({ id, patch: { deliverables: ['deliverables/design/design.yaml'] } }, { signal })
+    const read = await by('dataops_shared_read_workitem').execute({ id }, { signal })
+    assert(read.artifacts.length === 1 && read.artifacts[0].artifactId === 'design', 'legacy artifact listed')
+    assert(read.artifacts[0].revisions.length === 1 && read.artifacts[0].revisions[0].revisionId === 'rev-0001', 'legacy revision')
+    assert(read.currentIteration && read.currentIteration.artifactId === 'design', 'legacy current iteration')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

@@ -815,6 +815,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   function ArtifactInspector() {
     var state = React.useState(null)
     var openState = React.useState(null)
+    var revisionState = React.useState(null)
     React.useEffect(function () {
       if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
       var onOpen = function (event) {
@@ -868,15 +869,46 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
       var keys = ['goal', 'scope', 'target', 'grain', 'sources', 'acceptance', 'metrics']
       return keys.filter(function (key) { return c && c[key] !== undefined && c[key] !== null && c[key] !== '' }).slice(0, 5)
     }
+    function selectedRevision(item) {
+      var chosen = revisionState[0]
+      var revisions = Array.isArray(item.revisions) ? item.revisions : []
+      if (chosen && chosen.artifactId === item.artifactId) {
+        var found = revisions.filter(function (revision) { return revision.revisionId === chosen.revisionId })[0]
+        if (found) return found
+      }
+      return item.currentRevision || revisions[revisions.length - 1] || null
+    }
+    function revisionDiff(item, revision) {
+      var revisions = Array.isArray(item.revisions) ? item.revisions : []
+      var index = revisions.map(function (r) { return r.revisionId }).indexOf(revision && revision.revisionId)
+      if (index <= 0) return null
+      var before = (revisions[index - 1] && revisions[index - 1].content) || {}
+      var after = (revision && revision.content) || {}
+      var keys = Object.keys(after).concat(Object.keys(before).filter(function (key) { return !(key in after) }))
+      var changed = keys.filter(function (key) {
+        try { return JSON.stringify(before[key]) !== JSON.stringify(after[key]) } catch (error) { return false }
+      }).slice(0, 4)
+      if (!changed.length) return null
+      return h('div', { className: 'rd-rev-diff' }, h('b', null, 'diff v' + revisions[index - 1].version + ' → v' + revision.version), changed.map(function (key) {
+        var tone = !(key in before) ? 'add' : !(key in after) ? 'rem' : 'chg'
+        return h('span', { key: key, 'data-tone': tone }, tone === 'add' ? '+' : tone === 'rem' ? '−' : '~', ' ', key)
+      }))
+    }
     function stageBody(key, item) {
       if (!item) return h('div', { className: 'rd-stage-empty' }, '还没有产物。让 Agent 继续完成这个阶段。')
-      var rev = item.currentRevision || {}
-      var c = rev.content || {}
+      var rev = selectedRevision(item)
+      var c = rev && rev.content || {}
       var keys = fieldsOf(c)
+      var revisions = Array.isArray(item.revisions) ? item.revisions : []
       return h('div', { className: 'rd-stage-body' },
-        h('div', { className: 'rd-stage-body-head' }, h('b', null, item.kind || item.artifactId), h('span', null, (rev.status || 'draft') + (item.preview ? ' · 未归档' : ' · ' + (rev.revisionId || '')))),
+        h('div', { className: 'rd-stage-body-head' }, h('b', null, item.kind || item.artifactId), h('span', null, ((rev && rev.status) || 'draft') + (item.preview ? ' · 未归档' : ' · ' + ((rev && rev.revisionId) || '')))),
+        revisions.length > 1 ? h('div', { className: 'rd-rev-switch' }, revisions.map(function (revision) {
+          var active = rev && revision.revisionId === rev.revisionId
+          return h('button', { key: revision.revisionId, type: 'button', className: active ? 'on' : '', onClick: function () { revisionState[1]({ artifactId: item.artifactId, revisionId: revision.revisionId }) } }, 'v' + revision.version)
+        })) : null,
+        revisionDiff(item, rev),
         keys.length ? h('dl', { className: 'rd-float-grid' }, keys.map(function (field) { return h(React.Fragment, { key: field }, h('dt', null, field), h('dd', null, valueOf(field, c[field]))) })) : h('div', { className: 'rd-stage-empty' }, '已有一版产物，但还没有可展示的结构字段。'),
-        item.preview ? null : h('div', { className: 'rd-float-hash' }, 'revision · ' + (rev.revisionId || '') + ' · ' + String(rev.contentHash || '').slice(0, 12))
+        item.preview || !rev ? null : h('div', { className: 'rd-float-hash' }, 'revision · ' + (rev.revisionId || '') + ' · ' + String(rev.contentHash || '').slice(0, 12))
       )
     }
     function compose() {
