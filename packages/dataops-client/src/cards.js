@@ -6,7 +6,7 @@
  * Styling follows the DSH web-client rules: semantic --dsw-alias-* tokens only,
  * no palette literals in feature code.
  */
-export function createDataopsCards(React) {
+export function createDataopsCards(React, LineageFlow) {
   function safeChild(value) {
     if (Array.isArray(value)) return value.map(safeChild)
     if (value && typeof value === 'object' && !value.$$typeof && !(value.type && value.props)) return displayValue(value)
@@ -535,6 +535,11 @@ export function createDataopsCards(React) {
     '.do-lineage-overview-mark{width:30px;height:30px;border-radius:8px;background:var(--dsw-alias-state-business-bg,#eef2ff);color:var(--dsw-alias-state-business-primary,#3f63d9);display:grid;place-items:center;font-size:16px;margin-bottom:7px}',
     '.do-lineage-overview b{font-size:11px;font-weight:500}.do-lineage-overview p{font-size:8.5px;line-height:1.55;color:var(--dsw-alias-label-tertiary,#8b93a2);margin:3px 0 10px;max-width:310px}',
     '.do-lineage-overview-metrics{display:flex;gap:16px}.do-lineage-overview-metrics div{min-width:40px}.do-lineage-overview-metrics b{display:block;font-size:15px;line-height:17px;font-weight:500}.do-lineage-overview-metrics span{display:block;font-size:7.5px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-lineage-card-graph{margin:2px 0 8px}',
+    '.do-lineage-card-graph .do-lineage-surface{width:100%;height:250px;min-height:250px;max-height:250px;margin:0}',
+    '.do-lineage-card-graph .do-surface-detail{display:none}',
+    '.do-lineage-card-graph .do-surface-head{padding:6px 8px}',
+    '.do-lineage-card-graph .do-surface-canvas{min-height:190px}',
     '.do-lineage-toolbar{display:flex;align-items:center;gap:6px;width:min(100%,960px);margin:0 auto 7px;font-size:9px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.do-lineage-toolbar > span{margin-right:auto}',
     '.do-lineage-expand{border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.14));background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-secondary,#61666b);border-radius:5px;font-size:9px;line-height:22px;padding:0 8px;cursor:pointer;white-space:nowrap}',
@@ -1510,6 +1515,26 @@ export function createDataopsCards(React) {
         (schedule.dependsOn || []).length ? h('div', null, h('span', null, '依赖'), h('b', { className: 'mono' }, schedule.dependsOn.join('、'))) : null))
   }
 
+  function lineageGraphFromPayload(m) {
+    var graph = m.graph || { nodes: m.nodes || [], edges: m.edges || [] }
+    var nodes = (graph.nodes || []).map(function (node, index) {
+      var type = node.type || 'table'
+      return { id: node.id || node.table || ('node-' + index), type: type === 'table' || type === 'physical_table' ? 'table' : type === 'etl_job' ? 'etl_job' : type === 'schedule_task' ? 'schedule_task' : type === 'report' ? 'report' : 'job', label: node.label || node.table || node.name || node.id, meta: node.meta || node.owner || node.layer || '', owner: node.owner }
+    })
+    var ids = {}
+    nodes.forEach(function (node) { ids[node.id] = true })
+    var edges = (graph.edges || []).filter(function (edge) { return ids[edge.from] && ids[edge.to] }).map(function (edge) { return { from: edge.from, to: edge.to, kind: edge.type || edge.kind || 'feeds', label: edge.label || edge.type || '' } })
+    var kind = m.schemaVersion >= 2 && (m.view === 'schedule' || m.schedule) ? 'task_dag' : m.view === 'production' || nodes.some(function (n) { return n.type === 'etl_job' }) ? 'data_flow' : 'table_lineage'
+    return { graphId: 'session-lineage', kind, title: (kind === 'task_dag' ? '调度 DAG · ' : kind === 'data_flow' ? '数据链路 · ' : '表血缘 · ') + (m.table || ''), focus: graph.focus || null, nodes, edges, source: m.source || 'session', asOf: m.asOf || null, partial: m.partial === true, gaps: m.gaps || [] }
+  }
+
+  function SessionLineageGraph(props) {
+    var m = props.model
+    var graph = lineageGraphFromPayload(m)
+    if (!LineageFlow || typeof LineageFlow.LineageGraph !== 'function' || !graph.nodes.length) return h(LineageV2Preview, { lineage: m })
+    return h('div', { className: 'do-lineage-card-graph' }, h(LineageFlow.LineageGraph, { graph: graph }))
+  }
+
   function LineageV2Card(props) {
     var focusState = React.useState(false)
     var selectedState = React.useState('')
@@ -1553,7 +1578,7 @@ export function createDataopsCards(React) {
             schedule.typeCounts ? h('span', { className: 'do-doc-types-inline' }, Object.keys(schedule.typeCounts).map(function (type) { return type + ' × ' + schedule.typeCounts[type] }).join(' · ')) : null,
             schedule.taskParams && schedule.taskParams.length ? h('span', null, '参数：' + schedule.taskParams.join('、')) : null,
             schedule.placeholders && schedule.placeholders.length ? h('span', null, '占位符：' + schedule.placeholders.join('、')) : null))
-        : h(LineageV2Preview, { lineage: m }),
+        : h(SessionLineageGraph, { model: m }),
       (m.downstream || []).length ? h('div', null, h('div', { className: 'do-label' }, '下游影响'), h('div', { className: 'do-kv' }, m.downstream.map(function (d, i) { return h(Pill, { key: i }, (d.id || d.asset) + ' · ' + (d.owner || d.type || '')) }))) : null,
       h(Gaps, { gaps: m.gaps })
     )
@@ -1563,6 +1588,7 @@ export function createDataopsCards(React) {
     var m = parseModel(props.block, 'lineage')
     if (!m) return h(Fallback, props)
     if (m.schemaVersion >= 2 || m.graph) return h(LineageV2Card, props)
+    if (LineageFlow && typeof LineageFlow.LineageGraph === 'function' && Array.isArray(m.nodes) && m.nodes.length) return h(LineageV2Card, { block: { content: [{ type: 'text', text: JSON.stringify(Object.assign({}, m, { schemaVersion: 2, view: m.view || 'design' })) }] } })
     var shown = (m.nodes || []).slice(0, 12)
     return h(Frame, {
       title: '血缘 · ' + (m.table || ''),

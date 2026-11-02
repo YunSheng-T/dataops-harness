@@ -117,7 +117,7 @@ ${WORKBENCH_RUNTIME}
 ${CODEMIRROR_RUNTIME}
 ${inlined}
 
-    var Cards = createDataopsCards(React)
+    var Cards = null
     var StageStore = createStageStore()
     var HeaderStage = createHeaderStage(React, StageStore)
     var ContextStore = createContextStore()
@@ -144,6 +144,7 @@ ${inlined}
         return React.createElement(LineageGraphImpl, props)
       }
     }
+    Cards = createDataopsCards(React, LineageFlow)
     var Tabs = createDataopsTabs(React, ContextStore, LineageFlow, Cards)
     var Brief = createStageBrief(React, StageStore, ContextStore)
     var DataopsDocumentPreview = createDataopsDocumentPreview(React, Cards, LineageFlow)

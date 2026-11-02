@@ -513,6 +513,19 @@ check('lineage tab renders schedule view from task/job lineage', () => {
   assert(!body.includes('设计血缘'), 'right tab must not default to design lineage')
 })
 
+check('v1 lineage card migrates to the session LineageGraph', () => {
+  const FlowCards = createDataopsCards(React, { LineageGraph: () => React.createElement('div', null, 'session lineage graph') })
+  const body = text(FlowCards.LineageCard({
+    block: block({
+      kind: 'lineage', table: 'dws.trade_channel_daily', direction: 'down', depth: 1,
+      nodes: [{ table: 'dws.trade_channel_daily', type: 'table' }, { table: 'ads.channel_report', type: 'report' }],
+      edges: [{ from: 'dws.trade_channel_daily', to: 'ads.channel_report', kind: 'report' }],
+      source: 'mock', asOf: '2026-11-02 22:30', partial: false, gaps: []
+    })
+  }))
+  assert(body.includes('session lineage graph'), 'v1 lineage must use LineageGraph')
+})
+
 check('lineage tab uses the repo browser when LineageFlow is available', () => {
   const EmbeddedTabs = createDataopsTabs(React, ContextStore, {
     LineageSurface: () => React.createElement('div', null, 'lineage surface'),
