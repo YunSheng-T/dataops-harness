@@ -696,6 +696,11 @@ check('stage result and stage navigator expose the current iteration', () => {
   assert(nav.includes('当前迭代'), 'stage navigator entry')
 })
 
+check('US picker can archive an existing bound workitem', () => {
+  const body = text(Cards.USPickerCard({ block: block({ kind: 'us-picker', items: [{ id: 'US-1', title: '旧需求', status: '待分析', priority: 'P1', initialStage: 'requirement', existingWorkitem: 'old-workitem' }], total: 1 }) }))
+  assert(body.includes('归档已有工作项'), 'archive bound workitem')
+})
+
 check('requirement card exposes BA and requester signoff actions', () => {
   const tree = Cards.RequirementCard({ block: block({ kind: 'requirement', stage: 'requirement', title: '需求', goal: '目标', status: 'draft', canSignoff: true, workitemId: 's1', review: { ba: { approver: '陈璐', status: 'pending' }, requester: { approver: '渠道运营', status: 'pending' } }, gaps: [] }) })
   const body = text(tree)

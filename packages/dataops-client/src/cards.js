@@ -1294,6 +1294,22 @@ export function createDataopsCards(React, LineageFlow) {
         h('span', { className: 'do-upmeta' }, item.status + (item.existingWorkitem ? ' · 已有工作项' : ''))
       )
     }
+    function archiveExisting(item) {
+      if (!item || !item.existingWorkitem || typeof fetch !== 'function') return
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm('归档已有工作项 ' + item.existingWorkitem + '？\n\n归档不会删除 revision，历史会移到 .demo-archive。')) return
+      fetch('/api/dataops/workitem/archive', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ id: item.existingWorkitem })
+      }).then(function (response) {
+        return response.json().then(function (body) { if (!response.ok || body.ok !== true) throw new Error(body.message || body.error || 'archive failed'); return body })
+      }).then(function () {
+        if (typeof window !== 'undefined' && typeof window.location !== 'undefined' && typeof window.location.reload === 'function') window.location.reload()
+      }).catch(function (reason) {
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') window.alert('归档失败：' + (reason && reason.message ? reason.message : '请重试'))
+      })
+    }
+
     function preview(item) {
       if (!item) return null
       return h('div', { className: 'do-preview' },
@@ -1306,6 +1322,7 @@ export function createDataopsCards(React, LineageFlow) {
           h(Btn, { variant: 'primary', onClick: function () {
             composeMessage(item.existingWorkitem ? '处理 ' + item.id + '，继续已有工作项 ' + item.existingWorkitem : '处理 ' + item.id)
           } }, item.existingWorkitem ? '继续已有工作项' : '开始处理'),
+          item.existingWorkitem ? h(Btn, { variant: 'ghost', onClick: function () { archiveExisting(item) } }, '归档已有工作项') : null,
           h(Btn, { variant: 'ghost', onClick: function () { showAllState[1](true) } }, '查看全部')
         )
       )
