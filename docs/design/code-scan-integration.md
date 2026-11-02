@@ -16,8 +16,9 @@ Code Scan Service
   └─ 管理 ScanResultStore
 
 DataOps
-  ├─ 触发同一个 ScanRequest
+  ├─ 通过 dataops CLI 触发 ScanRequest
   ├─ 按 scanId 读取 ScanResult
+  ├─ 不管理扫描鉴权或凭据
   └─ 展示 findings / impacts，不重算
 ```
 
@@ -30,9 +31,16 @@ dataops_code_scan（唯一能力）
   ├─ Agent tool
   ├─ DataOps 检查 section 的“运行代码扫描”
   └─ CI / 外部调用
+        │
+        ▼
+  dataops CLI
+        │  鉴权、配置、服务地址由 CLI 自己处理
+        ▼
+  Code Scan Service
 ```
 
 它们是同一个扫描服务的不同调用方，不是三个扫描实现。  
+DataOps Host / Client 不保存扫描服务凭据，也不实现鉴权。  
 `dataops_cicd_scan` 只保留旧名兼容，不再新增独立入口。
 
 ## 3. 扫描范围
@@ -86,10 +94,21 @@ ScanAccepted
 
 ```text
 GET /api/dataops/code-scan?sessionId=...&scanId=...
-GET /api/dataops/code-scan?sessionId=...&latest=1
 ```
 
-DataOps 只做结果读取；scanId 和结果保留策略由扫描服务管理。
+只支持按 scanId 读取，不提供 latest 查询。  
+scanId 和结果保留策略由扫描服务管理。
+
+### scanId 归谁保存
+
+DataOps 不管理扫描结果，但需要保存**当前 scanId 的引用**：
+
+- 面板触发后，当前 view 持有 scanId
+- Agent 工具返回 scanId，可写入 workitem / evidence
+- 页面刷新后，如果没有 scanId，就显示“没有当前扫描”
+- 不提供“最近一次扫描”自动恢复，因为扫描服务没有 latest 查询
+
+DataOps 保存的是引用，不是 ScanResult 本体。
 
 ### 结果
 
@@ -129,11 +148,13 @@ ScanResult
 
 ### 概览
 
-只显示最近一次扫描：
+如果当前有 scanId，显示该扫描：
 
 ```text
 代码扫描 · scan-... · warn · 3 files · as of 12:30
 ```
+
+没有 scanId 时不显示“最近扫描”，只显示“尚未选择代码扫描”。
 
 ### 运行中
 
@@ -177,9 +198,9 @@ ScanResult
 ## 8. 验收
 
 1. 只有一个 `dataops_code_scan` 入口。
-2. 面板能触发扫描并拿到 `scanId`。
-3. 轮询能显示 queued / running / complete / error。
-4. 结果由扫描服务读取，DataOps 不写扫描结果。
+2. 面板能通过 dataops CLI 触发扫描并拿到 `scanId`。
+3. 轮询只按 scanId 查询，能显示 queued / running / complete / error。
+4. 结果由扫描服务管理，DataOps 只保存 scanId 引用。
 5. 文件级 scope 可用。
 6. package scope 作为后续扩展，不提前实现。
 7. findings / impacts 原样展示，不重新定级。
@@ -187,9 +208,8 @@ ScanResult
 
 ## 9. 待确认
 
-- 扫描服务触发接口是同步受理还是直接返回 scanId
-- 结果保留时间和 latest 查询粒度
-- 鉴权和 DataOps 调用扫描服务的凭据放置
+- `dataops CLI` 的触发/查询子命令和 JSON 输出约定
+- scanId 写入 workitem / evidence 的格式
 - package scope 的首个版本和 package 解析责任
 
 ## 10. 关联
