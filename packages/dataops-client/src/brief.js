@@ -442,8 +442,21 @@ export function createStageBrief(React, store, contextStore) {
     var sessionId = props.sessionId
     var action = buildAction(payloads, sessionId)
     var refreshState = React.useState(0)
-    if (typeof window !== 'undefined' && action && action.workitem && action.workitem.id) window.__dataopsActiveWorkitemId = action.workitem.id
+    var syncId = action && action.workitem && action.workitem.id ? action.workitem.id : (typeof window !== 'undefined' ? window.__dataopsActiveWorkitemId : null)
+    if (typeof window !== 'undefined' && syncId) window.__dataopsActiveWorkitemId = syncId
     if (typeof window !== 'undefined') window.__dataopsActiveGate = action ? action.spec.gate : null
+    if (typeof React.useEffect === 'function' && typeof window !== 'undefined' && typeof fetch === 'function' && syncId && sessionId) {
+      React.useEffect(function () {
+        var alive = true
+        fetch('/api/dataops/signoff?workitemId=' + encodeURIComponent(syncId)).then(function (response) {
+          return response.ok ? response.json() : null
+        }).then(function (body) {
+          if (!alive || !body || !body.workitem) return
+          if (contextStore && sessionId) contextStore.ingest(sessionId, Object.assign({}, body.workitem, { kind: 'workitem' }))
+        }).catch(function () {})
+        return function () { alive = false }
+      }, [sessionId, syncId])
+    }
     if (typeof React.useEffect === 'function' && typeof window !== 'undefined') {
       React.useEffect(function () {
         var onRecorded = function (event) {
