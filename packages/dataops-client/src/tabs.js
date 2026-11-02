@@ -603,6 +603,21 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
 
     function go(next) { sectionState[1](next) }
     function retry() { refreshState[1](refreshState[0] + 1) }
+    function archiveWorkitem() {
+      if (!workitem || !workitem.id || typeof fetch !== 'function') return
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm('归档工作项 ' + workitem.id + '？\n\n归档不会删除 revision，历史会移到 .demo-archive。')) return
+      fetch('/api/dataops/workitem/archive', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ id: workitem.id })
+      }).then(function (response) {
+        return response.json().then(function (body) { if (!response.ok || body.ok !== true) throw new Error(body.message || body.error || 'archive failed'); return body })
+      }).then(function () {
+        if (typeof window !== 'undefined' && typeof window.location !== 'undefined' && typeof window.location.reload === 'function') window.location.reload()
+      }).catch(function (reason) {
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') window.alert('归档失败：' + (reason && reason.message ? reason.message : '请重试'))
+      })
+    }
     function startScan() {
       if (scanLoading || typeof fetch !== 'function' || !props.sessionId) return
       scanLoadingState[1](true)
@@ -882,7 +897,8 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
           h('span', { className: 'rd-eyebrow' }, scanView ? 'DATAOPS / CODE SCAN' : runtimeView ? 'DATAOPS / RUNTIME LOG' : deployView ? 'DATAOPS / DEPLOY LOG' : section === 'deliverables' ? 'DATAOPS / ARTIFACTS' : isRepoSection ? 'DATAOPS / REPO DOCTOR' : 'DATAOPS / SESSION CONTEXT'),
           h('h2', { className: 'rd-title' }, sectionTitle),
           h('div', { className: 'rd-sub' }, sectionSub)),
-        isRepoSection ? h('div', { className: 'rd-head-actions', style: { display: 'flex', flex: '0 0 auto', gap: 4 } },
+        section === 'deliverables' && workitem && workitem.id ? h('div', { className: 'rd-head-actions', style: { display: 'flex', flex: '0 0 auto', gap: 4 } },
+          h('button', { type: 'button', className: 'rd-btn', onClick: archiveWorkitem }, '归档工作项')) : isRepoSection ? h('div', { className: 'rd-head-actions', style: { display: 'flex', flex: '0 0 auto', gap: 4 } },
           h('button', { type: 'button', className: 'rd-btn', onClick: scanView ? startScan : retry }, scanView ? '刷新' : '刷新'),
           scanView
             ? h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: startScan }, '运行扫描')

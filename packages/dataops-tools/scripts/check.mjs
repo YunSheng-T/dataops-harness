@@ -5,6 +5,7 @@ import { createWorkitemStore, parseWorkitem } from '../src/workitem-store.js'
 import { parseLtsTask } from '../src/lts.js'
 import { createAdapterIdentity, createLocalSignoffIdentity, createSignoffService } from '../src/signoff-service.js'
 import { createIdentityRoute, createSignoffRoute } from '../src/signoff-route.js'
+import { createWorkitemArchiveRoute } from '../src/workitem-route.js'
 import { normalizeTicket } from '../src/providers/devops.js'
 import { normalizeTable, normalizeLineage } from '../src/providers/catalog.js'
 import { requirementPayload } from '../src/contracts.js'
@@ -116,6 +117,20 @@ check('workitem accepts markdown front matter payload', () => {
   const parsed = parseWorkitem('---\nkind: tech_plan\nstage: scheme\ntarget: dws.trade_channel_daily\nstatus: draft\n---\n\n# 技术方案\n\n正文只给 ltsgen 读。\n')
   assert(parsed.kind === 'tech_plan' && parsed.target === 'dws.trade_channel_daily', 'front matter fields')
   assert(!('#' in parsed), 'markdown body must not be parsed as YAML')
+})
+
+check('workitem archive route moves the demo item without deleting revisions', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-archive-'))
+  try {
+    mkdirSync(join(dir, 'demo-item', 'revisions', 'develop'), { recursive: true })
+    writeFileSync(join(dir, 'demo-item', 'item.yaml'), 'id: demo-item\ntitle: demo\nstage: requirement\n', 'utf8')
+    writeFileSync(join(dir, 'demo-item', 'revisions', 'develop', 'rev-0001.yaml'), 'kind: develop\n', 'utf8')
+    const route = createWorkitemArchiveRoute({ workitemsDir: dir })
+    const response = await route(new Request('http://localhost/api/dataops/workitem/archive', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: 'demo-item' }) }))
+    assert(response.status === 200, 'archive route status')
+    assert(!existsSync(join(dir, 'demo-item')), 'workitem moved out of active root')
+    assert(existsSync(join(dir, '.demo-archive')), 'archive root exists')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 check('identity adapter maps a real adapter into signoff identity', async () => {

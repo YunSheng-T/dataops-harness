@@ -40,6 +40,14 @@ node scripts/reset-dataops-demo.mjs --id 2026-10-27-workitem --dry-run
 node scripts/reset-dataops-demo.mjs --id 2026-10-27-workitem
 ```
 
+也可以从 UI 操作：
+
+```text
+DataOps → 交付物 → 归档工作项
+```
+
+这个按钮同样只归档，不删除 revision。
+
 脚本只把目录移到：
 
 ```text

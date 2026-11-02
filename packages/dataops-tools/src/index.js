@@ -14,6 +14,7 @@ import { createCicdCliAdapter } from './providers/cicd-cli.js'
 import { createDeployCliAdapter } from './providers/deploy-cli.js'
 import { createWorkitemStore } from './workitem-store.js'
 import { registerSignoffRoute } from './signoff-route.js'
+import { registerWorkitemArchiveRoute } from './workitem-route.js'
 import { registerRepoRoute } from './repo/route.js'
 import { checkRepository, scanRepository, validateRepository } from './repo-doctor/index.js'
 import { registerRepoDoctorRoute } from './repo-doctor/route.js'
@@ -964,6 +965,11 @@ export function apply(ctx, config) {
   }
   if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountSignoff)
   else mountSignoff(ctx)
+  const mountWorkitemArchive = child => {
+    try { registerWorkitemArchiveRoute(child, normalized) } catch { /* optional host service; tools stay usable */ }
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['connection'], mountWorkitemArchive)
+  else mountWorkitemArchive(ctx)
   const mountRepo = child => {
     try { registerRepoRoute(child, normalized) } catch { /* optional host service; tools stay usable */ }
   }
