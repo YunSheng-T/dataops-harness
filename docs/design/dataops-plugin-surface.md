@@ -1,6 +1,6 @@
 # DataOps 插件聚合设计
 
-> 状态：P0 已实现第一版（DataOps 单面板 + `/dataops` 命令）。
+> 状态：P0-B 蓝图完成；只做 Repo Doctor，不迁移旧 tab。
 > 关联：`docs/design/dataops-plugin-roadmap.md`、`docs/design/repo-doctor.md`
 
 ## 1. 问题
@@ -14,22 +14,23 @@
 
 界面会很快碎片化，结果也会随着对话滚动丢失。
 
-## 2. 结论
+## 2. P0-B 结论
 
-**插件不再拥有自己的用户入口；插件向 DataOps 工作面板贡献 section。**
+P0 只做一个 **Repo Doctor 面板**，不迁移现有资产/血缘/证据 tab。
 
 ```text
-DSH Files tab       继续由 DSH 管文件浏览
-DataOps 面板        一个固定右栏 tab
+DSH Files tab        保持 DSH 文件浏览
+DataOps tab          新增 Repo Doctor
   ├─ 概览
   ├─ 仓库
-  ├─ 资产
-  ├─ 血缘
-  ├─ 证据
   └─ 检查
+
+旧 tab               资产 / 血缘 / 证据暂时保留
 ```
 
-插件只提供数据和 section 视图，不直接向 `sidebar.right.pane.tab` 塞多个 tab。
+P0 不实现统一 section registry；P1 再把这些 section 合并到一个 DataOps 面板。
+
+先把 Repo Doctor 的数据、状态、错误和命令跑通，再谈聚合。
 
 ## 2.1 DSH 命令语法的现实
 
@@ -93,20 +94,20 @@ DSH 原生命令只注册一个名字：
 
 ### 右栏 DataOps tab
 
-一个固定入口：
+P0 只有一个新 tab：
 
 ```text
 右侧栏
 [文件] [DataOps]
 ```
 
-`DataOps` tab 内部再分组：
+内部只有：
 
 ```text
-概览 / 仓库 / 资产 / 血缘 / 证据 / 检查
+概览 / 仓库 / 检查
 ```
 
-这样右栏不会随着插件增长变成一排 tab。
+旧的资产 / 血缘 / 证据 tab 暂时不动，避免 P0 同时做聚合和仓库能力。
 
 ### Composer
 
@@ -171,16 +172,15 @@ section 负责：
 - 自己的操作
 - 不抢占全局入口
 
-## 5. 分组
+## 5. P0 分组
 
 | group | 内容 |
 |---|---|
 | overview | 当前仓库 / workspace 一页概览 |
 | repo | package、制品、文件覆盖 |
-| assets | 表、模型、API 等资产 |
-| lineage | 设计 / 生产 / 调度三视图 |
-| evidence | 证据、查询、时间范围 |
 | checks | findings、扫描结果、警告 |
+
+assets / lineage / evidence 在 P0 不进入这个 tab；迁移到 P1。
 
 ## 6. 刷新模型
 
@@ -201,24 +201,22 @@ open panel
 - agent 工具调用只返回摘要，不负责渲染 UI
 - 面板刷新不依赖对话卡生命周期
 
-## 7. 迁移
+## 7. 迭代
 
-### Phase 1
+### P0-B：Repo Doctor
 
-- 新增 DataOps panel shell
-- 把现有资产 / 血缘 / 证据三个 tab 迁入
-- 保留 `DataOps` 单 tab
+- 新增一个独立 DataOps tab
+- 只有概览 / 仓库 / 检查
+- 旧资产 / 血缘 / 证据继续保留
+- 不做 section registry
+- 不做对话大卡
+- `/dataops` 先服务 Repo Doctor
 
-### Phase 2
+### P1：聚合
 
-- Repo Doctor 作为 `overview` / `checks` section 接入
-- 增加 `/dataops` 命令
-- 移除对话卡
-
-### Phase 3
-
-- 后续插件统一注册 section
-- 不再允许新增独立右栏 tab
+- 把旧资产 / 血缘 / 证据迁入 DataOps
+- 引入统一 section registry
+- 再决定是否移除旧 tab
 
 ## 8. 设计约束
 
@@ -231,7 +229,7 @@ open panel
 
 ## 9. 已确认
 
-- DataOps 面板**替代**现有资产 / 血缘 / 证据三个独立 tab。
+- P0 新增一个只包含 Repo Doctor 的 DataOps tab；P1 再决定是否迁移旧资产 / 血缘 / 证据 tab。
 - 面板是右栏固定 tab，不新开主区页面。
 - 插件的持久结果只进入面板 section，不进入对话大卡。
 - composer 状态 chip 是可选后续项，不作为 P0 依赖。

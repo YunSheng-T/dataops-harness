@@ -1,8 +1,10 @@
 # Repo Doctor 详细设计
 
-> 状态：P0 已实现第一版（Host scan/validate + DataOps 面板）。
+> 状态：P0-B 蓝图完成，待实现验收；只做 Repo Doctor。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
 > 聚合方案：`docs/design/dataops-plugin-surface.md`
+> P0-B 全量蓝图：[dataops-repo-doctor-blueprint.html](../../prototype/dataops-repo-doctor-blueprint.html)
+> P0-B 增量：[dataops-repo-doctor-blueprint-delta.html](../../prototype/dataops-repo-doctor-blueprint-delta.html)
 
 ## 1. 一句话
 
@@ -25,11 +27,10 @@ Repo Doctor 是 DataOps 工作面板里的**仓库体检 section**，不是对�
           │
           ├─ 概览
           ├─ 仓库
-          ├─ 资产
-          ├─ 血缘
-          ├─ 证据
           └─ 检查
 ```
+
+旧资产 / 血缘 / 证据 tab 在 P0 保持原样。
 
 打开 DataOps 面板，默认显示 `概览`：
 
@@ -98,18 +99,18 @@ DSH 的命令名不能包含空格，`repo index` 是 `rawInput`，不是原生�
 ```text
 /dataops                打开 DataOps 面板
 /dataops open checks    打开检查 section
-/dataops scan           只做索引扫描
-/dataops validate       只做规则校验
-/dataops check          索引 + 校验
+/dataops repo index      只做索引扫描
+/dataops repo validate   只做规则校验
+/dataops repo check      索引 + 校验
 ```
 
 P0 四个子命令一起做：
 
 ```text
 /dataops              打开面板
-/dataops scan         只做索引
-/dataops validate     只做规则校验
-/dataops check        索引 + 校验
+/dataops repo index   只做索引
+/dataops repo validate 只做规则校验
+/dataops repo check   索引 + 校验
 ```
 
 `scan` / `validate` 不是两个功能重复项，区别见第 4 节。
@@ -153,6 +154,28 @@ not-detected   不是 DataOps 代码仓；显示说明，不自动扫描
 
 - 只有 `task.yaml`，没有 `.dataops/`：`not-detected`
 - `.dataops/manifest.yaml` 存在但没有 build：`partial`
+
+### 错误态
+
+扫描失败不是空状态，面板必须显示可定位的错误：
+
+```text
+code        REPO_DOCTOR_FAILED
+stage       detect | index | validate
+workspace   internal-code-repo
+message     当前 Session 的 workspace 无法解析
+next        确认 cwd / 重新打开 workspace / 重试
+```
+
+错误 code 至少覆盖：
+
+- `SESSION_NOT_FOUND`
+- `WORKSPACE_UNAVAILABLE`
+- `REPO_SCAN_FAILED`
+- `REPO_VALIDATE_FAILED`
+- `TRANSPORT_FAILED`
+
+不允许只显示“扫描失败”；不允许把错误渲染成空白指标。
 - workspace 内有 `samples/internal-code-repo` 子目录：默认不递归，用户应打开该子目录作为 workspace
 - 未来支持 `dataops.repoRoots` 配置，但 P0 只做当前 workspace
 
@@ -211,7 +234,7 @@ ValidationResult
 ### check：组合
 
 ```text
-/dataops check = scan（若过期）+ validate
+/dataops repo check = index（若过期）+ validate
 ```
 
 ### 工具契约
@@ -329,7 +352,7 @@ P0 的 `check` 是面板/命令层组合，不新增第三个 agent 工具。
 
 ### 资产 / 血缘 / 证据
 
-现有 sections 迁入，不在 P0 重做。
+P0 不迁入、不重做；继续使用旧 tab。P1 再聚合。
 
 ## 8. 交互
 
@@ -396,13 +419,14 @@ dataops-client/
 6. parent 指向不存在 job 时返回 `TASK_PARENT_MISSING`。
 7. 未声明占位符返回 warning，不返回 blocking。
 8. 面板有 loading / empty / error / stale 状态。
-9. `/dataops check` 能刷新面板，不产生对话大卡。
+9. `/dataops repo check` 能刷新面板，不产生对话大卡。
 10. 全程只读。
 
 ## 13. 已确认
 
-- DataOps 面板替代现有资产 / 血缘 / 证据三个 tab。
-- P0 一起实现 `/dataops`、`/dataops scan`、`/dataops validate`、`/dataops check`。
+- P0 只做 Repo Doctor 面板，现有资产 / 血缘 / 证据 tab 保持原样。
+- P1 再决定是否合并成一个 DataOps 面板。
+- P0 一起实现 `/dataops`、`/dataops repo index`、`/dataops repo validate`、`/dataops repo check`。
 - placeholder 缺失统一 warning。
 - 当前 workspace 不是 repo 时只提示打开正确 workspace，不递归搜索，不在 P0 做目录选择器。
 - P0 仍需补全一次 blueprint 和增量说明后再进入实现。

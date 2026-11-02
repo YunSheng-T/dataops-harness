@@ -38,6 +38,8 @@
 - [DataOps 插件路线图](dataops-plugin-roadmap.md)
 - [DataOps 插件聚合设计](dataops-plugin-surface.md)
 - [Repo Doctor 详细设计](repo-doctor.md)
+  - [P0-B 全量蓝图](../../prototype/dataops-repo-doctor-blueprint.html)
+  - [P0-B 增量蓝图](../../prototype/dataops-repo-doctor-blueprint-delta.html)
 
 ### 架构
 

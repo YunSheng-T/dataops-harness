@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repo Doctor · P0-B 增量蓝图</title>
+<style>
+  :root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--panel2:#f8f9fb;--panel3:#eef1f5;--ink:#1b1f27;--muted:#667080;--faint:#929aa7;--line:#e1e6ed;--line2:#cdd5e0;--brand:#3f63d9;--brand-bg:#eef2ff;--brand-line:#d7e0ff;--green:#177f5c;--green-bg:#eaf7f1;--green-line:#c5e8d9;--amber:#94610e;--amber-bg:#fff6e6;--amber-line:#f0d6a6;--red:#b33737;--red-bg:#fff0ef;--red-line:#f0c9c5;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;--shadow:0 1px 2px rgba(15,23,42,.04),0 12px 30px rgba(15,23,42,.05)}
+  [data-theme="dark"]{color-scheme:dark;--bg:#0f141b;--panel:#181f29;--panel2:#1e2732;--panel3:#242e3b;--ink:#edf1f7;--muted:#a7b1c1;--faint:#778396;--line:#2a3442;--line2:#3b485a;--brand:#91a8ff;--brand-bg:#202c49;--brand-line:#34456b;--green:#69d2a8;--green-bg:#17372d;--green-line:#285a49;--amber:#e2b762;--amber-bg:#3a2e18;--amber-line:#58452a;--red:#f19a93;--red-bg:#3a2223;--red-line:#633334;--shadow:0 1px 2px rgba(0,0,0,.2),0 14px 32px rgba(0,0,0,.22)}
+  *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink)}body{font:13px/1.5 var(--sans)}button{font:inherit;color:inherit}button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}.mono{font-family:var(--mono)}
+  .page{max-width:1380px;margin:0 auto;padding:25px 24px 72px}.top{display:flex;align-items:center;gap:9px;margin-bottom:24px}.brand{display:flex;align-items:center;gap:8px;font-weight:750;font-size:13px}.mark{width:23px;height:23px;border-radius:7px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-size:15px}.slash{color:var(--faint)}.crumb{color:var(--muted);font-size:11px}.spacer{flex:1}.version{color:var(--faint);font-size:10px;border:1px solid var(--line);border-radius:5px;padding:3px 6px}.theme{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:6px;font-size:10.5px;padding:4px 8px;cursor:pointer}
+  .eyebrow{color:var(--faint);font-size:9.5px;font-weight:750;letter-spacing:.1em;text-transform:uppercase}.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:28px;align-items:end;padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:20px}.hero h1{font-size:28px;line-height:1.14;letter-spacing:-.8px;margin:7px 0 8px}.hero p{color:var(--muted);font-size:12px;line-height:1.7;margin:0;max-width:720px}.scope{border-left:2px solid var(--brand);padding-left:11px;color:var(--muted);font-size:10.5px;line-height:1.7}.scope b{display:block;color:var(--ink);font-size:11px;margin-bottom:2px}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:22px}.side{background:var(--panel);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);overflow:hidden}.side-head{display:flex;align-items:baseline;gap:7px;padding:10px 12px;border-bottom:1px solid var(--line)}.side-head b{font-size:11.5px}.side-head span{color:var(--faint);font-size:9.5px}.panel{padding:12px;min-height:300px}.panel-title{font-size:14px;font-weight:700;margin:2px 0 2px}.panel-sub{color:var(--muted);font-size:9.5px;line-height:1.5;margin-bottom:9px}.chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:4px;padding:2px 5px;font-size:8.5px;color:var(--muted);background:var(--panel2);white-space:nowrap}.chip.green{color:var(--green);border-color:var(--green-line);background:var(--green-bg)}.chip.amber{color:var(--amber);border-color:var(--amber-line);background:var(--amber-bg)}.chip.red{color:var(--red);border-color:var(--red-line);background:var(--red-bg)}.nav{display:flex;gap:3px;border-bottom:1px solid var(--line);margin:0 -12px 10px;padding:0 12px}.nav span{font-size:9.5px;color:var(--faint);padding:5px 6px;border-bottom:2px solid transparent}.nav span:first-child{color:var(--ink);border-bottom-color:var(--brand)}
+  .detect{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);padding:8px 9px;margin-bottom:8px}.detect .ico{width:21px;height:21px;border-radius:5px;background:var(--green-bg);color:var(--green);display:grid;place-items:center;font-size:11px;flex:none}.detect .main{min-width:0}.detect b{display:block;font-size:10px}.detect .path{display:block;color:var(--faint);font-family:var(--mono);font-size:8px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.detect .chip{margin-left:auto}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:7px;overflow:hidden;margin:8px 0}.metric{padding:7px 8px;border-right:1px solid var(--line)}.metric:last-child{border-right:0}.metric b{display:block;font-size:16px;line-height:18px;color:var(--ink)}.metric span{display:block;color:var(--faint);font-size:8px;margin-top:2px}.metric.amber b{color:var(--amber)}.actions{display:flex;gap:5px;margin:7px 0 8px}.btn{border:1px solid var(--line2);background:var(--panel);color:var(--muted);border-radius:4px;font-size:9px;line-height:21px;padding:0 7px;cursor:pointer}.btn.primary{border-color:var(--brand);background:var(--brand);color:#fff}.label{display:flex;gap:6px;align-items:center;color:var(--faint);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:8px 0 4px}.label::after{content:"";height:1px;background:var(--line);flex:1}.finding{display:grid;grid-template-columns:32px minmax(0,1fr);gap:6px;padding:5px 0;border-bottom:1px solid var(--line);font-size:9px}.finding:last-child{border-bottom:0}.severity{font-size:8px;line-height:16px;text-align:center;border-radius:3px;color:var(--amber);background:var(--amber-bg)}.finding code{font-family:var(--mono);font-size:8px;color:var(--brand);margin-right:4px}.finding p{margin:1px 0 0;color:var(--muted);line-height:1.4}.finding .path{font-family:var(--mono);color:var(--faint);font-size:7.5px;margin-top:1px}
+  .empty{border:1px dashed var(--line2);border-radius:7px;background:var(--panel2);padding:13px 11px}.empty .mark2{width:24px;height:24px;display:grid;place-items:center;border-radius:6px;background:var(--panel3);color:var(--faint);font-size:15px;margin-bottom:6px}.empty b{font-size:10.5px;display:block}.empty p{font-size:9px;color:var(--muted);line-height:1.5;margin:3px 0 7px}.empty code{font-family:var(--mono);font-size:8px;color:var(--faint);display:block;margin-bottom:7px}.error{border:1px solid var(--red-line);background:var(--red-bg);border-radius:7px;padding:9px 10px;color:var(--red)}.error .eh{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700}.error .ec{font-family:var(--mono);font-size:8px;margin-left:auto;opacity:.85}.error p{font-size:9px;line-height:1.45;margin:5px 0}.error dl{display:grid;grid-template-columns:48px minmax(0,1fr);gap:2px 5px;margin:0 0 7px;font-size:8px}.error dt{opacity:.65}.error dd{margin:0;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.error .btn{border-color:var(--red);color:var(--red);background:var(--panel)}
+  .before-mark{position:absolute;opacity:0}
+  .before-note{color:var(--amber);border:1px solid var(--amber-line);background:var(--amber-bg);border-radius:5px;padding:5px 7px;font-size:9px;line-height:1.5;margin:0 0 8px}.before-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:8px 0}.before-metric{border:1px solid var(--line);border-radius:5px;background:var(--panel2);padding:7px 6px;color:var(--faint);font-size:8px;min-height:42px}.before-error{border:1px solid var(--red-line);background:var(--red-bg);color:var(--red);border-radius:5px;padding:7px 8px;font-size:9px;margin-top:8px}.before-tabs{display:flex;gap:2px;color:var(--faint);font-size:9px;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:4px}.before-tabs span:first-child{color:var(--ink);font-weight:650}
+  .change{margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}.change h2{font-size:18px;letter-spacing:-.3px;margin:3px 0 11px}.change-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px}.change-col{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px 12px;box-shadow:var(--shadow)}.change-col h3{font-size:11px;margin:0 0 7px}.change-col ul{margin:0;padding-left:14px;color:var(--muted);font-size:9.5px;line-height:1.65}.change-col li::marker{color:var(--faint)}
+  .invariants{margin-top:18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.invariant{border-top:1px solid var(--line);padding-top:7px;color:var(--muted);font-size:9.5px;line-height:1.55}.invariant b{display:block;color:var(--ink);font-size:10.5px;margin-bottom:2px}
+  .phases{margin-top:25px;padding-top:20px;border-top:1px solid var(--line)}.phases h2{font-size:18px;margin:3px 0 11px;letter-spacing:-.3px}.phase-row{display:grid;grid-template-columns:76px 1fr 1fr;gap:12px;border-top:1px solid var(--line);padding:9px 0;font-size:9.5px;line-height:1.55}.phase-row:last-child{border-bottom:1px solid var(--line)}.phase-row b{color:var(--ink)}.phase-row span{color:var(--muted)}
+  .footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}.footer a:hover{color:var(--brand)}.footer{color:var(--faint);font-size:9px;text-align:center;margin-top:28px}
+  @media(max-width:900px){.hero{grid-template-columns:1fr}.compare{grid-template-columns:1fr}.change-grid{grid-template-columns:1fr}.invariants{grid-template-columns:1fr}.phase-row{grid-template-columns:60px 1fr}.phase-row span:last-child{grid-column:2}.page{padding:20px 16px 60px}}@media(max-width:560px){.hero h1{font-size:23px}.metrics{grid-template-columns:1fr 1fr}.metric:nth-child(2){border-right:0}.metric:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top"><div class="brand"><span class="mark">∞</span><span>DataOps</span></div><span class="slash">/</span><span class="crumb">Repo Doctor · P0-B delta</span><span class="spacer"></span><span class="version">2026-11-02</span><button class="theme" id="theme">深色</button></header>
+  <section class="hero">
+    <div><div class="eyebrow">P0-B · incremental blueprint</div><h1>不是把旧面板换皮，是先把“仓库体检”做对。</h1><p>这次只增加一个 DataOps tab，里面只放 Repo Doctor。资产 / 血缘 / 证据保持原样，等 P1 再聚合。增量重点不是视觉，而是识别、错误、空状态和边界。</p></div>
+    <div class="scope"><b>Before → After</b>旧的 DataOps 壳：识别错误 + 空指标 + 通用“扫描失败”；新的 P0-B：明确识别、可读指标、真实 package 与 findings，错误有 code / stage / workspace / retry。</div>
+  </section>
+
+  <section class="compare">
+    <article class="side">
+      <div class="side-head"><b>Before</b><span>当前实现，不可验收</span></div>
+      <div class="panel">
+        <div class="panel-title">数据工作台</div><div class="panel-sub">当前 workspace · 未识别</div>
+        <div class="before-tabs"><span>概览</span><span>仓库</span><span>资产</span><span>血缘</span><span>证据</span><span>检查</span></div>
+        <div class="before-note">当前 workspace 是 dataops-harness，不是代码仓；四个指标没有内容。</div>
+        <div class="before-metrics"><div class="before-metric">packages</div><div class="before-metric">tasks</div><div class="before-metric">jobs</div><div class="before-metric">findings</div></div>
+        <div class="before-error">ERROR · 扫描失败</div>
+        <div class="finding" style="margin-top:12px"><span class="severity" style="color:var(--faint);background:var(--panel3)">空</span><div><code style="color:var(--faint)">无诊断信息</code><p>无法判断是 workspace、route 还是 scan 失败。</p></div></div>
+      </div>
+    </article>
+    <article class="side">
+      <div class="side-head"><b>After</b><span>P0-B，只做 Repo Doctor</span></div>
+      <div class="panel">
+        <div class="panel-title">仓库体检</div><div class="panel-sub">识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。</div>
+        <div class="before-tabs"><span>概览</span><span>仓库</span><span>检查</span><span style="margin-left:auto">DataOps</span></div>
+        <div class="detect"><span class="ico">✓</span><div class="main"><b>internal-code-repo</b><span class="path">.dataops/manifest.yaml · build.yaml</span></div><span class="chip green">已识别</span></div>
+        <div class="metrics"><div class="metric"><b>5</b><span>packages</span></div><div class="metric"><b>4</b><span>tasks</span></div><div class="metric"><b>13</b><span>jobs</span></div><div class="metric amber"><b>1</b><span>warning</span></div></div>
+        <div class="actions"><button class="btn primary">运行检查</button><button class="btn">刷新索引</button><button class="btn">复制摘要</button></div>
+        <div class="label">最近发现</div>
+        <div class="finding"><span class="severity">警告</span><div><code>ARTIFACT_UNCLAIMED</code><p>sp 的制品没有被 package 覆盖。</p><div class="path">code/etl/sp/calc_channel_summary.sql</div></div></div>
+        <div class="finding"><span class="severity" style="color:var(--green);background:var(--green-bg)">通过</span><div><code style="color:var(--green)">PACKAGE_SCOPE_OK</code><p>5 个 package 都命中至少一个文件。</p><div class="path">.dataops/build.yaml</div></div></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="change">
+    <div class="eyebrow">CHANGE SET</div><h2>新增 / 保留 / 迁出 / 替换 / 删除</h2>
+    <div class="change-grid">
+      <div class="change-col"><h3>新增</h3><ul><li>DataOps tab：只含概览 / 仓库 / 检查</li><li>detection：detected / partial / not-detected</li><li>scan / validate 双层状态</li><li>finding 的 code / path / hint</li><li>错误态：code / stage / workspace / retry</li></ul></div>
+      <div class="change-col"><h3>保留</h3><ul><li>资产 / 血缘 / 证据旧 tab</li><li>DSH Files 与源码预览</li><li>只读边界</li><li>Repo Doctor 的 Host tools</li><li>/dataops 命令命名空间</li></ul></div>
+      <div class="change-col"><h3>替换 / 删除</h3><ul><li>删除空指标占位</li><li>删除“扫描失败”通用文案</li><li>删除 P0 对旧 tab 的迁移</li><li>P0 不引入 section registry</li></ul></div>
+    </div>
+    <div class="invariants"><div class="invariant"><b>不改变文件入口</b>Files tab 仍然负责打开文件、源码和源码分栏。</div><div class="invariant"><b>不改变写入边界</b>Repo Doctor 始终只读，不 build、不 deploy、不自动修。</div><div class="invariant"><b>不改变旧能力</b>资产 / 血缘 / 证据 tab 这次不动，避免 P0 同时做两件事。</div></div>
+  </section>
+
+  <section class="phases">
+    <div class="eyebrow">SEQUENCE</div><h2>先 B，再谈聚合</h2>
+    <div class="phase-row"><b>P0-B</b><span>Repo Doctor 单 tab + 真实 scan / validate 结果。</span><span>通过：5 packages / 4 tasks / 13 jobs；错误态可诊断；旧 tab 不受影响。</span></div>
+    <div class="phase-row"><b>P0.1</b><span>修复 Host route / Session cwd / scan 错误。</span><span>所有结果来自当前 Session，不接受任意 root。</span></div>
+    <div class="phase-row"><b>P1</b><span>再把资产 / 血缘 / 证据迁入 DataOps，引入 section registry。</span><span>这时才讨论“单面板替代旧 tab”。</span></div>
+    <div class="phase-row"><b>P1.1</b><span>Placeholder / Env Guard、LTS Guard。</span><span>作为同一个 checks section 的规则扩展。</span></div>
+  </section>
+
+  <div class="footer">DataOps · Repo Doctor · P0-B delta · 2026-11-02 · <a href="dataops-repo-doctor-blueprint.html">全量</a> · <a href="../docs/design/repo-doctor.md">详细设计</a></div>
+</div>
+<script>
+document.getElementById('theme').addEventListener('click', function(){
+  var dark = document.documentElement.dataset.theme !== 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  this.textContent = dark ? '浅色' : '深色';
+});
+</script>
+</body>
+</html>

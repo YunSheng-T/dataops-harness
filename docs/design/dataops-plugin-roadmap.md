@@ -21,7 +21,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 
 | ID | 名称 | 优先级 | 状态 | 用户入口 | Host / Client | 依赖 | 下一步 |
 |---|---|---|---|---|---|---|---|
-| DO-PLUGIN-001 | **Repo Doctor** | P0 | building | DataOps 面板「概览 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 补全 blueprint 后实施 |
+| DO-PLUGIN-001 | **Repo Doctor** | P0 | design | 独立 DataOps tab「概览 / 仓库 / 检查」、`/dataops` 命令 | Host + Client | repo index、LTS parser | 完成 P0-B 设计评审 |
 | DO-PLUGIN-002 | **Env / Placeholder Guard** | P1 | idea | DataOps 检查 section | Host + Client | Repo Doctor findings | 合并进 Repo Doctor P0 |
 | DO-PLUGIN-003 | **LTS Guard** | P1 | idea | DataOps 检查 section | Host | LTS parser | 定义 parent/path 规则 |
 | DO-PLUGIN-004 | **Impact Watch** | P2 | idea | DataOps 检查 / 血缘 section | Host + Client | workspaceChanges / fs | 评估事件来源 |
@@ -34,13 +34,13 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 | DO-PLUGIN-011 | **Evidence Completeness** | P3 | idea | evidence card / review card | Host + Client | evidence schema | 定义缺失判定 |
 | DO-PLUGIN-012 | **Repo Doctor Settings** | P3 | idea | DataOps 设置 / settings.section | Host + Client | repo config | 等 P0 用户入口确认 |
 
-## 2.1 表面聚合原则
+## 2.1 P0-B 表面原则
 
-- 插件不拥有自己的右栏 tab
-- 插件不拥有自己的对话大卡
-- 插件向 DataOps 面板注册 section
+- P0 只新增一个 Repo Doctor DataOps tab
+- 旧资产 / 血缘 / 证据 tab 暂不迁移
+- 不做对话大卡
 - 一个 `/dataops` 命令命名空间
-- 一个 composer 聚合状态入口
+- 聚合到单面板放到 P1
 - 详情见 [DataOps 插件聚合设计](dataops-plugin-surface.md)
 
 ## 3. 为什么 P0 是 Repo Doctor
