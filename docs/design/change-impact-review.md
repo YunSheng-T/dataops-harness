@@ -1,6 +1,6 @@
 # Change Impact Review（P2.1）
 
-> 状态：设计暂停；并入单一 code scan 的结果展示，不再作为独立 P2.1 能力。
+> 状态：已被 [Code Scan Integration](code-scan-integration.md) 取代；此文档只保留历史设计。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
 > 边界：唯一代码扫描入口是 `dataops_code_scan`；DataOps 只展示其结果，不解析 SQL、不实现扫描。
 > 蓝图：[全量](../../prototype/change-impact-review-blueprint.html) · [增量](../../prototype/change-impact-review-blueprint-delta.html)
