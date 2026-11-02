@@ -1,6 +1,6 @@
 # Artifact Evidence Links
 
-> 状态：设计稿，待评审。
+> 状态：P3.2 第一版实现中；Stage prepare、DataOps 交付物、当前迭代浮层已接入 evidenceRefs。
 > 关联：[Stage Artifact Ledger](stage-artifact-ledger.md) · [Run Timeline](run-timeline.md)
 > 蓝图：[全量](../../prototype/artifact-evidence-blueprint.html) · [增量](../../prototype/artifact-evidence-blueprint-delta.html)
 > 目标：让每个 ArtifactRevision 能回答“依据是什么”，但不把证据正文塞进 revision。

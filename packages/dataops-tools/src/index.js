@@ -825,7 +825,7 @@ export function createTools(config, deps) {
     }),
     textTool({
       name: 'dataops_shared_stage',
-      description: '阶段运行时：prepare 写交付物并更新 workitem；signoff 记录 UI 签收并推进 stage；status 读取工作项。',
+      description: '阶段运行时：prepare 写交付物、ArtifactRevision 与 evidenceRefs；signoff 记录 UI 签收并推进 stage；status 读取工作项。',
       parameters: parameterRoot({
         action: { type: 'string', enum: ['prepare', 'signoff', 'status', 'complete'] },
         id: { type: 'string' },
@@ -834,6 +834,7 @@ export function createTools(config, deps) {
         substage: { type: 'string', enum: ['analysis', 'solution', 'tech_plan'] },
         deliverable: { type: 'string' },
         payload: { type: 'object' },
+        evidenceRefs: { type: 'array', items: { type: 'object' }, description: '本轮 revision 的证据引用；code_scan/deploy_log/runtime_log/query/catalog，最多 20 条。' },
         status: { type: 'string' },
         gaps: { type: 'array', items: { type: 'object' } },
         next: { type: 'string' },

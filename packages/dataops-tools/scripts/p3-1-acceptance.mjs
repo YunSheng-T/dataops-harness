@@ -20,12 +20,14 @@ try {
   await run('dataops_shared_stage', { action: 'signoff', id, gate: 'requirement', role: 'ba', via: 'ui', actionId: 'ui-p31-ba', actor: '陈璐' })
   await run('dataops_shared_stage', { action: 'signoff', id, gate: 'requirement', role: 'requester', via: 'ui', actionId: 'ui-p31-req', actor: '渠道运营' })
 
+  const evidenceRefs = [{ kind: 'code_scan', ref: { scanId: 'scan-p31' }, status: 'pass', summary: '0 blocking', asOf: '2026-11-02 17:50' }, { kind: 'deploy_log', ref: { deploymentId: 'deploy-20261102-001' }, status: 'pass', summary: 'sit healthy' }]
   const designPayload = { target: { table: 'dws.trade_channel_daily', grain: '渠道 × 支付日期', primaryKey: ['channel_id', 'dt'], partition: 'dt' }, sources: [{ table: 'dwd.orders' }, { table: 'dim.channel' }], metrics: [{ name: 'gmv', definition: '支付成功 GMV' }], goal: '支付成功口径' }
-  await run('dataops_shared_stage', { action: 'prepare', id, kind: 'design', stage: 'design', deliverable: 'deliverables/design/design.yaml', payload: designPayload })
+  await run('dataops_shared_stage', { action: 'prepare', id, kind: 'design', stage: 'design', deliverable: 'deliverables/design/design.yaml', payload: designPayload, evidenceRefs })
   const design = await run('dataops_shared_read_workitem', { id })
   assert(design.artifacts.some(item => item.artifactId === 'design'), 'design artifact missing')
   assert(design.currentIteration.artifactId === 'design' && design.currentIteration.revisionId === 'rev-0001', 'design current iteration')
   assert(design.artifacts.find(item => item.artifactId === 'design').currentRevision.status === 'draft', 'design starts draft')
+  assert(design.artifacts.find(item => item.artifactId === 'design').currentRevision.evidenceRefs.length === 2, 'design evidence refs persisted')
 
   await run('dataops_shared_stage', { action: 'signoff', id, gate: 'design', role: 'ba', via: 'ui', actionId: 'ui-p31-design-ba', actor: '陈璐' })
   const approved = await run('dataops_shared_read_workitem', { id })
@@ -38,6 +40,7 @@ try {
   assert(revised.currentIteration.revisionId === 'rev-0002', 'design revision advanced')
   assert(revised.approvals.find(item => item.gate === 'design').status === 'pending', 'design approval invalidated')
   assert(artifact.revisions.length === 2 && artifact.revisions[0].content.goal === '支付成功口径', 'revision content available for diff')
+  assert(artifact.currentRevision.evidenceRefs.length === 0, 'new revision does not inherit evidence')
 
   console.log('P3.1 acceptance: PASS')
   console.log('workitem: ' + id)

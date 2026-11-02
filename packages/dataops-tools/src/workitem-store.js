@@ -369,10 +369,10 @@ function readArtifactSummaries(dir) {
           if (!path || !existsSync(path)) return item
           try {
             const revision = parseWorkitem(readFileSync(path, 'utf8'))
-            return { ...item, content: revision.content, parentRevisionId: revision.parentRevisionId || null, author: revision.author || null }
+            return { ...item, content: revision.content, parentRevisionId: revision.parentRevisionId || null, author: revision.author || null, evidenceRefs: Array.isArray(revision.evidenceRefs) ? revision.evidenceRefs : [] }
           } catch { return item }
         })
-        return { ...meta, revisions, currentRevision: current ? { revisionId: current.revisionId, version: current.version, status: current.status, contentHash: current.contentHash, createdAt: current.createdAt, content: current.content } : null }
+        return { ...meta, revisions, currentRevision: current ? { revisionId: current.revisionId, version: current.version, status: current.status, contentHash: current.contentHash, createdAt: current.createdAt, content: current.content, evidenceRefs: Array.isArray(current.evidenceRefs) ? current.evidenceRefs : [] } : null }
       } catch { return null }
     })
     .filter(Boolean)
@@ -440,6 +440,31 @@ function setArtifactGateStatus(dir, gate, status) {
   } catch { /* revision status is metadata; never block a signoff */ }
 }
 
+const EVIDENCE_KINDS = new Set(['code_scan', 'deploy_log', 'runtime_log', 'query', 'catalog'])
+const EVIDENCE_STATUSES = new Set(['pass', 'warn', 'fail', 'unknown'])
+
+function validateEvidenceRefs(value) {
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value)) throw new Error('stage: evidenceRefs must be an array')
+  if (value.length > 20) throw new Error('stage: evidenceRefs exceeds 20 items')
+  return value.map((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('stage: evidenceRefs[' + index + '] must be an object')
+    const kind = String(item.kind || '')
+    if (!EVIDENCE_KINDS.has(kind)) throw new Error('stage: evidenceRefs[' + index + '] has unknown kind ' + kind)
+    const ref = item.ref
+    if (!ref || typeof ref !== 'object' || Array.isArray(ref)) throw new Error('stage: evidenceRefs[' + index + '] needs ref')
+    const required = kind === 'code_scan' ? ['scanId'] : kind === 'deploy_log' ? ['deploymentId'] : kind === 'runtime_log' ? ['platform', 'project', 'group', 'runId'] : kind === 'query' ? [] : ['table']
+    for (const key of required) if (typeof ref[key] !== 'string' || !ref[key]) throw new Error('stage: evidenceRefs[' + index + '] missing ' + key)
+    if (kind === 'runtime_log' && !ref.task && !ref.job) throw new Error('stage: evidenceRefs[' + index + '] needs task or job')
+    if (kind === 'query' && !ref.queryId && !ref.table && !ref.id) throw new Error('stage: evidenceRefs[' + index + '] needs queryId or table')
+    const status = item.status === undefined ? 'unknown' : String(item.status)
+    if (!EVIDENCE_STATUSES.has(status)) throw new Error('stage: evidenceRefs[' + index + '] has invalid status ' + status)
+    if (item.summary !== undefined && (typeof item.summary !== 'string' || item.summary.length > 500)) throw new Error('stage: evidenceRefs[' + index + '] summary must be <=500 chars')
+    if (item.asOf !== undefined && typeof item.asOf !== 'string') throw new Error('stage: evidenceRefs[' + index + '] asOf must be a string')
+    return { ...item, kind, ref, status, summary: item.summary || '', asOf: item.asOf || null, source: item.source || 'unknown' }
+  })
+}
+
 function writeArtifactRevision(dir, raw, input) {
   const id = artifactId(input.kind)
   const base = artifactMetaPath(dir, id)
@@ -463,11 +488,12 @@ function writeArtifactRevision(dir, raw, input) {
     author: input.migrate ? 'migration' : 'agent',
     createdAt: now,
     sourceTurnId: input.sourceTurnId || (input.migrate ? 'legacy-deliverable' : null),
+    evidenceRefs: Array.isArray(input.evidenceRefs) ? input.evidenceRefs : [],
     content: input.file
   }
   mkdirSync(revisionDir(dir, id), { recursive: true })
   writeFileSync(join(revisionDir(dir, id), revisionId + '.yaml'), serializeWorkitem(revision), 'utf8')
-  revisions.push({ revisionId, version, status: revision.status, contentHash, createdAt: now, sourceTurnId: revision.sourceTurnId })
+  revisions.push({ revisionId, version, status: revision.status, contentHash, createdAt: now, sourceTurnId: revision.sourceTurnId, evidenceCount: revision.evidenceRefs.length })
   meta.currentRevisionId = revisionId
   meta.updatedAt = now
   meta.revisions = revisions
@@ -795,6 +821,7 @@ function stagePrepareUnlocked(config, args) {
   const deliverable = args.deliverable
   if (typeof deliverable !== 'string' || !SAFE_PATH.test(deliverable) || deliverable.includes('..')) throw new Error('stage: unsafe deliverable path')
   if (!args.payload || typeof args.payload !== 'object' || Array.isArray(args.payload)) throw new Error('stage: payload must be an object')
+  const evidenceRefs = validateEvidenceRefs(args.evidenceRefs)
   const root = rootDir(config)
   const dir = itemDir(root, id)
   const raw = readRaw(root, id)
@@ -814,9 +841,9 @@ function stagePrepareUnlocked(config, args) {
   if (Array.isArray(args.gaps)) raw.gaps = args.gaps
   if (args.next) raw.next = args.next
   raw.updated_at = stamp()
-  const revision = writeArtifactRevision(dir, raw, { kind, stage, substage: args.substage, file, sourceTurnId: args.sourceTurnId })
+  const revision = writeArtifactRevision(dir, raw, { kind, stage, substage: args.substage, file, sourceTurnId: args.sourceTurnId, evidenceRefs })
   writeItem(dir, raw, config, `stage prepare · ${stage}${args.substage ? '/' + args.substage : ''} · ${deliverable}`)
-  return { ...file, workitemId: id, prepared: true, workitemStage: raw.stage, artifactId: revision.artifactId, revisionId: revision.revisionId }
+  return { ...file, workitemId: id, prepared: true, workitemStage: raw.stage, artifactId: revision.artifactId, revisionId: revision.revisionId, evidenceCount: evidenceRefs.length }
 }
 
 function advanceAfterSignoff(raw, gate) {

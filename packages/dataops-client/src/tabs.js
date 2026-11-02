@@ -746,13 +746,14 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
           current ? h('span', null, 'current · ' + current.artifactId + ' ' + current.revisionId) : null),
         artifacts.length ? artifacts.map(function (artifact) {
           var currentRevision = artifact.currentRevision || {}
+          var evidence = Array.isArray(currentRevision.evidenceRefs) ? currentRevision.evidenceRefs : []
           var isCurrent = current && current.artifactId === artifact.artifactId
           return h('button', { type: 'button', className: 'rd-artifact' + (isCurrent ? ' on' : '') + (artifact.preview ? ' preview' : ''), key: artifact.artifactId, onClick: function () {
             if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
               window.dispatchEvent(new CustomEvent('dataops:artifact-inspector', { detail: { workitem: workitem, artifacts: artifacts, artifact: artifact } }))
             }
           } },
-            h('div', { className: 'rd-artifact-main' }, h('b', null, artifact.kind || artifact.artifactId), h('span', null, artifact.preview ? 'draft preview · 未归档' : (artifact.revisions || []).length + ' revisions · ' + (artifact.stage || ''))),
+            h('div', { className: 'rd-artifact-main' }, h('b', null, artifact.kind || artifact.artifactId), h('span', null, artifact.preview ? 'draft preview · 未归档' : (artifact.revisions || []).length + ' revisions · ' + (artifact.stage || '') + ' · ' + (evidence.length ? evidence.length + ' evidence' : '未关联证据')), evidence.length ? h('div', { className: 'rd-mini-ev' }, evidence.slice(0, 3).map(function (item, index) { return h('span', { key: index, 'data-tone': evidenceTone(item.status) }, evidenceLabel(item)) })) : null),
             h('div', { className: 'rd-artifact-side' }, h('span', { className: 'rd-badge', 'data-tone': currentRevision.status === 'approved' || currentRevision.status === 'review' ? 'pass' : 'warn' }, currentRevision.status || 'draft'), h('code', null, artifact.preview ? 'preview' : (currentRevision.version ? 'v' + currentRevision.version : artifact.currentRevisionId || ''))))
         }) : h('div', { className: 'rd-inline-empty' }, h('b', null, '还没有阶段产物'), h('p', null, 'Agent 阶段 prepare 后会生成 revision，并在这里显示当前版本。')),
         current ? h('div', { className: 'rd-current-iteration' }, h('span', null, 'currentIteration'), h('code', null, current.stage + ' / ' + current.artifactId + ' / ' + current.revisionId), current.gate ? h('span', { className: 'rd-badge', 'data-tone': 'warn' }, current.gate) : null) : null)
@@ -816,6 +817,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var state = React.useState(null)
     var openState = React.useState(null)
     var revisionState = React.useState(null)
+    var evidenceState = React.useState(null)
     React.useEffect(function () {
       if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
       var onOpen = function (event) {
@@ -894,6 +896,45 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
         return h('span', { key: key, 'data-tone': tone }, tone === 'add' ? '+' : tone === 'rem' ? '−' : '~', ' ', key)
       }))
     }
+    function evidenceRefsOf(revision) {
+      return revision && Array.isArray(revision.evidenceRefs) ? revision.evidenceRefs : []
+    }
+    function evidenceLabel(evidence) {
+      var ref = evidence && evidence.ref || {}
+      if (evidence && evidence.kind === 'code_scan') return ref.scanId || 'scan'
+      if (evidence && evidence.kind === 'deploy_log') return ref.deploymentId || 'deploy'
+      if (evidence && evidence.kind === 'runtime_log') return [ref.platform, ref.task || ref.job, ref.runId].filter(Boolean).join(' / ')
+      if (evidence && evidence.kind === 'query') return ref.queryId || ref.table || 'query'
+      if (evidence && evidence.kind === 'catalog') return ref.table || 'catalog'
+      return evidence && evidence.kind || 'evidence'
+    }
+    function evidenceTone(status) {
+      return status === 'pass' ? 'pass' : status === 'warn' ? 'warn' : status === 'fail' ? 'fail' : 'unknown'
+    }
+    function evidenceDetail(item, revision, index) {
+      var chosen = evidenceState[0]
+      if (!chosen || chosen.artifactId !== item.artifactId || chosen.revisionId !== (revision && revision.revisionId) || chosen.index !== index) return null
+      var refs = evidenceRefsOf(revision)
+      var evidence = refs[index]
+      if (!evidence) return null
+      return h('div', { className: 'rd-ev-detail' },
+        h('div', { className: 'rd-ev-detail-head' }, h('b', null, evidenceLabel(evidence)), h('span', { className: 'rd-badge', 'data-tone': evidenceTone(evidence.status) }, evidence.status || 'unknown')),
+        h('dl', { className: 'rd-ev-kv' },
+          h('dt', null, 'kind'), h('dd', null, evidence.kind),
+          h('dt', null, 'ref'), h('dd', null, h('code', null, JSON.stringify(evidence.ref || {}))),
+          h('dt', null, 'asOf'), h('dd', null, evidence.asOf || '—'),
+          h('dt', null, 'source'), h('dd', null, evidence.source || 'unknown')),
+        evidence.summary ? h('div', { className: 'rd-ev-summary' }, evidence.summary) : null,
+        h('button', { type: 'button', className: 'rd-btn', onClick: function () { openEvidenceSection() } }, '在证据里打开')
+      )
+    }
+    function openEvidenceSection() {
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('dataops:panel-section', { detail: { section: 'evidence' } }))
+        window.dispatchEvent(new CustomEvent('dataops:open-tab', { detail: { kind: 'dataops' } }))
+      }
+      close()
+    }
     function stageBody(key, item) {
       if (!item) return h('div', { className: 'rd-stage-empty' }, '还没有产物。让 Agent 继续完成这个阶段。')
       var rev = selectedRevision(item)
@@ -904,10 +945,17 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
         h('div', { className: 'rd-stage-body-head' }, h('b', null, item.kind || item.artifactId), h('span', null, ((rev && rev.status) || 'draft') + (item.preview ? ' · 未归档' : ' · ' + ((rev && rev.revisionId) || '')))),
         revisions.length > 1 ? h('div', { className: 'rd-rev-switch' }, revisions.map(function (revision) {
           var active = rev && revision.revisionId === rev.revisionId
-          return h('button', { key: revision.revisionId, type: 'button', className: active ? 'on' : '', onClick: function () { revisionState[1]({ artifactId: item.artifactId, revisionId: revision.revisionId }) } }, 'v' + revision.version)
+          return h('button', { key: revision.revisionId, type: 'button', className: active ? 'on' : '', onClick: function () { revisionState[1]({ artifactId: item.artifactId, revisionId: revision.revisionId }); evidenceState[1](null) } }, 'v' + revision.version)
         })) : null,
         revisionDiff(item, rev),
         keys.length ? h('dl', { className: 'rd-float-grid' }, keys.map(function (field) { return h(React.Fragment, { key: field }, h('dt', null, field), h('dd', null, valueOf(field, c[field]))) })) : h('div', { className: 'rd-stage-empty' }, '已有一版产物，但还没有可展示的结构字段。'),
+        h('div', { className: 'rd-ev-section' },
+          h('div', { className: 'rd-ev-head' }, h('span', null, '证据'), h('span', { className: 'rd-badge' }, evidenceRefsOf(rev).length || '未关联')),
+          evidenceRefsOf(rev).length ? h('div', { className: 'rd-ev-chips' }, evidenceRefsOf(rev).map(function (evidence, index) {
+            return h('button', { key: index, type: 'button', className: 'rd-ev-chip', 'data-tone': evidenceTone(evidence.status), onClick: function () { evidenceState[1]({ artifactId: item.artifactId, revisionId: rev.revisionId, index: index }) } }, evidenceLabel(evidence), h('span', null, evidence.status || 'unknown'))
+          })) : h('div', { className: 'rd-stage-empty' }, '未关联证据。'),
+          evidenceRefsOf(rev).length ? h(React.Fragment, null, evidenceRefsOf(rev).map(function (_, index) { return evidenceDetail(item, rev, index) })) : null
+        ),
         item.preview || !rev ? null : h('div', { className: 'rd-float-hash' }, 'revision · ' + (rev.revisionId || '') + ' · ' + String(rev.contentHash || '').slice(0, 12))
       )
     }
@@ -933,6 +981,20 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
             h('div', { className: 'rd-stage-expand' + (open ? ' open' : ''), 'aria-hidden': open ? 'false' : 'true' }, h('div', { className: 'rd-stage-expand-inner' }, stageBody(stage.key, item))))
         })),
         h('div', { className: 'rd-float-actions' }, h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: compose }, '在会话继续修改'), h('button', { type: 'button', className: 'rd-btn', onClick: close }, '关闭'))))
+  }
+
+  function evidenceLabel(evidence) {
+    var ref = evidence && evidence.ref || {}
+    if (evidence && evidence.kind === 'code_scan') return ref.scanId || 'scan'
+    if (evidence && evidence.kind === 'deploy_log') return ref.deploymentId || 'deploy'
+    if (evidence && evidence.kind === 'runtime_log') return [ref.platform, ref.task || ref.job, ref.runId].filter(Boolean).join(' / ')
+    if (evidence && evidence.kind === 'query') return ref.queryId || ref.table || 'query'
+    if (evidence && evidence.kind === 'catalog') return ref.table || 'catalog'
+    return evidence && evidence.kind || 'evidence'
+  }
+
+  function evidenceTone(status) {
+    return status === 'pass' ? 'pass' : status === 'warn' ? 'warn' : status === 'fail' ? 'fail' : 'unknown'
   }
 
   function tab(id, kind, label, description, order, Body) {

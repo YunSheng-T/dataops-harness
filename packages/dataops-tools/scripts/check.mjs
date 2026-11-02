@@ -575,6 +575,36 @@ check('artifact ledger creates immutable revisions and binds gates', async () =>
   }
 })
 
+check('artifact evidence refs validate and do not inherit', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-evidence-refs-'))
+  try {
+    const scoped = createTools(normalizeConfig({ workitemsDir: dir }), {})
+    const by = name => scoped.find(tool => tool.name === name)
+    const created = await by('dataops_shared_ensure_workitem').execute({ source: { system: 'evidops', id: 'EV-1' }, title: 'evidence', initialStage: 'requirement' }, { signal })
+    const id = created.workitem.id
+    const refs = [
+      { kind: 'code_scan', ref: { scanId: 'scan-7f2' }, status: 'pass', summary: '0 blocking', asOf: '2026-11-02 10:06' },
+      { kind: 'deploy_log', ref: { deploymentId: 'deploy-20261102-001' }, status: 'pass', summary: 'sit healthy' },
+      { kind: 'runtime_log', ref: { platform: 'lts', project: 'dataops-sample', group: 'channel_daily', task: 'channel_daily_mixed', runId: 'lts-run-1' }, status: 'warn' }
+    ]
+    const prepared = await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'requirement', stage: 'requirement', deliverable: 'deliverables/requirement/requirement.yaml', payload: { title: 'evidence' }, evidenceRefs: refs }, { signal })
+    assert(prepared.evidenceCount === 3, 'evidence count')
+    const read = await by('dataops_shared_read_workitem').execute({ id }, { signal })
+    assert(read.artifacts[0].currentRevision.evidenceRefs.length === 3, 'evidence refs persisted')
+    assert(read.artifacts[0].currentRevision.evidenceRefs[2].ref.runId === 'lts-run-1', 'runtime coordinates persisted')
+    let rejected = false
+    try {
+      await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'requirement', stage: 'requirement', deliverable: 'deliverables/requirement/bad.yaml', payload: { title: 'bad' }, evidenceRefs: [{ kind: 'deploy_log', ref: {} }] }, { signal })
+    } catch (error) { rejected = /missing deploymentId/.test(error.message) }
+    assert(rejected, 'invalid evidence ref rejected')
+    await by('dataops_shared_stage').execute({ action: 'prepare', id, kind: 'requirement', stage: 'requirement', deliverable: 'deliverables/requirement/requirement.yaml', payload: { title: 'v2' } }, { signal })
+    const next = await by('dataops_shared_read_workitem').execute({ id }, { signal })
+    assert(next.artifacts[0].currentRevision.evidenceRefs.length === 0, 'new revision must not inherit evidence')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 check('legacy deliverables migrate to rev-0001 on read', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'dataops-legacy-ledger-'))
   try {

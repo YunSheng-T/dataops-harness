@@ -589,14 +589,14 @@ check('DataOps deliverables reads the workitem artifact ledger', () => {
     kind: 'workitem',
     id: 'wi-deliverables',
     currentIteration: { stage: 'design', artifactId: 'design', revisionId: 'rev-0002', gate: 'design.review' },
-    artifacts: [{ artifactId: 'design', kind: 'design', stage: 'design', currentRevisionId: 'rev-0002', revisions: [{ revisionId: 'rev-0001' }, { revisionId: 'rev-0002' }], currentRevision: { version: 2, status: 'review', contentHash: 'abc' } }]
+    artifacts: [{ artifactId: 'design', kind: 'design', stage: 'design', currentRevisionId: 'rev-0002', revisions: [{ revisionId: 'rev-0001' }, { revisionId: 'rev-0002' }], currentRevision: { version: 2, status: 'review', contentHash: 'abc', evidenceRefs: [{ kind: 'code_scan', ref: { scanId: 'scan-7f2' }, status: 'pass' }, { kind: 'deploy_log', ref: { deploymentId: 'deploy-20261102-001' }, status: 'pass' }] } }]
   })
   const previous = globalThis.window
   globalThis.window = { __dataopsPanelSection: 'deliverables' }
   try {
     const body = text(Tabs._internals.DataOpsPanelBody({ sessionId: 's-deliverables' }))
     assert(body.includes('交付物') && body.includes('design') && body.includes('v2'), 'deliverables list')
-    assert(body.includes('rev-0002'), 'current iteration')
+    assert(body.includes('rev-0002') && body.includes('2 evidence') && body.includes('scan-7f2'), 'current iteration evidence')
   } finally {
     if (previous === undefined) delete globalThis.window
     else globalThis.window = previous
