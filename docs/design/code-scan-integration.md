@@ -40,7 +40,7 @@ dataops_code_scan（唯一能力）
 ```
 
 它们是同一个扫描服务的不同调用方，不是三个扫描实现。  
-DataOps Host / Client 不保存扫描服务凭据，也不实现鉴权。  
+DataOps Host / Client 不保存扫描服务凭据，也不实现鉴权。
 `dataops_cicd_scan` 只保留旧名兼容，不再新增独立入口。
 
 ## 3. 扫描范围
@@ -96,7 +96,7 @@ ScanAccepted
 GET /api/dataops/code-scan?sessionId=...&scanId=...
 ```
 
-只支持按 scanId 读取，不提供 latest 查询。  
+只支持按 scanId 读取，不提供 latest 查询。
 scanId 和结果保留策略由扫描服务管理。
 
 ### scanId 归谁保存
