@@ -304,8 +304,14 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
   }
 
   function LineageBody(props) {
+    var dialogState = React.useState(false)
     if (Flow && typeof Flow.LineageSurface === 'function') {
-      return h('div', { className: 'do-lineage-inline' }, h(Flow.LineageSurface, { initialView: 'schedule' }))
+      return h('div', { className: 'do-lineage-inline' },
+        h('div', { className: 'do-lineage-toolbar' },
+          h('span', null, '当前会话 · 调度视图'),
+          h('button', { type: 'button', className: 'do-lineage-expand', onClick: function () { dialogState[1](true) } }, '半屏打开')),
+        h(Flow.LineageSurface, { initialView: 'schedule' }),
+        dialogState[0] && Flow.LineageDialog ? h(Flow.LineageDialog, { open: true, initialView: 'schedule', onClose: function () { dialogState[1](false) } }) : null)
     }
     var context = useContext(props.sessionId) || {}
     var lineage = context.lineage

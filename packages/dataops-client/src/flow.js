@@ -761,6 +761,31 @@ function content(info, tab) {
       h('div', { className: 'do-surface-foot' }, h('span', null, schedule ? '来自 task.yaml · 只读' : '设计 / 生产 / 调度三视图'), h('span', null, schedule ? (schedule.source || '解析结果') : '只读 · 来自血缘模型')))
   }
 
+  function LineageDialog(props) {
+    React.useEffect(function () {
+      if (!props.open || typeof document === 'undefined') return
+      var onKey = function (event) { if (event && event.key === 'Escape' && props.onClose) props.onClose() }
+      document.addEventListener('keydown', onKey)
+      return function () { document.removeEventListener('keydown', onKey) }
+    }, [props.open, props.onClose])
+    if (!props.open) return null
+    ensureWorkbenchStyles()
+    function close(event) {
+      if (event && event.target !== event.currentTarget) return
+      if (props.onClose) props.onClose()
+    }
+    return ReactDOM.createPortal(
+      h('div', { className: 'do-lineage-dialog-mask', role: 'presentation', onClick: close },
+        h('div', { className: 'do-lineage-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': '血缘视图' },
+          h('div', { className: 'do-lineage-dialog-head' },
+            h('div', null, h('span', { className: 'do-lineage-dialog-kicker' }, 'LINEAGE'), h('b', null, '血缘半屏视图')),
+            h('button', { type: 'button', className: 'do-lineage-dialog-close', 'aria-label': '关闭血缘', onClick: props.onClose }, '关闭')),
+          h('div', { className: 'do-lineage-dialog-body' },
+            h(LineageSurface, { initialView: props.initialView || 'schedule', schedule: props.schedule })))),
+      document.body
+    )
+  }
+
   function LineageWorkbench(props) {
     if (!props.open) return null;
     ensureWorkbenchStyles();
@@ -780,5 +805,5 @@ function content(info, tab) {
     document.head.appendChild(style);
   }
 
-  return { LineageWorkbench: LineageWorkbench, LineageSurface: LineageSurface };
+  return { LineageWorkbench: LineageWorkbench, LineageSurface: LineageSurface, LineageDialog: LineageDialog };
 }

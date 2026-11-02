@@ -30,6 +30,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 | DO-PLUGIN-015 | **Stage Artifact Ledger** | P3 | building | Workitem 悬浮窗 / DataOps 交付物 | Host + Client | workitem store、stage runtime | Headless 验收通过；待真机验收 |
 | DO-PLUGIN-016 | **Artifact Evidence Links** | P3.2 | building | DataOps 交付物 / 当前迭代浮层 | Host + Client | scan / deploy / runtime / query | evidenceRefs / chips / inline detail / evidence diff 已实现 |
 | DO-PLUGIN-017 | **Conversation Summary Cards** | P3.3 | building | 对话内 Table / Evidence / Profile | Client | DataOps 资产 / 证据 | summary renderer + focus CTA 第一版；待真机验收 |
+| DO-PLUGIN-018 | **Lineage Surface** | P3.4 | building | DataOps 血缘 / 对话血缘卡 | Client | LineageFlow | 内联 + 半屏弹窗已实现 |
 | DO-PLUGIN-005 | **Migration Review** | P2 | idea | DataOps 检查 section | Host + Client | SQL/model parser | 定义 DDL/DML/Rollback 规则 |
 | DO-PLUGIN-006 | **Run Timeline** | P2.2 | building | DataOps 证据 section | Host + Client | dataops_shared_read_logs | Mock RuntimeLog + DeployLog 已实现 |
 | DO-PLUGIN-007 | **Data Contract Diff** | P3 | idea | API 预览差异卡 | Host + Client | API YAML / ofl | 定义兼容性规则 |

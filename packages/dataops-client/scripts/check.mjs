@@ -518,7 +518,7 @@ check('lineage tab uses embedded three-view surface when available', () => {
     LineageSurface: () => React.createElement('div', null, '三视图 surface')
   })
   const body = text(EmbeddedTabs._internals.LineageBody({ sessionId: 's-surface' }))
-  assert(body.includes('三视图 surface'), 'embedded surface was not used')
+  assert(body.includes('三视图 surface') && body.includes('半屏打开'), 'embedded surface and half-screen action')
 })
 
 check('DataOps panel sections read the context store', () => {
