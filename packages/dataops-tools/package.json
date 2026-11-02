@@ -33,6 +33,6 @@
     "@deepseek-ai/cordis": "^4.0.5"
   },
   "scripts": {
-    "check": "node scripts/check.mjs && node scripts/repo-check.mjs && node scripts/repo-doctor-check.mjs && node scripts/code-scan-check.mjs && node scripts/runtime-log-check.mjs && node scripts/deploy-log-check.mjs && node scripts/smoke-apply.mjs && node scripts/provider-check.mjs && node --check src/index.js"
+    "check": "node scripts/check.mjs && node scripts/repo-check.mjs && node scripts/repo-doctor-check.mjs && node scripts/code-scan-check.mjs && node scripts/runtime-log-check.mjs && node scripts/deploy-log-check.mjs && node scripts/lineage-check.mjs && node scripts/smoke-apply.mjs && node scripts/provider-check.mjs && node --check src/index.js"
   }
 }

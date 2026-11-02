@@ -516,6 +516,7 @@ check('lineage tab renders schedule view from task/job lineage', () => {
 check('lineage tab uses the repo browser when LineageFlow is available', () => {
   const EmbeddedTabs = createDataopsTabs(React, ContextStore, {
     LineageSurface: () => React.createElement('div', null, 'lineage surface'),
+    LineageGraph: () => React.createElement('div', null, 'lineage graph'),
     LineageDialog: () => React.createElement('div', null, 'lineage dialog')
   })
   const body = text(EmbeddedTabs._internals.LineageBody({ sessionId: 's-surface' }))

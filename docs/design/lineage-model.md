@@ -1,6 +1,6 @@
 # Lineage Model
 
-> 状态：第一版实现；当前使用 `samples/internal-code-repo` 的自洽 mock inventory（4 表 / 2 链路 / 1 调度任务），真实 repo 血缘索引未接。
+> 状态：第一版实现；DataOps 对象和 graph 已从 `/api/dataops/lineage` 读取，Host 使用自洽 mock（4 表 / 2 链路 / 1 调度任务）；真实企业血缘服务待接。
 > 关联：OPEN-011 · [Lineage Surface](lineage-surface.md) · [Summary Cards](summary-cards.md)
 > 蓝图：[全量](../../prototype/lineage-browser-blueprint.html) · [增量](../../prototype/lineage-browser-blueprint-delta.html)
 > 目标：把“三种视图”改成三种业务血缘，把 DataOps 血缘做成代码仓浏览器。
@@ -168,7 +168,18 @@ CTA 文案：
 
 缺少来源时显示 `partial` / `gaps`，不伪造边。
 
-## 9. 非目标
+## 9. 会话内血缘卡
+
+会话里工具返回的血缘 **不查 DataOps 接口**：
+
+- tool result 里的 lineage payload 是当前会话快照
+- LineageCard 直接渲染这份 payload
+- CTA 带 table / kind 打开 DataOps 代码仓浏览器
+- DataOps 浏览器展示的是仓库当前视图，不代表历史快照
+
+因此卡片和浏览器是两条数据路径，不能互相替代。
+
+## 10. 非目标
 
 - 不做一个包含全部对象的巨图
 - 不保留 design/production/schedule 三 tab
@@ -176,7 +187,7 @@ CTA 文案：
 - 不改 Host tool 契约
 - 不做真实平台写入
 
-## 10. 验收
+## 11. 验收
 
 1. 三种 kind 使用不同 graph 渲染。
 2. 不再出现 `生产视图`。
@@ -187,7 +198,7 @@ CTA 文案：
 7. 旧 payload 能适配。
 8. 半屏弹窗只渲染当前 graph。
 
-## 11. 待确认
+## 12. 待确认
 
 - 数据链路的 ETL/调度关系由哪个现有服务提供
 - DataOps 血缘对象列表是否需要按 package 分组

@@ -124,6 +124,7 @@ ${inlined}
     var LineageWorkbenchImpl = null
     var LineageSurfaceImpl = null
     var LineageDialogImpl = null
+    var LineageGraphImpl = null
     var LineageFlow = {
       LineageWorkbench: function (props) {
         if (!props.open) return null
@@ -137,6 +138,10 @@ ${inlined}
       LineageDialog: function (props) {
         if (!LineageDialogImpl) LineageDialogImpl = createLineageWorkbench(React, require('react-dom')).LineageDialog
         return React.createElement(LineageDialogImpl, props)
+      },
+      LineageGraph: function (props) {
+        if (!LineageGraphImpl) LineageGraphImpl = createLineageWorkbench(React, require('react-dom')).LineageGraph
+        return React.createElement(LineageGraphImpl, props)
       }
     }
     var Tabs = createDataopsTabs(React, ContextStore, LineageFlow, Cards)

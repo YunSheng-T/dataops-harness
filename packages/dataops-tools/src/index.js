@@ -21,6 +21,8 @@ import { createMockRuntimeLogService } from './runtime-log/mock.js'
 import { registerRuntimeLogRoute } from './runtime-log/route.js'
 import { createMockDeployLogService } from './deploy-log/mock.js'
 import { registerDeployLogRoute } from './deploy-log/route.js'
+import { createMockLineageProvider } from './lineage/mock.js'
+import { registerLineageRoute } from './lineage/route.js'
 import { createAdapterIdentity } from './signoff-service.js'
 import { createDomainAdapters } from './providers/domain-adapters.js'
 import { buildDevelopArtifacts } from './develop-package.js'
@@ -890,6 +892,7 @@ export function apply(ctx, config) {
   const codeScan = createMockCodeScanService()
   const runtimeLog = createMockRuntimeLogService()
   const deployLog = createMockDeployLogService()
+  const lineage = createMockLineageProvider()
   const tools = createTools(normalized, { ctx, codeScan })
   for (const tool of tools) ctx.tools.register(tool)
   const store = createWorkitemStore(normalized)
@@ -974,6 +977,21 @@ export function apply(ctx, config) {
   }
   if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents'], mountDeployLog)
   else mountDeployLog(ctx)
+
+  const mountLineage = child => {
+    try {
+      const connection = child && typeof child.get === 'function' ? child.get('connection') : null
+      const routeCtx = {
+        get: name => name === 'connection' ? connection : (ctx && typeof ctx.get === 'function' ? ctx.get(name) : null),
+        effect: ctx && typeof ctx.effect === 'function' ? ctx.effect.bind(ctx) : undefined
+      }
+      registerLineageRoute(routeCtx, lineage)
+    } catch (error) {
+      if (ctx && typeof ctx.logger?.warn === 'function') ctx.logger.warn('[dataops] lineage route failed: ' + (error && error.message ? error.message : String(error)))
+    }
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents'], mountLineage)
+  else mountLineage(ctx)
 
   function mountDataopsCommand(child) {
     const commands = child && child.commands ? child.commands : (child && typeof child.get === 'function' ? child.get('commands') : null)
