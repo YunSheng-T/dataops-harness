@@ -3,7 +3,7 @@
 > 日期：2026-11-03  
 > 目标：演示 US/需求 → 设计 → 3a 分析 → 3b 需求方案 → 3c 技术方案 → 开发验证 → 数据 CICD 的完整阶段推进。  
 > 时长：18–22 分钟  
-> 边界：平台数据为 mock；真实发布/部署不在 DataOps 内执行。
+> 边界：平台数据为 mock；mock 只模拟部署状态，真实部署仅在内网配置下执行。
 
 ---
 
@@ -17,13 +17,14 @@ node scripts/verify-local.mjs
 
 重启 3088 Host，关闭 DevTools，浏览器缩放 100%。
 
-演示工作项使用独立 ID：
+创建时用 source.id 去重，但后续必须使用 **创建的 Workitem ID**：
 
 ```text
-DEMO-STAGEFLOW-001
+source.id = DEMO-STAGEFLOW-001
+workitemId = 创建后返回的 ID
 ```
 
-不要把历史工作项当主演示对象，避免旧 revision / 旧门禁干扰。
+不要把 source.id 当成 workitemId；也不要用历史工作项当主演示对象，避免旧 revision / 旧门禁干扰。
 
 ### 兜底种子
 
@@ -89,7 +90,7 @@ source.id=DEMO-STAGEFLOW-001
 
 ```text
 继续需求阶段：
-读取工作项 DEMO-STAGEFLOW-001，生成需求交付物并 stage prepare。
+读取刚创建/恢复的 Workitem ID，生成需求交付物并 stage prepare。
 目标：渠道日报从下单口径改为支付成功口径。
 范围：dws.trade_channel_daily + 3 个下游。
 验收：自对账容差 0、下游口径一致、05:00 前产出。
@@ -115,7 +116,7 @@ currentIteration = requirement rev-0001
 
 1. 点 `确认并继续`
 2. 一次提交 BA + 需求方签收
-3. 等待阶段推进
+3. 页面自动刷新，等待阶段推进
 
 **预期状态**：
 
@@ -279,7 +280,7 @@ substage → tech_plan
 **操作**：
 
 ```text
-SE 确认
+确认并继续
 ```
 
 **预期状态**：
@@ -302,7 +303,7 @@ stage → develop
 
 ```text
 继续开发验证阶段：
-读取技术方案和开发规范，生成 SQL/ETL/schedule/API/ops/tests 多产物，并执行 mock build/scan/deploy/test。
+读取技术方案和开发规范，生成 SQL/ETL/schedule/API/ops/tests 多产物；可选执行 ltsgen，生成 lts_code/<task>/task.yaml 和 output/<package>.zip；再执行 mock build/scan/deploy/test。
 失败要记录 attempt 和修复动作。
 生成后停下，等我评审和合入。
 ```
@@ -312,14 +313,16 @@ stage → develop
 ```text
 开发验证
 分支 / 产物数量 / build / scan / deploy / test
-SE 评审 / Committer 合入
+数据代码仓 / LTS 制品（如果执行了 ltsgen）
+SE 通过 / 记录合入
 ```
 
 **操作**：
 
-1. `SE 评审` 通过
-2. `Committer 合入`
-3. 阶段推进到 CICD
+1. 点 `SE 通过`
+2. 页面自动刷新
+3. 点 `记录合入`
+4. 阶段推进到 CICD
 
 **预期状态**：
 
@@ -343,8 +346,9 @@ stage → cicd
 ```text
 继续数据 CICD：
 确认已合入后，触发一次 dataops_cicd_pipeline。
-展示 pipeline run、制品包、manifest、checksum 和外部环境只读状态。
-不要执行真实发布/部署，不要接 DSH 原生 approval。
+展示 pipeline run、制品包、manifest、checksum 和外部环境状态。
+mock 下只模拟 dev/sit/uat/beta/gamma 状态，不执行真实部署；不要接 DSH 原生 approval。
+如果需要展示部署链，调用 `dataops_cicd_pipeline({ deploy: true })`，仍是 mock 状态。
 ```
 
 **预期卡**：
@@ -364,8 +368,8 @@ cicd stage = done
 
 **讲述**：
 
-> DataOps 只生成和验证制品，不执行真实部署。  
-> 外部发布审批由公司发布平台负责，DataOps 只记录只读状态。  
+> mock 只生成和验证制品，并模拟环境状态，不执行真实部署。  
+> internal 配置下才执行真实部署，且需要用户确认。  
 > Stage 6 不在本版。
 
 ---
@@ -420,10 +424,10 @@ currentIteration = cicd
 
 | 现象 | 处理 |
 |---|---|
-| Workitem 已存在 | 用 `DEMO-STAGEFLOW-001` 恢复，不要新建重复项 |
+| Workitem 已存在 | 用创建时返回的 Workitem ID 恢复，不要把 source.id 当 workitemId |
 | 阶段卡不出现 | 看轨迹是否调用 `stage prepare` |
-| 签收后没推进 | 确认所有必需角色都已签；缺角色不会推进 |
+| 签收后没推进 | 确认所有必需角色都已签；页面会自动刷新，等刷新完成 |
 | 旧 revision 在 | 新 prepare 会生成新 rev，旧审批失效 |
 | 设计卡没归档 | 必须调用 `stage prepare`，不能只展示卡 |
-| CICD 卡未完成 | seed `--stage cicd` 或重新触发 pipeline |
+| CICD 卡未完成 | seed `--stage cicd`，或调用 `dataops_cicd_pipeline({ deploy: true })` 重试 |
 | 页面数据旧 | 重建 client + 重启 Host + 硬刷新 |
