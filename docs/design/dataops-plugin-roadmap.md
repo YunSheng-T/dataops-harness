@@ -48,7 +48,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 ## 2.2 单一代码扫描入口
 
 - 代码扫描只有一个入口：`dataops_code_scan`
-- `dataops_cicd_scan` 是旧名字，进入兼容/迁移期后收敛，不能成为第二个独立入口
+- `dataops_cicd_scan` 已移除；旧 CICD 调用走 `dataops_code_scan` 的 `scenario` 兼容模式，不再保留第二个工具名
 - DDL / DML / Rollback、破坏性 SQL、下游影响、criticality 都由这个入口产出
 - DataOps 只展示 code scan 结果，不再拥有 Change Impact Review 规则
 - Change Impact Review 的蓝图保留为展示参考，不进入独立实现

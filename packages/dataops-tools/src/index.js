@@ -559,6 +559,9 @@ export function createTools(config, deps) {
 
   async function runCodeScan(args, exec) {
     const input = args || {}
+    // Compatibility path for the old CICD scan callers: a scenario means the
+    // legacy phase payload, while no scenario means the new scanId contract.
+    if (input.scenario || input.mode === 'cicd') return runScan(input)
     const scope = input.scope && input.scope.kind ? input.scope : { kind: 'workspace' }
     const started = codeScan.start({
       sessionId: exec && exec.agent && exec.agent.id,
@@ -656,13 +659,6 @@ export function createTools(config, deps) {
       parameters: parameterRoot({ scenario: SCENARIO }),
       execute: runDevelop,
       summary: value => '开发：' + value.target + '｜' + value.tasks.length + ' 个任务｜阻塞 ' + (value.blockers || []).length + ' 项'
-    }),
-    textTool({
-      name: 'dataops_cicd_scan',
-      description: 'CICD·扫描：对 SQL/调度/密钥做规范与安全扫描，返回 cicd JSON（phase=scan）。mock 只读。',
-      parameters: parameterRoot({ scenario: SCENARIO }),
-      execute: runScan,
-      summary: value => '扫描：' + value.status + '｜错误 ' + value.summary.errors + '｜警告 ' + value.summary.warnings
     }),
     textTool({
       name: 'dataops_cicd_compile',
@@ -865,13 +861,17 @@ export function createTools(config, deps) {
     }),
     textTool({
       name: 'dataops_code_scan',
-      description: '通过 dataops CLI 触发代码扫描并返回 scanId；扫描结果由 code scan 服务管理，DataOps 只按 scanId 读取。Mock 阶段只验证 scanId 契约。',
+      description: '唯一代码扫描入口：触发 code scan 并返回 scanId；旧 CICD 阶段传 scenario 时保留旧 CICD scan payload。扫描结果由 code scan 服务管理，DataOps 只按 scanId 读取。',
       parameters: parameterRoot({
+        scenario: SCENARIO,
+        mode: { type: 'string', enum: ['workspace', 'files', 'cicd'] },
         scope: { type: 'object', description: '扫描范围；当前支持 workspace 或 files，package 后续扩展。' },
         profile: { type: 'string' }
       }),
       execute: runCodeScan,
-      summary: value => '代码扫描：' + value.scanId + ' · ' + value.phase
+      summary: value => value.kind === 'cicd'
+        ? '扫描：' + value.status + '｜错误 ' + value.summary.errors + '｜警告 ' + value.summary.warnings
+        : '代码扫描：' + value.scanId + ' · ' + value.phase
     })
   ]
   const disabled = new Set(config.disabledTools || [])

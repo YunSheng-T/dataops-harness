@@ -3,7 +3,7 @@
 > 状态：Mock 实现完成，等待真实 CLI 对接。
 > 单一入口：`dataops_code_scan`
 > 扫描服务负责执行、规则、结果存储；DataOps 只触发和展示。
-> 旧命名：`dataops_cicd_scan` 进入兼容/迁移期，不能成为第二个入口。
+> 旧命名：`dataops_cicd_scan` 已移除；旧 CICD 调用方改走 `dataops_code_scan` 的 `scenario` 兼容路径。
 > Mock 边界：当前只做设计 / fixture；真实 CLI 调用和契约变更由内部对接。
 > 蓝图：[Mock 全量](../../prototype/code-scan-integration-blueprint.html) · [Mock 增量](../../prototype/code-scan-integration-blueprint-delta.html)
 
@@ -53,7 +53,7 @@ dataops_code_scan（唯一能力）
 
 它们是同一个扫描服务的不同调用方，不是三个扫描实现。  
 DataOps Host / Client 不保存扫描服务凭据，也不实现鉴权。
-`dataops_cicd_scan` 只保留旧名兼容，不再新增独立入口。
+`dataops_cicd_scan` 不再注册为独立工具；旧 CICD 调用方通过 `dataops_code_scan` 的 `scenario` 模式获取旧 payload。
 
 ## 3. 扫描范围
 

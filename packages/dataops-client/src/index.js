@@ -16,7 +16,7 @@ var TOOL_VIEWS = [
   ['dataops_shared_read_lineage', 'LineageCard'],
   ['dataops_shared_read_evidence', 'EvidenceCard'],
   ['dataops_shared_read_profile', 'ProfileCard'],
-  ['dataops_cicd_scan', 'CicdCard'],
+  ['dataops_code_scan', 'CodeScanToolCard'],
   ['dataops_cicd_compile', 'ScheduleCard'],
   ['dataops_cicd_test', 'TestCard'],
   ['dataops_cicd_release', 'ReleaseCard'],

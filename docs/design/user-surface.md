@@ -258,7 +258,7 @@ packages/dataops-client/
 | `dataops_scheme_compose_solution` | `scenario?` | `solution` |
 | `dataops_shared_read_evidence` | `scenario?` | `evidence` |
 | `dataops_develop_generate_code` | `scenario?` | `develop` |
-| `dataops_cicd_scan` | `scenario?` | `cicd` |
+| `dataops_code_scan` | `scenario?` / `scope?` | `cicd` / `code_scan` |
 | `dataops_cicd_compile` | `scenario?` | `schedule` |
 | `dataops_cicd_test` | `scenario?` | `test` |
 | `dataops_cicd_release` | `scenario?` | `release` |

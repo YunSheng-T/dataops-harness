@@ -27,7 +27,7 @@
 | `dataops_shared_read_lineage` | `LineageCard` | `lineage` |
 | `dataops_shared_read_evidence` | `EvidenceCard` | `evidence/ev-*.yaml` |
 | `dataops_shared_read_profile` | `ProfileCard` | `profile.yaml` |
-| `dataops_cicd_scan` | `CicdCard` | `scan-report.yaml` |
+| `dataops_code_scan` | `CodeScanToolCard` | `scan-report.yaml` / scanId |
 | `dataops_cicd_compile` | `ScheduleCard` | `schedule.yaml` |
 | `dataops_cicd_test` | `TestCard` | `test-report.yaml` |
 | `dataops_cicd_release` | `ReleaseCard`（awaiting/released/rejected） | `release.yaml` |

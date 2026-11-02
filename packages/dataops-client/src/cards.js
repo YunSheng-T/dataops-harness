@@ -1843,6 +1843,13 @@ export function createDataopsCards(React) {
     )
   }
 
+  function CodeScanToolCard(props) {
+    var m = parseModel(props.block)
+    if (m && m.kind === 'cicd') return h(CicdCard, props)
+    if (m && m.kind === 'code_scan') return h('div', { className: 'do-muted' }, '代码扫描已触发：' + (m.scanId || '') + ' · ' + (m.phase || 'queued'))
+    return h(Fallback, props)
+  }
+
   function CicdCard(props) {
     var m = parseModel(props.block, 'cicd')
     if (!m) return h(Fallback, props)
@@ -2018,6 +2025,7 @@ export function createDataopsCards(React) {
     AnalysisCard: AnalysisCard,
     SolutionCard: SolutionCard,
     CicdCard: CicdCard,
+    CodeScanToolCard: CodeScanToolCard,
     PipelineCard: PipelineCard,
     ScheduleCard: ScheduleCard,
     DevelopCard: DevelopCard,

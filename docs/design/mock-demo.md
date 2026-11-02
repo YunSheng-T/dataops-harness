@@ -36,7 +36,7 @@ dsh --profile dataops
 5) dataops_scheme_compose_solution
 6) dataops_scheme_compose_tech_plan
 7) dataops_develop_generate_code
-8) dataops_cicd_scan
+8) dataops_code_scan（scenario 兼容 CICD）
 9) dataops_cicd_compile
 10) dataops_cicd_test
 11) dataops_cicd_release
@@ -55,7 +55,7 @@ dsh --profile dataops
 | 3 方案 | 需求方案设计 | `dataops_scheme_compose_solution` | 需求方案卡；`需求方案设计` |
 | 3 方案 | 技术方案输出 | `dataops_scheme_compose_tech_plan` | 技术方案卡；`技术方案输出` |
 | 4 开发 | — | `dataops_develop_generate_code` | 开发卡；`开发 · 4/6` |
-| 5 CICD | 扫描 | `dataops_cicd_scan` | 扫描卡；`CICD · 5/6 · 扫描` |
+| 5 CICD | 扫描 | `dataops_code_scan` | 扫描卡；`CICD · 5/6 · 扫描` |
 | 5 CICD | 编译构建 | `dataops_cicd_compile` | `schedule.yaml` / 诊断；`编译构建` |
 | 5 CICD | 测试 | `dataops_cicd_test` | 测试卡；`测试` |
 | 5 CICD | 发布/部署 | `dataops_cicd_release` | 发布卡；`发布/部署` |

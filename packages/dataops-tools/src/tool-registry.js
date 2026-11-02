@@ -58,11 +58,6 @@ export const TOOL_REGISTRY = [
     stages: ['develop'], payloadKind: 'develop', card: 'DevelopCard', skill: 'code-review', implemented: true
   },
   {
-    name: 'dataops_cicd_scan',
-    scope: 'cicd', action: 'scan', shared: false,
-    stages: ['cicd'], payloadKind: 'cicd', card: 'CicdCard', skill: 'cicd-gate', implemented: true
-  },
-  {
     name: 'dataops_cicd_compile',
     scope: 'cicd', action: 'compile', shared: false,
     stages: ['cicd'], payloadKind: 'schedule', card: 'ScheduleCard', skill: 'schedule-yaml', implemented: true,

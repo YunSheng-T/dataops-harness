@@ -14,7 +14,7 @@ Host 侧工具：把对话意图变成结构化阶段产物，客户端卡片负
 | `dataops_shared_read_profile` | `scenario?`、`table?` | `profile` | 数据画像卡 |
 | `dataops_scheme_analyze_data` | `scenario?` | `analysis` | 分析卡 |
 | `dataops_scheme_compose_solution` | `scenario?` | `solution` | 需求方案卡 |
-| `dataops_cicd_scan` | `scenario?` | `cicd` | CICD 扫描卡 |
+| `dataops_code_scan` | `scenario?` / `scope?` | `code_scan` / `cicd` | 代码扫描 scanId / CICD 扫描卡 |
 | `dataops_cicd_compile` | `scenario?` | `schedule` | 编译/YAML 卡 |
 | `dataops_develop_generate_code` | `scenario?` | `develop` | 开发卡（mock） |
 | `dataops_cicd_test` | `scenario?` | `test` | 测试卡（mock） |
@@ -38,7 +38,7 @@ Host 侧工具：把对话意图变成结构化阶段产物，客户端卡片负
 
 - 共享事实：`dataops_shared_read_table` / `_lineage` / `_evidence`
 - 阶段能力：`dataops_requirement_extract_spec`、`dataops_scheme_compose_tech_plan`、`dataops_develop_generate_code`
-- CICD：`dataops_cicd_scan`、`dataops_cicd_compile`、`dataops_cicd_test`、`dataops_cicd_release`
+- CICD：`dataops_code_scan`、`dataops_cicd_compile`、`dataops_cicd_test`、`dataops_cicd_release`
 - 工作项：`dataops_shared_read_workitem` / `dataops_shared_update_workitem`
 - 排障旁路：`dataops_incident_triage` / `dataops_shared_read_logs`
 

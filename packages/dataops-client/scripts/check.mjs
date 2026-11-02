@@ -579,6 +579,11 @@ check('Repo Doctor panel exposes its three sections and read-only boundary', () 
   assert(body.includes('运行检查'), 'missing check action')
 })
 
+check('code scan tool card keeps the legacy CICD payload route', () => {
+  const body = text(Cards.CodeScanToolCard({ block: block({ kind: 'cicd', phase: 'scan', status: 'pass', checks: [{ name: 'SQL', status: 'pass', detail: 'ok' }], summary: { errors: 0, warnings: 1 } }) }))
+  assert(body.includes('CICD') && body.includes('SQL'), 'legacy CICD card route missing')
+})
+
 check('stage result card routes prepared deliverable payloads', () => {
   const body = text(Cards.StageResultCard({ block: block({ kind: 'requirement', stage: 'requirement', title: '需求', goal: '目标', status: 'draft', gaps: [] }) }))
   assert(body.includes('需求') && body.includes('目标'), 'stage result delegates to deliverable renderer')

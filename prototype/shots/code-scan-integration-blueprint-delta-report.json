@@ -4,9 +4,9 @@
   "slug": "code-scan-integration-blueprint-delta",
   "file": "prototype/code-scan-integration-blueprint-delta.html",
   "fileUrl": "file:///Users/zhangshu/code/dataops-harness/prototype/code-scan-integration-blueprint-delta.html",
-  "startedAt": "2026-11-02T05:58:23.479Z",
-  "finishedAt": "2026-11-02T05:58:26.699Z",
-  "durationMs": 3219,
+  "startedAt": "2026-11-02T06:13:09.536Z",
+  "finishedAt": "2026-11-02T06:13:12.846Z",
+  "durationMs": 3309,
   "runtime": {
     "node": "v22.22.0",
     "platform": "darwin",
@@ -18,7 +18,7 @@
     "version": "Chrome/156.0.8078.74",
     "protocolVersion": "1.3",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
-    "port": 57591,
+    "port": 63350,
     "headless": true,
     "product": "Chrome/156.0.8078.74"
   },
@@ -46,7 +46,7 @@
   "page": {
     "title": "Code Scan Integration · P2.1 增量蓝图",
     "readyState": "complete",
-    "bodyTextLength": 1401,
+    "bodyTextLength": 1422,
     "bodyChildren": 2,
     "hasThemeButton": true,
     "scrollWidth": 1440,
@@ -248,7 +248,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/code-scan-integration-blueprint-delta-full.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/code-scan-integration-blueprint-delta-full.png",
-      "bytes": 183285,
+      "bytes": 184792,
       "width": 1440,
       "height": 1242,
       "expected": {
@@ -284,7 +284,7 @@
       "viewport": "1440x900",
       "file": "prototype/shots/code-scan-integration-blueprint-delta-full-dark.png",
       "absolutePath": "/Users/zhangshu/code/dataops-harness/prototype/shots/code-scan-integration-blueprint-delta-full-dark.png",
-      "bytes": 188055,
+      "bytes": 189577,
       "width": 1440,
       "height": 1242,
       "expected": {
