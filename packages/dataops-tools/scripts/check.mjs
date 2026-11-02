@@ -16,6 +16,7 @@ import { SCENARIO_KEYS, buildRequirement, buildDesign, buildTechPlan, buildEvide
 import { TOOL_REGISTRY, IMPLEMENTED_TOOL_NAMES, TOOL_NAME_PATTERN } from '../src/tool-registry.js'
 import { DOMAIN_NAMES, createDomainAdapters } from '../src/providers/domain-adapters.js'
 import { createCicdPipelineRunner } from '../src/providers/cicd-cli.js'
+import { createDeployCliAdapter } from '../src/providers/deploy-cli.js'
 import { createCliClient } from '../src/providers/cli.js'
 
 const results = []
@@ -94,6 +95,21 @@ check('mock ltsgen writes lts_code and a zip artifact', async () => {
     const dev = await configured.find(tool => tool.name === 'dataops_shared_read_develop').execute({ workitemId: 'lts-demo' }, { signal })
     assert(dev.codeRepo && dev.codeRepo.tasks.length === 1 && dev.codeRepo.outputs.length === 1, 'develop carries lts repo')
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+check('cicd mock deploy only changes environment status', async () => {
+  const result = await execute('dataops_cicd_pipeline', { deploy: true, environments: ['dev', 'sit', 'uat'] })
+  assert(result.externalDeployment.mock === true, 'mock deployment marked')
+  assert(result.externalDeployment.environments.every(item => item.status === 'deployed'), 'mock env statuses')
+})
+
+check('release cli adapter maps real environment statuses', async () => {
+  const adapter = createDeployCliAdapter({ domains: { release: { kind: 'cli', commands: { deploy: ['deploy', '--artifact', '{artifact}'] } } }, timeoutMs: 1000 }, {
+    execFileImpl: (_cmd, _args, _opts, callback) => callback(null, JSON.stringify({ platform: 'release', approvalId: 'R-1', environments: [{ name: 'dev', status: 'succeeded', deployedAt: '00:10' }, { name: 'sit', status: 'running' }] }), '')
+  })
+  const value = await adapter.deploy({ artifact: 'pkg.zip', environments: ['dev', 'sit'] })
+  assert(value.source === 'release-cli' && value.mock === false, 'release source')
+  assert(value.environments[0].status === 'deployed' && value.environments[1].status === 'running', 'release status mapping')
 })
 
 check('workitem accepts markdown front matter payload', () => {

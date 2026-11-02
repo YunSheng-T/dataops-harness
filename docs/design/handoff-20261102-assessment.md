@@ -162,7 +162,10 @@ domains:
     commands: { buildRun: [...], scanRun: [...], deploySit: [...] }
   cicd:
     kind: cli
-    commands: { run: [...], status: [...], deploy: [...] }
+    commands: { run: [...], status: [...] }
+  release:
+    kind: cli
+    commands: { deploy: [...] }
 ```
 
 工具内部只认 domain contract；mock 与 cli 返回同一 payload。

@@ -53,7 +53,7 @@ decision.md    # 审批记录
 2. **设计**：加载 `dataops-design`，用 `dataops-deliverable-templates` 产 design payload。生成后必须调 `dataops_shared_stage`（`action=prepare`、`kind=design`、`stage=design`、`deliverable=deliverables/design/design.yaml`），由它写交付物、生成 ArtifactRevision 和阶段卡。不能只用 `dataops_shared_present_deliverable` 或对话卡代替归档。证据不足标 `gaps`，不编造。
 3. **方案**：加载 `dataops-analysis`、`dataops-solution`、`dataops-tech-plan`，按分析 → 需求方案 → 技术方案推进；分别产 `deliverables/analysis.yaml`、`solution.yaml`、`tech-plan.yaml` 并调 presenter。技术方案要包含任务、依赖、SLA、平台、回滚。不要调用已下线的方案内容工具。
 4. **开发验证**：加载 `dataops-develop`。先生成多产物（sql/etl/schedule/api/ops/tests），`develop.yaml` 只做清单+验证摘要。用 `dataops_shared_read_develop` 读 mock 事实；build/scan/deploy/test 失败要记录 attempt、回流和修复动作，不能只做 happy path。SE 评审用 gate=`develop.code_review`；Committer 合入用 gate=`develop.merge`，DataOps 不执行 merge。
-5. **数据 CICD**：加载 `dataops-cicd`。确认已合入后，调一次 `dataops_cicd_pipeline`；展示 pipeline run、制品包/manifest/checksum、日志和外部环境只读状态。**不使用 DSH 原生 approval，不执行部署/发布/回滚**；外部环境状态不是 DataOps 门禁。
+5. **数据 CICD**：加载 `dataops-cicd`。确认已合入后，调一次 `dataops_cicd_pipeline`；展示 pipeline run、制品包/manifest/checksum、日志和外部环境只读状态。**不使用 DSH 原生 approval**；mock 只模拟环境状态，internal 配置在用户确认后可执行部署，不执行回滚；外部环境状态不是 DataOps 门禁。
 6. **Stage 6**：本版不实现，不展示复盘页面。
 
 ## 工具怎么用

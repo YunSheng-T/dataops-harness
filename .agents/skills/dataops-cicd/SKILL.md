@@ -32,7 +32,7 @@ deliverables/cicd/
 1. 确认 Stage 4 已合并，否则不触发。
 2. 调 `dataops_cicd_pipeline` 一次跑 build/scan/test/package；用 `workitemId` 让工具记录 Stage 5 完成。
 3. 展示 pipeline run、制品包、digest、manifest/checksum、日志。
-4. 外部环境 dev→sit→uat→beta→gamma 只读展示；部署、晋级、外部审批由公司发布平台负责。
+4. mock：只模拟 dev→sit→uat→beta→gamma 状态；internal：显式 `deploy=true` 才调用 release CLI，部署是远程写操作，需用户确认。
 5. 外部审批 ID/状态只记录，不伪造审批。
 
 ## 门禁
@@ -46,6 +46,6 @@ deliverables/cicd/
 ## 禁止
 
 - 不使用 DSH 原生 approval；
-- 不执行真实部署、发布、回滚；
+- mock 不执行真实部署；internal 仅在用户确认后执行部署，不执行回滚；
 - 不展示 DataOps 发布/回滚按钮；
-- 不把 Stage 4 开发产物冒充 Stage 5 官方制品。
+- 不把 Stage 4 开发产物冒充 Stage 5 官方制品；mock 状态不冒充真实部署。

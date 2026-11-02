@@ -11,6 +11,7 @@ import { normalizeConfig } from './config.js'
 import { buildPipelinePackage } from './pipeline-package.js'
 import { generateMockLts } from './ltsgen/mock.js'
 import { createCicdCliAdapter } from './providers/cicd-cli.js'
+import { createDeployCliAdapter } from './providers/deploy-cli.js'
 import { createWorkitemStore } from './workitem-store.js'
 import { registerSignoffRoute } from './signoff-route.js'
 import { registerRepoRoute } from './repo/route.js'
@@ -735,9 +736,10 @@ export function createTools(config, deps) {
     }),
     textTool({
       name: 'dataops_cicd_pipeline',
-      description: '触发/读取一条 mock 数据 CICD pipeline：build/scan/test/package、制品包 manifest/checksum、外部环境只读状态；不执行真实部署。',
-      parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：完成后把 workitem cicd 阶段标为 done。' }, target: { type: 'string', description: '真实 CICD CLI 的目标表；mock 下忽略。' }, commit: { type: 'string', description: '真实 CICD CLI 的 commit；mock 下忽略。' } }),
+      description: '触发/读取一条数据 CICD pipeline：build/scan/test/package、制品包；deploy=true 时按 release 配置模拟或执行环境部署。',
+      parameters: parameterRoot({ workitemId: { type: 'string', description: '可选：完成后把 workitem cicd 阶段标为 done。' }, target: { type: 'string', description: '真实 CICD CLI 的目标表；mock 下忽略。' }, commit: { type: 'string', description: '真实 CICD CLI 的 commit；mock 下忽略。' }, deploy: { type: 'boolean', description: '是否执行环境部署；默认 false。' }, environments: { type: 'array', items: { type: 'string' }, description: '部署环境链，默认 dev/sit/uat/beta/gamma。' }, operator: { type: 'string', description: '真实部署 operator；mock 忽略。' }, ticket: { type: 'string', description: '真实部署变更号；mock 忽略。' } }),
       execute: async args => {
+        const environments = Array.isArray(args.environments) && args.environments.length ? args.environments : ['dev', 'sit', 'uat', 'beta', 'gamma']
         let value = { ...CICD_PIPELINE, mock: true }
         if (config.cicd.kind === 'cli') {
           const adapter = createCicdCliAdapter(config, {
@@ -750,6 +752,25 @@ export function createTools(config, deps) {
           value = { ...value, ...run, source: 'cicd-cli', mock: false, status: run.status }
         } else if (args.workitemId) {
           value.artifact = buildPipelinePackage(resolve(config.workitemsDir), args.workitemId, { target: value.target, commit: value.commit })
+        }
+        if (args.deploy) {
+          const release = config.domains && config.domains.release
+          if (release && release.kind === 'cli') {
+            try {
+              const adapter = createDeployCliAdapter(config, { resolveSecret, execFileImpl: options.execFileImpl })
+              value.externalDeployment = await adapter.deploy({ artifact: value.artifact && value.artifact.package, packageName: value.artifact && value.artifact.package, workitemId: args.workitemId, environments, operator: args.operator, ticket: args.ticket })
+            } catch (error) {
+              value.externalDeployment = { platform: 'company-release-platform', source: 'release-cli', mock: false, environments: environments.map(name => ({ name, status: 'failed', error: error && error.message || 'deploy failed', deployedAt: null })) }
+              value.deployError = error && error.message || 'deploy failed'
+            }
+          } else {
+            value.externalDeployment = {
+              ...(value.externalDeployment || {}),
+              mock: true,
+              source: 'mock-release',
+              environments: environments.map((name, index) => ({ name, status: 'deployed', deployedAt: '00:0' + Math.min(index, 9) + ':00', approval: 'mock' }))
+            }
+          }
         }
         if (args.workitemId) value.workitem = stageComplete(config, { id: args.workitemId })
         return value
