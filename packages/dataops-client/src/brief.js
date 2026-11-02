@@ -317,6 +317,30 @@ export function createStageBrief(React, store, contextStore) {
     var view = viewState[0]
     var expanded = expandedState[0]
     if (!Object.keys(payloads).length) return null
+    function gateForCard(kind) {
+      if (kind === 'analysis') return 'scheme.analysis'
+      if (kind === 'solution') return 'scheme.solution'
+      if (kind === 'tech_plan') return 'scheme.tech_plan'
+      if (kind === 'design') return 'design'
+      if (kind === 'requirement') return 'requirement'
+      if (kind === 'develop') return 'develop.code_review'
+      if (kind === 'cicd') return 'cicd.pipeline'
+      return null
+    }
+    function withApproval(card) {
+      if (!card || !workitem || !Array.isArray(workitem.approvals)) return card
+      var gate = gateForCard(card.kind)
+      var approval = workitem.approvals.filter(function (item) { return item && item.gate === gate })[0]
+      if (!approval || !Array.isArray(approval.signoffs) || !approval.signoffs.length) return card
+      var review = Object.assign({}, card.review || {})
+      approval.signoffs.forEach(function (signoff) {
+        if (!signoff || !signoff.role) return
+        var role = String(signoff.role).toLowerCase()
+        review[role] = Object.assign({}, typeof review[role] === 'object' && review[role] ? review[role] : {}, { status: 'approved', approver: signoff.actor || role })
+      })
+      return Object.assign({}, card, { review: review, status: approval.status === 'approved' ? 'approved' : card.status })
+    }
+
     function focusCard(kind) {
       if (typeof document === 'undefined') return
       var nodes = document.querySelectorAll('.do-turn-card[data-kind="' + kind + '"]')
@@ -390,7 +414,7 @@ export function createStageBrief(React, store, contextStore) {
           var gate = card.kind === 'analysis' ? 'scheme.analysis' : card.kind === 'solution' ? 'scheme.solution' : card.kind === 'tech_plan' ? 'scheme.tech_plan' : card.kind === 'design' ? 'design' : 'requirement'
           var approval = workitem && Array.isArray(workitem.approvals) ? workitem.approvals.filter(function (a) { return a && a.gate === gate })[0] : null
           var status = approval && approval.status === 'approved' ? 'approved' : card.status === 'blocked' ? 'blocked' : card.status === 'reviewed' ? 'reviewed' : 'draft'
-          return h('button', { key: card.kind, type: 'button', className: 'do-stagebar-card', onClick: function () { viewState[1](card) } },
+          return h('button', { key: card.kind, type: 'button', className: 'do-stagebar-card', onClick: function () { viewState[1](withApproval(card)) } },
             h('span', { className: 'do-stagebar-card-dot', 'data-state': status }),
             h('span', { className: 'do-stagebar-card-name' }, cardLabels[card.kind] || card.kind),
             h('span', { className: 'do-stagebar-card-status', 'data-state': status }, statusLabel(status)),
