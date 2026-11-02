@@ -749,7 +749,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
           var isCurrent = current && current.artifactId === artifact.artifactId
           return h('button', { type: 'button', className: 'rd-artifact' + (isCurrent ? ' on' : '') + (artifact.preview ? ' preview' : ''), key: artifact.artifactId, onClick: function () {
             if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
-              window.dispatchEvent(new CustomEvent('dataops:artifact-inspector', { detail: { workitem: workitem, artifact: artifact } }))
+              window.dispatchEvent(new CustomEvent('dataops:artifact-inspector', { detail: { workitem: workitem, artifacts: artifacts, artifact: artifact } }))
             }
           } },
             h('div', { className: 'rd-artifact-main' }, h('b', null, artifact.kind || artifact.artifactId), h('span', null, artifact.preview ? 'draft preview · 未归档' : (artifact.revisions || []).length + ' revisions · ' + (artifact.stage || ''))),
@@ -814,32 +814,92 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
 
   function ArtifactInspector() {
     var state = React.useState(null)
+    var openState = React.useState(null)
     React.useEffect(function () {
       if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return
-      var onOpen = function (event) { if (event && event.detail && event.detail.artifact) state[1](event.detail) }
+      var onOpen = function (event) {
+        if (!event || !event.detail || !event.detail.artifact) return
+        state[1](event.detail)
+        openState[1](event.detail.artifact.artifactId || event.detail.artifact.kind)
+      }
       var onKey = function (event) { if (event && event.key === 'Escape') state[1](null) }
       window.addEventListener('dataops:artifact-inspector', onOpen)
       window.addEventListener('keydown', onKey)
       return function () { window.removeEventListener('dataops:artifact-inspector', onOpen); window.removeEventListener('keydown', onKey) }
     }, [])
     if (!state[0]) return null
-    var artifact = state[0].artifact
-    var revision = artifact.currentRevision || {}
+    var stages = [
+      { key: 'requirement', label: '需求' },
+      { key: 'design', label: '设计' },
+      { key: 'analysis', label: '数据挖掘' },
+      { key: 'solution', label: '需求方案' },
+      { key: 'tech_plan', label: '技术方案' },
+      { key: 'develop', label: '开发' },
+      { key: 'cicd', label: 'CICD' }
+    ]
+    var artifacts = Array.isArray(state[0].artifacts) ? state[0].artifacts.slice() : []
+    if (!artifacts.some(function (item) { return item.artifactId === state[0].artifact.artifactId })) artifacts.push(state[0].artifact)
+    var byKind = {}
+    artifacts.forEach(function (item) { byKind[item.kind || item.artifactId] = item })
+    var selected = state[0].artifact
+    var revision = selected.currentRevision || {}
     var content = revision.content || {}
-    var fields = ['title', 'goal', 'target', 'grain', 'sources', 'scope', 'metrics']
+    var workitem = state[0].workitem || {}
+    var stageStates = workitem.stages || {}
     function close() { state[1](null) }
+    function statusOf(item, key) {
+      if (item && item.currentRevision) return item.currentRevision.status || 'draft'
+      return (stageStates[key] && stageStates[key].status) || 'pending'
+    }
+    function labelOf(item, key) {
+      if (!item) return '未开始'
+      return item.preview ? '未归档' : (item.currentRevision && item.currentRevision.version ? 'v' + item.currentRevision.version : 'draft')
+    }
+    function valueOf(key, value) {
+      if (value === null || value === undefined || value === '') return '待补充'
+      if (key === 'target' && typeof value === 'object') {
+        return [value.table, value.grain].filter(Boolean).join(' · ') || JSON.stringify(value)
+      }
+      if (Array.isArray(value)) return value.map(function (item) { return typeof item === 'string' ? item : (item.table || item.name || JSON.stringify(item)) }).join(' · ')
+      if (typeof value === 'object') return JSON.stringify(value)
+      return String(value)
+    }
+    function fieldsOf(c) {
+      var keys = ['goal', 'scope', 'target', 'grain', 'sources', 'acceptance', 'metrics']
+      return keys.filter(function (key) { return c && c[key] !== undefined && c[key] !== null && c[key] !== '' }).slice(0, 5)
+    }
+    function stageBody(key, item) {
+      if (!item) return h('div', { className: 'rd-stage-empty' }, '还没有产物。让 Agent 继续完成这个阶段。')
+      var rev = item.currentRevision || {}
+      var c = rev.content || {}
+      var keys = fieldsOf(c)
+      return h('div', { className: 'rd-stage-body' },
+        h('div', { className: 'rd-stage-body-head' }, h('b', null, item.kind || item.artifactId), h('span', null, (rev.status || 'draft') + (item.preview ? ' · 未归档' : ' · ' + (rev.revisionId || '')))),
+        keys.length ? h('dl', { className: 'rd-float-grid' }, keys.map(function (field) { return h(React.Fragment, { key: field }, h('dt', null, field), h('dd', null, valueOf(field, c[field]))) })) : h('div', { className: 'rd-stage-empty' }, '已有一版产物，但还没有可展示的结构字段。'),
+        item.preview ? null : h('div', { className: 'rd-float-hash' }, 'revision · ' + (rev.revisionId || '') + ' · ' + String(rev.contentHash || '').slice(0, 12))
+      )
+    }
     function compose() {
       if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
-        window.dispatchEvent(new CustomEvent('dataops:compose', { detail: { text: '基于当前 ' + (artifact.kind || artifact.artifactId) + ' ' + (revision.version ? 'v' + revision.version : '') + ' 继续修改：' } }))
+        window.dispatchEvent(new CustomEvent('dataops:compose', { detail: { text: '基于当前 ' + (selected.kind || selected.artifactId) + ' ' + (revision.version ? 'v' + revision.version : '') + ' 继续修改：' } }))
       }
       close()
     }
     return h('div', { className: 'rd-float', role: 'dialog', 'aria-label': '当前迭代' },
-      h('div', { className: 'rd-float-head' }, h('b', null, '当前迭代'), h('span', { className: 'rd-badge', 'data-tone': revision.status === 'approved' ? 'pass' : 'warn' }, (artifact.kind || artifact.artifactId) + ' ' + (revision.version ? 'v' + revision.version : '')), h('button', { type: 'button', className: 'rd-float-x', 'aria-label': '关闭', onClick: close }, '×')),
+      h('div', { className: 'rd-float-head' }, h('b', null, '当前迭代'), h('span', { className: 'rd-badge', 'data-tone': 'warn' }, workitem.id || 'Workitem'), h('button', { type: 'button', className: 'rd-float-x', 'aria-label': '关闭', onClick: close }, '×')),
       h('div', { className: 'rd-float-body' },
-        h('div', { className: 'rd-float-title' }, h('b', null, artifact.kind || artifact.artifactId), h('span', null, (revision.status || 'draft') + ' · ' + (revision.createdAt || '')),),
-        h('dl', { className: 'rd-float-grid' }, fields.filter(function (key) { return content[key] !== undefined && content[key] !== null }).slice(0, 5).map(function (key) { return h(React.Fragment, { key: key }, h('dt', null, key), h('dd', null, typeof content[key] === 'string' ? content[key] : JSON.stringify(content[key]))) })),
-        h('div', { className: 'rd-float-hash' }, 'revision · ' + (revision.revisionId || '') + ' · ' + String(revision.contentHash || '').slice(0, 12)),
+        h('div', { className: 'rd-float-stage-list' }, stages.map(function (stage) {
+          var item = byKind[stage.key]
+          var open = openState[0] === stage.key
+          var status = statusOf(item, stage.key)
+          return h('div', { key: stage.key, className: 'rd-stage-row' + (open ? ' open' : '') },
+            h('button', { type: 'button', className: 'rd-stage-head', 'aria-expanded': open ? 'true' : 'false', onClick: function () { openState[1](stage.key) } },
+              h('span', { className: 'rd-stage-name' }, stage.label),
+              h('span', { className: 'rd-stage-summary' }, item ? (item.preview ? 'draft preview' : (item.currentRevision && item.currentRevision.content && (item.currentRevision.content.goal || item.currentRevision.content.scope) || '已归档')) : '未开始'),
+              h('span', { className: 'rd-badge', 'data-tone': status === 'approved' ? 'pass' : status === 'review' || status === 'preview' ? 'warn' : undefined }, labelOf(item, stage.key)),
+              h('span', { className: 'rd-stage-chevron', 'aria-hidden': 'true' }, '⌄')),
+            h('div', { className: 'rd-stage-expand' + (open ? ' open' : ''), 'aria-hidden': open ? 'false' : 'true' }, h('div', { className: 'rd-stage-expand-inner' }, stageBody(stage.key, item))))
+        })),
         h('div', { className: 'rd-float-actions' }, h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: compose }, '在会话继续修改'), h('button', { type: 'button', className: 'rd-btn', onClick: close }, '关闭'))))
   }
 
