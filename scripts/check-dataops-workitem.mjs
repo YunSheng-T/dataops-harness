@@ -50,7 +50,7 @@ check(preset.includes('item.yaml'), 'preset persona missing item.yaml')
 
 // Validate any real workitem beside the template with the same minimal contract.
 const workitemsDir = resolve(root, 'workitems')
-const actual = readdirSync(workitemsDir).filter(name => name !== '_template' && name !== 'README.md')
+const actual = readdirSync(workitemsDir).filter(name => name !== '_template' && name !== 'README.md' && !name.startsWith('.'))
   .filter(name => statSync(join(workitemsDir, name)).isDirectory())
 for (const name of actual) {
   const file = join(workitemsDir, name, 'item.yaml')
