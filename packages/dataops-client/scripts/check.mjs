@@ -702,6 +702,14 @@ check('historical design card cannot sign when analysis is current', () => {
   }
 })
 
+check('current develop card uses workitem approvals, not payload review', () => {
+  let rendered = null
+  const develop = { kind: 'develop', stage: 'develop', status: 'awaiting_merge', branch: 'feat/x', artifacts: [], validation: {}, tasks: [], review: { se: { status: 'approved', approver: 'payload' }, committer: { status: 'waiting' } }, gaps: [] }
+  const workitem = { id: 'wi-review', stage: 'develop', approvals: [{ gate: 'develop.code_review', status: 'pending', signoffs: [] }, { gate: 'develop.merge', status: 'pending', signoffs: [] }] }
+  text(Brief.TurnTail({ payloads: { develop, workitem }, sessionId: 's-review', renderCard: props => { rendered = JSON.parse(props.block.content[0].text); return 'CARD' } }))
+  assert(rendered && rendered.review.se.status === 'pending', 'payload SE review must not override pending workitem approval')
+})
+
 check('turn tail exposes the current gate summary and stage brief', () => {
   const requirement = { kind: 'requirement', status: 'draft', title: '需求', goal: '支付口径', review: { ba: { status: 'pending', approver: '陈璐' }, requester: { status: 'pending', approver: '渠道运营' } }, gaps: [] }
   const brief = Brief._internals.briefFrom(requirement)

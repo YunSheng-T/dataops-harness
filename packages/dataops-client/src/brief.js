@@ -229,9 +229,13 @@ export function createStageBrief(React, store, contextStore) {
         if (signoff && signoff.role) signed[String(signoff.role).toLowerCase()] = signoff
       })
     })
-    Object.keys(signed).forEach(function (role) {
-      var current = review[role]
-      review[role] = Object.assign({}, typeof current === 'object' && current ? current : { status: current }, { status: 'approved', approver: signed[role].actor || (current && current.approver) })
+    ;(action.spec.roles || []).forEach(function (role) {
+      var key = String(role.key).toLowerCase()
+      var current = review[key]
+      var base = typeof current === 'object' && current ? current : {}
+      review[key] = Object.assign({}, base, signed[key]
+        ? { status: 'approved', approver: signed[key].actor || (base && base.approver) || role.actor }
+        : { status: 'pending' })
     })
     payload.review = review
     payload.canSignoff = true
