@@ -627,6 +627,12 @@ check('tech plan renders legacy string lineage edges', () => {
   assert(body.includes('dwd.orders') && body.includes('etl_target') && body.includes('dws.trade_channel_daily'), 'legacy lineage nodes')
 })
 
+check('tech plan rollback object steps do not leak JSON', () => {
+  const body = text(Cards.TechPlanCard({ block: block({ kind: 'tech_plan', stage: 'scheme', target: 'dws.x', status: 'draft', tasks: [], estimate: '1 人日', risks: [], gaps: [], rollback: { steps: [{ step: '切回旧 SQL' }, { description: '恢复调度 v1' }], materials: [{ name: 'rollback.sql' }] } }) }))
+  assert(body.includes('切回旧 SQL') && body.includes('恢复调度 v1'), 'rollback step text')
+  assert(!body.includes('{"step"') && !body.includes('{"name"'), 'rollback JSON leak')
+})
+
 check('tech plan renders task and embedded lineage', () => {
   const body = text(Cards.TechPlanCard({ block: block({ kind: 'tech_plan', stage: 'scheme', target: 'dws.trade_channel_daily', status: 'draft', tasks: [{ id: 'T1', name: '支付口径聚合', platform: 'spark', owner: '交易组' }], estimate: '2 人日', risks: [], gaps: [], review: { se: 'pending', dev: 'deferred' }, lineage: { table: 'dws.trade_channel_daily', graph: { nodes: [{ id: 'table:dws.trade_channel_daily', type: 'physical_table', label: 'dws.trade_channel_daily' }], edges: [] }, timeband: { upstreamReadyAt: '03:12', sla: '05:00', buffer: '22m', points: [] } } }) }))
   assert(body.includes('支付口径聚合') && body.includes('设计血缘'), 'tech plan preview')

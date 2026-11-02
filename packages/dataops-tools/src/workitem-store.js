@@ -124,6 +124,12 @@ function unquote(key) {
 }
 
 export function parseWorkitem(text) {
+  const source = String(text).replace(/^\uFEFF/, '')
+  const frontMatter = source.match(/^\s*---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/u)
+  return parseYamlText(frontMatter ? frontMatter[1] : source)
+}
+
+function parseYamlText(text) {
   const lines = String(text).replace(/^\uFEFF/, '').split(/\r?\n/)
     .map(line => ({ indent: indentOf(line), text: stripComment(line).trim() }))
     .filter(line => line.text.trim() !== '')
@@ -474,7 +480,7 @@ function writeArtifactRevision(dir, raw, input) {
   const revisionId = 'rev-' + String(version).padStart(4, '0')
   const parentRevisionId = meta.currentRevisionId || null
   const now = stamp()
-  const contentHash = createHash('sha256').update(serializeWorkitem(input.file)).digest('hex')
+  const contentHash = createHash('sha256').update(input.text || serializeWorkitem(input.file)).digest('hex')
   for (const revision of revisions) {
     if (revision.revisionId === meta.currentRevisionId) revision.status = 'superseded'
   }
@@ -830,7 +836,14 @@ function stagePrepareUnlocked(config, args) {
   const full = join(dir, deliverable)
   mkdirSync(dirname(full), { recursive: true })
   const file = { ...args.payload, kind, stage, ...(args.substage ? { substage: args.substage } : {}), deliverable, status: args.status || args.payload.status || 'draft' }
-  writeFileSync(full, serializeWorkitem(file), 'utf8')
+  const body = file.body || file.markdown || ''
+  const yamlFile = { ...file }
+  delete yamlFile.body
+  delete yamlFile.markdown
+  const text = deliverable.endsWith('.md')
+    ? '---\n' + serializeWorkitem(yamlFile) + '---\n\n' + (body || '# ' + (file.title || kind) + '\n\n')
+    : serializeWorkitem(file)
+  writeFileSync(full, text, 'utf8')
   raw.stages = raw.stages && typeof raw.stages === 'object' ? raw.stages : {}
   raw.stages[stage] = raw.stages[stage] || {}
   raw.stages[stage].status = 'in_progress'
@@ -841,7 +854,7 @@ function stagePrepareUnlocked(config, args) {
   if (Array.isArray(args.gaps)) raw.gaps = args.gaps
   if (args.next) raw.next = args.next
   raw.updated_at = stamp()
-  const revision = writeArtifactRevision(dir, raw, { kind, stage, substage: args.substage, file, sourceTurnId: args.sourceTurnId, evidenceRefs })
+  const revision = writeArtifactRevision(dir, raw, { kind, stage, substage: args.substage, file, text, sourceTurnId: args.sourceTurnId, evidenceRefs })
   writeItem(dir, raw, config, `stage prepare · ${stage}${args.substage ? '/' + args.substage : ''} · ${deliverable}`)
   return { ...file, workitemId: id, prepared: true, workitemStage: raw.stage, artifactId: revision.artifactId, revisionId: revision.revisionId, evidenceCount: evidenceRefs.length }
 }

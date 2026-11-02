@@ -757,8 +757,13 @@ export function createDataopsCards(React, LineageFlow) {
       model.scope = model.scope && typeof model.scope === 'object' ? displayValue(model.scope, '—') : model.scope
     }
     if (kind === 'tech_plan' && model.rollback && typeof model.rollback === 'object') {
-      model.rollback.steps = asArray(model.rollback.steps)
-      model.rollback.materials = asArray(model.rollback.materials)
+      var rollbackText = function (item) {
+        if (typeof item === 'string') return item
+        if (!item || typeof item !== 'object') return ''
+        return item.step || item.description || item.name || item.text || displayValue(item, '')
+      }
+      model.rollback.steps = asArray(model.rollback.steps).map(rollbackText).filter(Boolean)
+      model.rollback.materials = asArray(model.rollback.materials).map(rollbackText).filter(Boolean)
     }
     if (kind === 'develop' && model.validation && typeof model.validation === 'object') {
       Object.keys(model.validation).forEach(function (key) {

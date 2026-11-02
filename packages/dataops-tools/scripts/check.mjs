@@ -1,7 +1,7 @@
 // Offline checks for the stage tools and their contracts.
 import { createTools } from '../src/index.js'
 import { normalizeConfig } from '../src/config.js'
-import { createWorkitemStore } from '../src/workitem-store.js'
+import { createWorkitemStore, parseWorkitem } from '../src/workitem-store.js'
 import { createAdapterIdentity, createLocalSignoffIdentity, createSignoffService } from '../src/signoff-service.js'
 import { createIdentityRoute, createSignoffRoute } from '../src/signoff-route.js'
 import { normalizeTicket } from '../src/providers/devops.js'
@@ -78,6 +78,12 @@ check('tool names follow the scope-action-object registry', () => {
   assert(!TOOL_REGISTRY.some(item => item.name.includes('schedule_spec') || item.name.includes('schedule_yaml')), 'artifact names must not be tool names')
   const legacy = ['dataops_requirement', 'dataops_design', 'dataops_table', 'dataops_lineage', 'dataops_tech_plan', 'dataops_evidence', 'dataops_develop', 'dataops_test', 'dataops_release', 'dataops_postmortem', 'dataops_incident']
   for (const name of legacy) assert(!tools.some(tool => tool.name === name), 'legacy tool name still registered: ' + name)
+})
+
+check('workitem accepts markdown front matter payload', () => {
+  const parsed = parseWorkitem('---\nkind: tech_plan\nstage: scheme\ntarget: dws.trade_channel_daily\nstatus: draft\n---\n\n# 技术方案\n\n正文只给 ltsgen 读。\n')
+  assert(parsed.kind === 'tech_plan' && parsed.target === 'dws.trade_channel_daily', 'front matter fields')
+  assert(!('#' in parsed), 'markdown body must not be parsed as YAML')
 })
 
 check('identity adapter maps a real adapter into signoff identity', async () => {
