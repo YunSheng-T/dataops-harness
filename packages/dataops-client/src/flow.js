@@ -161,11 +161,37 @@ const VIEWS = {
     },
     layout: 'manual'
   },
+  table: {
+    title: 'dws.trade_channel_daily · 表血缘',
+    tabs: '表血缘',
+    tag: 'TABLE LINEAGE',
+    summary: '表血缘 · 只展示 table → table 的上游 / 下游关系',
+    nodes: [
+      N('table:dwd.orders', 'dwd.orders', 'DWD', 'Hive · 交易组', ICON.hive, palette.hive, { layer: 'dwd' }),
+      N('table:dim.channel', 'dim.channel', 'DIM', 'MySQL · 交易组', ICON.mysql, palette.mysql, { layer: 'dim' }),
+      N('table:dws.trade_channel_daily', 'dws.trade_channel_daily', 'DWS', 'ClickHouse · 本次目标', ICON.clickhouse, palette.clickhouse, { layer: 'dws', target: true }),
+      N('table:ads.channel_report', 'ads.channel_report', 'ADS', 'ClickHouse · 报表组', ICON.clickhouse, palette.clickhouse, { layer: 'ads' }),
+      N('report:channel_dashboard', '渠道日报看板', 'RPT', '报表 · 报表组', ICON.report, palette.report)
+    ],
+    edges: [
+      E('table:dwd.orders', 'table:dws.trade_channel_daily', 'reads', '读'),
+      E('table:dim.channel', 'table:dws.trade_channel_daily', 'reads', 'join'),
+      E('table:dws.trade_channel_daily', 'table:ads.channel_report', 'reads', '下游'),
+      E('table:ads.channel_report', 'report:channel_dashboard', 'reads', '供数')
+    ],
+    positions: {
+      'table:dwd.orders': { x: 20, y: 40 }, 'table:dim.channel': { x: 20, y: 160 },
+      'table:dws.trade_channel_daily': { x: 330, y: 100 },
+      'table:ads.channel_report': { x: 640, y: 100 },
+      'report:channel_dashboard': { x: 640, y: 220 }
+    },
+    layout: 'manual'
+  },
   production: {
     title: 'dws.trade_channel_daily',
-    tabs: '生产视图',
-    tag: '本次目标',
-    summary: '生产视图 · 源系统 → Kafka → 集成 → ODS → ETL → DWD/DWS/ADS → API/缓存/报表',
+    tabs: '数据链路',
+    tag: 'DATA FLOW',
+    summary: '数据链路 · 源系统 → Kafka → 集成 → ODS → ETL → DWD/DWS/ADS → API/缓存/报表',
     nodes: [
       N('src:orders', '交易库.orders', 'SRC', 'MySQL · 交易库', ICON.mysql, palette.mysql),
       N('kafka:orders', 'Kafka orders_cdc', 'MQ', 'Kafka · 3 分区', ICON.kafka, palette.kafka),
@@ -239,6 +265,12 @@ const VIEWS = {
     layout: 'manual'
   }
 };
+
+const KIND_VIEW = {
+  table_lineage: 'table',
+  data_flow: 'production',
+  task_dag: 'schedule'
+}
 
 function nodeData(def) {
   return { name: def.name, kind: def.kind, meta: def.meta, icon: def.icon, iconBg: def.iconBg, target: !!def.target };
@@ -663,12 +695,12 @@ function content(info, tab) {
   function LineageSurface(props) {
     ensureWorkbenchStyles()
     var schedule = props.schedule || null
-    var initial = schedule ? 'schedule' : (props.initialView || 'schedule')
-    var viewState = React.useState(VIEWS[initial] ? initial : 'schedule')
+    var kind = props.kind || (schedule ? 'task_dag' : (props.initialView === 'production' ? 'data_flow' : props.initialView === 'schedule' ? 'task_dag' : 'table_lineage'))
+    var initial = schedule ? 'schedule' : (KIND_VIEW[kind] || (props.initialView || 'schedule'))
+    var view = VIEWS[initial] ? initial : 'table'
     var selectedState = React.useState(schedule ? 'task:current' : null)
     var selectedTab = React.useState('overview')
     var densityState = React.useState('compact')
-    var view = viewState[0]
     var selectedId = selectedState[0]
     var tab = selectedTab[0]
     var density = densityState[0]
@@ -736,12 +768,7 @@ function content(info, tab) {
             h('strong', null, viewDef.title),
             h('span', null, viewDef.summary))),
         h('div', { className: 'do-surface-actions' },
-          h('div', { className: 'do-surface-tabs', role: 'tablist' },
-            schedule
-              ? h('button', { type: 'button', className: 'do-surface-tab', 'data-active': 'true' }, '调度视图')
-              : ['design', 'production', 'schedule'].map(function (key) {
-                return h('button', { key: key, type: 'button', className: 'do-surface-tab', 'data-active': String(view === key), onClick: function () { viewState[1](key); selectedState[1](null) } }, VIEWS[key].tabs)
-              })),
+          h('div', { className: 'do-surface-kinds' }, h('span', { className: 'do-surface-kind' }, viewDef.tabs || viewDef.tag || '血缘')),
           h('button', { type: 'button', className: 'do-surface-focus', onClick: function () { densityState[1](density === 'focus' ? 'compact' : 'focus') } }, density === 'focus' ? '退出聚焦' : '聚焦'))),
       h('div', { className: 'do-surface-body do-workbench-overlay' },
         h('div', { className: 'do-surface-canvas' },
@@ -758,7 +785,7 @@ function content(info, tab) {
             setTab: selectedTab[1], setSelectedId: selectedState[1],
             setToast: function () {}
           }))),
-      h('div', { className: 'do-surface-foot' }, h('span', null, schedule ? '来自 task.yaml · 只读' : '设计 / 生产 / 调度三视图'), h('span', null, schedule ? (schedule.source || '解析结果') : '只读 · 来自血缘模型')))
+      h('div', { className: 'do-surface-foot' }, h('span', null, schedule ? '来自 task.yaml · 只读' : viewDef.tag || '血缘渲染'), h('span', null, schedule ? (schedule.source || '解析结果') : '只读 · 来自血缘模型')))
   }
 
   function LineageDialog(props) {
@@ -781,7 +808,7 @@ function content(info, tab) {
             h('div', null, h('span', { className: 'do-lineage-dialog-kicker' }, 'LINEAGE'), h('b', null, '血缘半屏视图')),
             h('button', { type: 'button', className: 'do-lineage-dialog-close', 'aria-label': '关闭血缘', onClick: props.onClose }, '关闭')),
           h('div', { className: 'do-lineage-dialog-body' },
-            h(LineageSurface, { initialView: props.initialView || 'schedule', schedule: props.schedule })))),
+            h(LineageSurface, { kind: props.kind, initialView: props.initialView || 'schedule', schedule: props.schedule })))),
       document.body
     )
   }

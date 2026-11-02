@@ -502,6 +502,38 @@ export function createDataopsCards(React) {
     '.rd-skeleton{height:12px;border-radius:4px;background:var(--dsw-alias-bg-overlay,#eef0f5);opacity:.8}',
     '.rd-skeleton-wide{height:36px}',
     '.rd-skeleton-short{width:55%}',
+    '.do-lineage-browser{display:flex;flex-direction:column;gap:7px;min-height:0}',
+    '.do-lineage-toolbar{display:flex;align-items:center;gap:6px;width:100%;margin:0 0 7px;font-size:9px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-lineage-counts{display:flex;gap:3px;flex-wrap:wrap;margin-right:auto}',
+    '.do-lineage-counts span{font-size:7.5px;line-height:16px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.08));border-radius:3px;padding:0 4px;background:var(--dsw-alias-bg-l2,#f7f8fa);color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-lineage-search{width:170px;max-width:45%;height:22px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.1));border-radius:5px;background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-primary,#171a20);font:8.5px var(--sans);padding:0 7px;outline:none}',
+    '.do-lineage-search:focus{border-color:var(--dsw-alias-state-business-primary,#3f63d9)}',
+    '.do-lineage-browser-body{display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px;align-items:start;min-height:430px}',
+    '.do-lineage-objects{border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.08));border-radius:7px;background:var(--dsw-alias-bg-l2,#f7f8fa);padding:4px 0;overflow:auto;max-height:520px;min-width:0}',
+    '.do-lineage-group{font-size:7px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dsw-alias-label-tertiary,#8b93a2);padding:5px 7px 2px}',
+    '.do-lineage-object{display:flex;align-items:center;gap:5px;width:100%;border:0;border-left:2px solid transparent;background:transparent;text-align:left;padding:4px 6px;cursor:pointer;min-width:0}',
+    '.do-lineage-object:hover{background:var(--dsw-alias-bg-layer-1,#fff)}',
+    '.do-lineage-object.on{border-left-color:var(--dsw-alias-state-business-primary,#3f63d9);background:var(--dsw-alias-state-business-bg,#eef2ff)}',
+    '.do-lineage-obj-dot{width:5px;height:5px;border-radius:50%;background:var(--dsw-alias-label-quaternary,#b6bbc3);flex:none}',
+    '.do-lineage-obj-dot[data-kind=table_lineage]{background:var(--dsw-alias-state-business-primary,#3f63d9)}',
+    '.do-lineage-obj-dot[data-kind=data_flow]{background:var(--dsw-alias-state-success-primary,#177f5c)}',
+    '.do-lineage-obj-dot[data-kind=task_dag]{background:var(--dsw-alias-state-warning-primary,#94610e)}',
+    '.do-lineage-obj-main{min-width:0;flex:1}.do-lineage-obj-main b{display:block;font-size:8px;line-height:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.do-lineage-obj-main small{display:block;font-size:7px;line-height:10px;color:var(--dsw-alias-label-tertiary,#8b93a2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.do-lineage-empty{font-size:8px;color:var(--dsw-alias-label-tertiary,#8b93a2);padding:10px 8px}',
+    '.do-lineage-stage{min-width:0;min-height:430px}',
+    '.do-lineage-stage-head{display:flex;align-items:center;gap:5px;margin:0 0 6px;min-width:0}.do-lineage-stage-head b{font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.do-lineage-stage-head .rd-badge{margin-left:auto}',
+    '.do-lineage-stage .do-lineage-surface{width:100%;height:460px;min-height:0;max-height:460px;margin:0}',
+    '.do-lineage-stage .do-surface-body{grid-template-columns:1fr}.do-lineage-stage .do-surface-detail{display:none}',
+    '.do-lineage-flow-preview{border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.08));border-radius:8px;background:var(--dsw-alias-bg-layer-1,#fff);padding:28px 20px;min-height:300px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}',
+    '.do-lineage-flow-mark{font-family:ui-monospace,Menlo,monospace;font-size:8px;letter-spacing:.1em;color:var(--dsw-alias-state-business-primary,#3f63d9);background:var(--dsw-alias-state-business-bg,#eef2ff);border-radius:4px;padding:3px 6px;margin-bottom:9px}',
+    '.do-lineage-flow-preview > b{font-size:13px;font-weight:500;line-height:18px}',
+    '.do-lineage-flow-preview > p{font-size:9.5px;line-height:1.6;color:var(--dsw-alias-label-secondary,#61666b);max-width:340px;margin:4px 0 10px}',
+    '.do-lineage-flow-meta{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 10px}.do-lineage-flow-meta span{font-size:8px;line-height:16px;padding:0 5px;border-radius:3px;background:var(--dsw-alias-bg-l2,#f7f8fa);color:var(--dsw-alias-label-tertiary,#8b93a2)}',
+    '.do-lineage-flow-preview .rd-btn{align-self:flex-start;margin-top:2px}',
+    '.do-lineage-overview{border:1px dashed var(--dsw-alias-border-l2,rgba(0,0,0,.14));border-radius:8px;background:var(--dsw-alias-bg-l2,#f7f8fa);padding:26px 18px;text-align:center;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center}',
+    '.do-lineage-overview-mark{width:30px;height:30px;border-radius:8px;background:var(--dsw-alias-state-business-bg,#eef2ff);color:var(--dsw-alias-state-business-primary,#3f63d9);display:grid;place-items:center;font-size:16px;margin-bottom:7px}',
+    '.do-lineage-overview b{font-size:11px;font-weight:500}.do-lineage-overview p{font-size:8.5px;line-height:1.55;color:var(--dsw-alias-label-tertiary,#8b93a2);margin:3px 0 10px;max-width:310px}',
+    '.do-lineage-overview-metrics{display:flex;gap:16px}.do-lineage-overview-metrics div{min-width:40px}.do-lineage-overview-metrics b{display:block;font-size:15px;line-height:17px;font-weight:500}.do-lineage-overview-metrics span{display:block;font-size:7.5px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.do-lineage-toolbar{display:flex;align-items:center;gap:6px;width:min(100%,960px);margin:0 auto 7px;font-size:9px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.do-lineage-toolbar > span{margin-right:auto}',
     '.do-lineage-expand{border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.14));background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-secondary,#61666b);border-radius:5px;font-size:9px;line-height:22px;padding:0 8px;cursor:pointer;white-space:nowrap}',
@@ -1300,7 +1332,7 @@ export function createDataopsCards(React) {
         h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'design.yaml')),
         h(Btn, { key: 'artifact', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看交付物'),
         h(Btn, { key: 'canvas', variant: 'ghost', onClick: function () { canvas[1](true) } }, '打开画布'),
-        h(Btn, { key: 'lineage', variant: 'ghost', onClick: function () { openTab('dataops-lineage') } }, '查看血缘'),
+        h(Btn, { key: 'lineage', variant: 'ghost', onClick: function () { openDataOps('lineage', { table: m.target && m.target.table, lineageKind: 'table_lineage' }) } }, '查看表血缘'),
         h(Btn, { key: 'sign', variant: 'primary', onClick: function () { signoff('design', 'ba', (review.ba && review.ba.approver) || m.owner || '陈璐') } }, '确认设计'),
         h(Btn, { key: 'back', variant: 'ghost', onClick: function () { returnGate('design', 'ba', '设计需要修改') } }, '退回修改')
       ]
@@ -1507,9 +1539,10 @@ export function createDataopsCards(React) {
       footer: schedule
         ? [
           h('span', { key: 'meta', className: 'do-muted do-meta' }, (schedule.taskName || '') + ' · ' + (schedule.jobCount || jobs.length) + ' 作业' + (selectedJob ? ' · ' + selectedJob.name : '')),
+          h(Btn, { key: 'dataops', variant: 'ghost', onClick: function () { openDataOps('lineage', { table: schedule.taskName || m.table, lineageKind: 'task_dag' }) } }, '查看调度 DAG'),
           h(Btn, { key: 'focus', variant: focus ? 'primary' : 'ghost', onClick: function () { var next = !focus; focusState[1](next); if (props.onFocusChange) props.onFocusChange(next) } }, focus ? '退出聚焦' : '聚焦')
         ]
-        : [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'lineage'))]
+        : [h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'lineage')), h(Btn, { key: 'dataops', variant: 'ghost', onClick: function () { openDataOps('lineage', { table: m.table, lineageKind: m.view === 'production' ? 'data_flow' : 'table_lineage' }) } }, m.view === 'production' ? '查看数据链路' : '查看表血缘')]
     },
       schedule
         ? h('div', { className: 'do-sched-card', 'data-density': focus ? 'focus' : 'compact' },
@@ -1540,7 +1573,8 @@ export function createDataopsCards(React) {
       ],
       footer: [
         h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'lineage')),
-        m.truncated ? h('span', { key: 'trunc', className: 'do-muted' }, '已截断') : null
+        m.truncated ? h('span', { key: 'trunc', className: 'do-muted' }, '已截断') : null,
+        h(Btn, { key: 'dataops', variant: 'ghost', onClick: function () { openDataOps('lineage', { table: m.table, lineageKind: 'table_lineage' }) } }, '查看表血缘')
       ]
     },
       h('div', { className: 'do-lin' }, shown.map(function (node) {
@@ -1574,7 +1608,7 @@ export function createDataopsCards(React) {
       footer: [
         h('span', { key: 'meta', className: 'do-muted do-meta' }, metaLine(m, 'tech-plan.yaml')),
         h(Btn, { key: 'open', variant: 'ghost', onClick: function () { artifact[1](true) } }, '查看交付物'),
-        lineage ? h(Btn, { key: 'lineage', variant: 'ghost', onClick: function () { openTab('dataops-lineage') } }, '查看完整血缘') : null,
+        lineage ? h(Btn, { key: 'lineage', variant: 'ghost', onClick: function () { openDataOps('lineage', { table: m.target && typeof m.target === 'object' ? m.target.table : m.target, lineageKind: 'data_flow' }) } }, '查看数据链路') : null,
         h(Btn, { key: 'sign', variant: 'primary', onClick: function () { signoff('scheme.tech_plan', 'se', (review.se && review.se.approver) || '王工') } }, 'SE 确认')
       ]
     },

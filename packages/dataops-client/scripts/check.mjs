@@ -513,12 +513,13 @@ check('lineage tab renders schedule view from task/job lineage', () => {
   assert(!body.includes('设计血缘'), 'right tab must not default to design lineage')
 })
 
-check('lineage tab uses embedded three-view surface when available', () => {
+check('lineage tab uses the repo browser when LineageFlow is available', () => {
   const EmbeddedTabs = createDataopsTabs(React, ContextStore, {
-    LineageSurface: () => React.createElement('div', null, '三视图 surface')
+    LineageSurface: () => React.createElement('div', null, 'lineage surface'),
+    LineageDialog: () => React.createElement('div', null, 'lineage dialog')
   })
   const body = text(EmbeddedTabs._internals.LineageBody({ sessionId: 's-surface' }))
-  assert(body.includes('三视图 surface') && body.includes('半屏打开'), 'embedded surface and half-screen action')
+  assert(body.includes('选择代码仓里的血缘对象') && body.includes('数据链路') && body.includes('调度 DAG'), 'repo browser overview')
 })
 
 check('DataOps panel sections read the context store', () => {

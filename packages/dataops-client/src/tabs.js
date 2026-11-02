@@ -303,15 +303,59 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     }
   }
 
+  var LINEAGE_OBJECTS = [
+    { id: 'flow:channel_daily', kind: 'data_flow', label: 'channel_daily', sub: '3 tasks · 4 tables', group: '数据链路' },
+    { id: 'flow:etl_channel_sync', kind: 'data_flow', label: 'etl_channel_sync', sub: '2 tasks · 2 tables', group: '数据链路' },
+    { id: 'table:dwd.orders', kind: 'table_lineage', label: 'dwd.orders', sub: 'dwd · 上游 2 / 下游 3', group: '表' },
+    { id: 'table:dws.trade_channel_daily', kind: 'table_lineage', label: 'dws.trade_channel_daily', sub: 'dws · 上游 2 / 下游 1', group: '表' },
+    { id: 'task:channel_daily_mixed', kind: 'task_dag', label: 'channel_daily_mixed', sub: '6 jobs · 1 warning', group: '调度 DAG' }
+  ]
+
   function LineageBody(props) {
+    var selectedState = React.useState(null)
+    var queryState = React.useState('')
     var dialogState = React.useState(false)
+    var focus = props.focus || null
+    React.useEffect(function () {
+      if (!focus) return
+      var match = null
+      if (focus.table) match = LINEAGE_OBJECTS.filter(function (item) { return item.label === focus.table })[0] || null
+      if (!match && focus.lineageKind) match = LINEAGE_OBJECTS.filter(function (item) { return item.kind === focus.lineageKind })[0] || null
+      if (match) selectedState[1](match)
+    }, [focus])
     if (Flow && typeof Flow.LineageSurface === 'function') {
-      return h('div', { className: 'do-lineage-inline' },
+      var selected = selectedState[0]
+      var query = queryState[0].trim().toLowerCase()
+      var filtered = LINEAGE_OBJECTS.filter(function (item) { return !query || item.label.toLowerCase().indexOf(query) >= 0 || item.group.indexOf(query) >= 0 })
+      var counts = { data_flow: 0, table_lineage: 0, task_dag: 0 }
+      LINEAGE_OBJECTS.forEach(function (item) { counts[item.kind]++ })
+      var groups = ['数据链路', '表', '调度 DAG']
+      return h('div', { className: 'do-lineage-browser' },
         h('div', { className: 'do-lineage-toolbar' },
-          h('span', null, '当前会话 · 调度视图'),
-          h('button', { type: 'button', className: 'do-lineage-expand', onClick: function () { dialogState[1](true) } }, '半屏打开')),
-        h(Flow.LineageSurface, { initialView: 'schedule' }),
-        dialogState[0] && Flow.LineageDialog ? h(Flow.LineageDialog, { open: true, initialView: 'schedule', onClose: function () { dialogState[1](false) } }) : null)
+          h('div', { className: 'do-lineage-counts' }, h('span', null, '表 12'), h('span', null, '链路 ' + counts.data_flow), h('span', null, '任务 ' + counts.task_dag)),
+          h('input', { className: 'do-lineage-search', value: queryState[0], placeholder: '搜索表 / 任务 / 作业', onChange: function (event) { queryState[1](event.target.value) } })),
+        h('div', { className: 'do-lineage-browser-body' },
+          h('div', { className: 'do-lineage-objects' }, filtered.length ? groups.map(function (group) {
+            var items = filtered.filter(function (item) { return item.group === group })
+            return items.length ? h('div', { key: group }, h('div', { className: 'do-lineage-group' }, group), items.map(function (item) {
+              return h('button', { key: item.id, type: 'button', className: 'do-lineage-object' + (selected && selected.id === item.id ? ' on' : ''), onClick: function () { selectedState[1](item); dialogState[1](false) } },
+                h('span', { className: 'do-lineage-obj-dot', 'data-kind': item.kind }),
+                h('span', { className: 'do-lineage-obj-main' }, h('b', null, item.label), h('small', null, item.sub)))
+            })) : null
+          }) : h('div', { className: 'do-lineage-empty' }, '没有匹配的血缘对象')),
+          h('div', { className: 'do-lineage-stage' }, selected ? h(React.Fragment, null,
+            h('div', { className: 'do-lineage-stage-head' }, h('b', null, selected.label), h('span', { className: 'rd-badge', 'data-tone': 'brand' }, selected.kind), h('button', { type: 'button', className: 'do-lineage-expand', onClick: function () { dialogState[1](true) } }, '半屏打开')),
+            selected.kind === 'table_lineage' ? h(Flow.LineageSurface, { kind: selected.kind }) : h('div', { className: 'do-lineage-flow-preview' },
+              h('div', { className: 'do-lineage-flow-mark' }, selected.kind === 'task_dag' ? 'DAG' : 'FLOW'),
+              h('b', null, selected.label),
+              h('p', null, selected.kind === 'task_dag' ? 'Task.yaml 内的 Job 依赖图在独立半屏中打开，避免在右栏压缩节点。' : '表、ETL 与调度的完整链路在独立半屏中打开，避免在右栏压缩节点。'),
+              h('div', { className: 'do-lineage-flow-meta' }, h('span', null, selected.sub), h('span', null, selected.kind)),
+              h('button', { type: 'button', className: 'rd-btn rd-btn-primary', onClick: function () { dialogState[1](true) } }, '打开完整图'),
+              h('button', { type: 'button', className: 'rd-btn', onClick: function () { selectedState[1](null) } }, '返回概览')),
+            dialogState[0] && Flow.LineageDialog ? h(Flow.LineageDialog, { open: true, kind: selected.kind, initialView: selected.kind === 'task_dag' ? 'schedule' : undefined, onClose: function () { dialogState[1](false) } }) : null
+          ) : h('div', { className: 'do-lineage-overview' }, h('div', { className: 'do-lineage-overview-mark' }, '⌘'), h('b', null, '选择代码仓里的血缘对象'), h('p', null, '左侧选择表、数据链路或调度 DAG；右侧只显示该对象的一张图。'),
+            h('div', { className: 'do-lineage-overview-metrics' }, h('div', null, h('b', null, '12'), h('span', null, '表')), h('div', null, h('b', null, counts.data_flow), h('span', null, '数据链路')), h('div', null, h('b', null, counts.task_dag), h('span', null, '调度 DAG'))))))
+      )
     }
     var context = useContext(props.sessionId) || {}
     var lineage = context.lineage
@@ -321,12 +365,12 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var payload = schedulePayload || designCardPayload(graph)
     if (Cards && typeof Cards.LineageV2Card === 'function' && payload) {
       return h('div', { className: 'do-lineage-inline' },
-        h('div', { className: 'do-label' }, payload.view === 'schedule' ? '当前会话 · 调度视图' : '当前会话血缘'),
+        h('div', { className: 'do-label' }, payload.view === 'schedule' ? '当前会话 · 调度 DAG' : '当前会话血缘'),
         h(Cards.LineageV2Card, { block: { content: [{ type: 'text', text: JSON.stringify(payload) }] } }))
     }
     return h('div', { className: 'do-lineage-inline' },
       h(CtxCard, { title: '血缘', sub: '当前会话还没有血缘上下文' },
-        h('div', { className: 'do-muted' }, '打开带血缘的设计/技术方案卡后，会在这里展示同一张血缘卡。')))
+        h('div', { className: 'do-muted' }, '打开带血缘的设计/技术方案卡后，会在这里展示该图。')))
   }
 
   function EvidenceBody(props) {
@@ -824,7 +868,7 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     var deployView = section === 'evidence' && evidenceTab === 'deploy'
     var sectionTitle = scanView ? '代码扫描' : runtimeView ? '运行日志' : deployView ? '部署日志' : section === 'deliverables' ? '交付物' : section === 'assets' ? '资产' : section === 'lineage' ? '血缘' : section === 'evidence' ? '证据' : '仓库体检'
     var sectionSub = scanView ? '代码扫描结果由 scanning service 提供，只按 scanId 读取。' : runtimeView ? '按平台坐标查询最近运行，再按 runId 查看单次日志。' : deployView ? '按 deploymentId 查询一次制品包部署。' : section === 'deliverables' ? 'Workitem 的阶段产物与不可变 revision。' : section === 'assets' ? '当前 Session 的目标表与字段。' : section === 'lineage' ? '当前 Session 的上下游影响面。' : section === 'evidence' ? '当前 Session 的查询、时间范围与证据。' : '识别数据代码仓，检查 package 覆盖、LTS 结构和占位符。'
-    var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'deliverables' ? h(Deliverables) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId, focus: focus })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId })) : section === 'evidence' ? h(EvidencePanel) : h(Overview)
+    var content = section === 'checks' ? h(Checks) : section === 'repo' ? h(Repo) : section === 'deliverables' ? h(Deliverables) : section === 'assets' ? h('div', { className: 'rd-legacy' }, h(AssetBody, { sessionId: props.sessionId, focus: focus })) : section === 'lineage' ? h('div', { className: 'rd-legacy' }, h(LineageBody, { sessionId: props.sessionId, focus: focus })) : section === 'evidence' ? h(EvidencePanel) : h(Overview)
     return h('div', { className: 'rd-panel' },
       h('div', { className: 'rd-inner' },
       h('div', { className: 'rd-head', style: { display: 'flex', alignItems: 'flex-start' } },

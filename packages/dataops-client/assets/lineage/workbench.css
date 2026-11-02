@@ -111,6 +111,9 @@
 .do-surface-title strong{display:block;font-size:12px;line-height:20px;color:#1b1f27;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
 .do-surface-title span:not(.do-surface-mark){display:block;font-size:9px;line-height:14px;color:#8b93a2;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .do-surface-actions{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
+
+.do-surface-kinds{display:flex;align-items:center}
+.do-surface-kind{font-size:9px;line-height:20px;padding:0 7px;border:1px solid rgba(15,23,42,.1);border-radius:5px;background:#f6f8fb;color:#3f63d9;font-weight:600;white-space:nowrap}
 .do-surface-tabs{display:flex;gap:2px;padding:2px;border:1px solid rgba(15,23,42,.08);border-radius:6px;background:#f6f8fb}
 .do-surface-tab{border:0;background:transparent;color:#7b8492;font-size:10px;line-height:18px;padding:0 7px;border-radius:4px;cursor:pointer;white-space:nowrap}
 .do-surface-tab[data-active="true"]{background:#fff;color:#1b1f27;box-shadow:0 1px 2px rgba(15,23,42,.06)}

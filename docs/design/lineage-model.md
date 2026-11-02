@@ -1,6 +1,6 @@
 # Lineage Model
 
-> 状态：设计稿，待评审。
+> 状态：第一版实现中；三类 graph、代码仓对象列表、半屏图已接入。
 > 关联：OPEN-011 · [Lineage Surface](lineage-surface.md) · [Summary Cards](summary-cards.md)
 > 蓝图：[全量](../../prototype/lineage-browser-blueprint.html) · [增量](../../prototype/lineage-browser-blueprint-delta.html)
 > 目标：把“三种视图”改成三种业务血缘，把 DataOps 血缘做成代码仓浏览器。
