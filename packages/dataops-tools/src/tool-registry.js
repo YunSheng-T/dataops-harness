@@ -139,6 +139,11 @@ export const TOOL_REGISTRY = [
     stages: ['requirement', 'design', 'scheme'], payloadKind: 'deliverable', card: 'StageResultCard', skill: 'dataops-workflow', implemented: true
   },
   {
+    name: 'dataops_develop_generate_lts',
+    scope: 'develop', action: 'generate', object: 'lts', shared: false,
+    stages: ['develop'], payloadKind: 'ltsgen', card: null, skill: 'ltsgen', implemented: true
+  },
+  {
     name: 'dataops_repo_index',
     scope: 'repo', action: 'index', object: 'repo', shared: false,
     stages: ['repo'], payloadKind: 'repo', card: null, skill: null, implemented: true

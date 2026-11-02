@@ -2,6 +2,7 @@
 import { createTools } from '../src/index.js'
 import { normalizeConfig } from '../src/config.js'
 import { createWorkitemStore, parseWorkitem } from '../src/workitem-store.js'
+import { parseLtsTask } from '../src/lts.js'
 import { createAdapterIdentity, createLocalSignoffIdentity, createSignoffService } from '../src/signoff-service.js'
 import { createIdentityRoute, createSignoffRoute } from '../src/signoff-route.js'
 import { normalizeTicket } from '../src/providers/devops.js'
@@ -46,7 +47,7 @@ check('registry fixtures are in the expected order', () => {
   assert(JSON.stringify(names) === JSON.stringify([
     'dataops_requirement_extract_spec', 'dataops_design_compose_model', 'dataops_shared_read_table', 'dataops_shared_read_lineage', 'dataops_scheme_compose_tech_plan', 'dataops_shared_read_evidence',
     'dataops_shared_read_profile', 'dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_develop_generate_code',
-    'dataops_cicd_compile', 'dataops_cicd_test', 'dataops_cicd_release', 'dataops_review_write_postmortem', 'dataops_incident_triage', 'dataops_shared_read_develop', 'dataops_cicd_pipeline', 'dataops_shared_read_stage', 'dataops_shared_present_deliverable', 'dataops_shared_read_workitem', 'dataops_shared_update_workitem', 'dataops_shared_read_logs', 'dataops_shared_read_us', 'dataops_shared_read_datamap', 'dataops_shared_ensure_workitem', 'dataops_shared_stage', 'dataops_repo_index', 'dataops_repo_validate', 'dataops_code_scan'
+    'dataops_cicd_compile', 'dataops_cicd_test', 'dataops_cicd_release', 'dataops_review_write_postmortem', 'dataops_incident_triage', 'dataops_shared_read_develop', 'dataops_cicd_pipeline', 'dataops_shared_read_stage', 'dataops_shared_present_deliverable', 'dataops_shared_read_workitem', 'dataops_shared_update_workitem', 'dataops_shared_read_logs', 'dataops_shared_read_us', 'dataops_shared_read_datamap', 'dataops_shared_ensure_workitem', 'dataops_shared_stage', 'dataops_develop_generate_lts', 'dataops_repo_index', 'dataops_repo_validate', 'dataops_code_scan'
   ]), 'unexpected tools: ' + names.join(','))
   for (const tool of tools) {
     assert(typeof tool.description === 'string' && tool.description.length > 20, tool.name + ': weak description')
@@ -56,9 +57,9 @@ check('registry fixtures are in the expected order', () => {
   }
 })
 
-check('stage-0-5 active surface exposes 21 tools', () => {
+check('stage-0-5 active surface exposes 22 tools', () => {
   const active = createTools(normalizeConfig({ disabledTools: ['dataops_requirement_extract_spec', 'dataops_design_compose_model', 'dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_scheme_compose_tech_plan', 'dataops_develop_generate_code', 'dataops_review_write_postmortem', 'dataops_incident_triage'] }), {})
-  assert(active.length === 21, 'P3 should expose 21 tools, got ' + active.length)
+  assert(active.length === 22, 'P3 should expose 22 tools, got ' + active.length)
   assert(!active.some(tool => tool.name === 'dataops_requirement_extract_spec'), 'requirement content tool is hidden')
   assert(!active.some(tool => tool.name === 'dataops_design_compose_model'), 'design content tool is hidden')
   for (const name of ['dataops_scheme_analyze_data', 'dataops_scheme_compose_solution', 'dataops_scheme_compose_tech_plan', 'dataops_develop_generate_code', 'dataops_review_write_postmortem', 'dataops_incident_triage']) assert(!active.some(tool => tool.name === name), name + ' is hidden')
@@ -78,6 +79,19 @@ check('tool names follow the scope-action-object registry', () => {
   assert(!TOOL_REGISTRY.some(item => item.name.includes('schedule_spec') || item.name.includes('schedule_yaml')), 'artifact names must not be tool names')
   const legacy = ['dataops_requirement', 'dataops_design', 'dataops_table', 'dataops_lineage', 'dataops_tech_plan', 'dataops_evidence', 'dataops_develop', 'dataops_test', 'dataops_release', 'dataops_postmortem', 'dataops_incident']
   for (const name of legacy) assert(!tools.some(tool => tool.name === name), 'legacy tool name still registered: ' + name)
+})
+
+check('mock ltsgen writes lts_code and a zip artifact', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dataops-ltsgen-'))
+  try {
+    const configured = createTools(normalizeConfig({ workitemsDir: dir }), {})
+    const result = await configured.find(tool => tool.name === 'dataops_develop_generate_lts').execute({ workitemId: 'lts-demo', taskName: 'channel_pay_daily', packageName: 'channel_pay_daily' }, { signal })
+    const taskText = readFileSync(result.taskPath, 'utf8')
+    const parsed = parseLtsTask(taskText)
+    assert(parsed.ok && parsed.tasks[0].name === 'channel_pay_daily', 'lts task parse')
+    assert(readFileSync(result.artifact.package).subarray(0, 2).toString() === 'PK', 'zip magic')
+    assert(result.artifact.digest.startsWith('sha256:'), 'artifact digest')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 check('workitem accepts markdown front matter payload', () => {

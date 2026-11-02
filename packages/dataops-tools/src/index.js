@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { normalizeConfig } from './config.js'
 import { buildPipelinePackage } from './pipeline-package.js'
+import { generateMockLts } from './ltsgen/mock.js'
 import { createCicdCliAdapter } from './providers/cicd-cli.js'
 import { createWorkitemStore } from './workitem-store.js'
 import { registerSignoffRoute } from './signoff-route.js'
@@ -851,6 +852,23 @@ export function createTools(config, deps) {
       summary: value => value.action === 'signoff' || value.gateStatus
         ? '阶段签收：' + (value.id || '') + '｜' + (value.gateStatus || '') + (value.advanced ? '｜进入 ' + value.advanced : '')
         : '阶段交付：' + (value.kind || '') + '｜' + (value.workitemId || value.id || '')
+    }),
+    textTool({
+      name: 'dataops_develop_generate_lts',
+      description: 'Mock LTS 生成：把技术设计转成 lts_code/<task>/task.yaml 和 output/<package>.zip；真内部模式替换为 ltsgen jar，不在此工具里执行真实构建。',
+      parameters: parameterRoot({
+        workitemId: { type: 'string', description: '工作项 ID；mock 产物落在该工作项的 develop/code-repo。' },
+        taskName: { type: 'string', description: 'LTS 任务名，默认 channel_pay_daily。' },
+        packageName: { type: 'string', description: '构建包名，默认同 taskName。' }
+      }),
+      execute: async args => {
+        const workitemId = args.workitemId
+        if (!workitemId) throw new Error('dataops_develop_generate_lts: workitemId is required')
+        const workitemDir = resolve(config.workitemsDir, workitemId)
+        const codeRepoRoot = config.codeRepoRoot ? resolve(process.cwd(), config.codeRepoRoot) : null
+        return generateMockLts({ workitemId, workitemDir, codeRepoRoot, taskName: args.taskName, packageName: args.packageName })
+      },
+      summary: value => 'LTS mock：' + value.taskName + ' → ' + value.artifact.package
     }),
     textTool({
       name: 'dataops_repo_index',

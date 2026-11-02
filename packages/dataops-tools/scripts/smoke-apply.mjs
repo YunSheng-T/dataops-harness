@@ -18,7 +18,7 @@ apply(ctx, { disabledTools: LEGACY_CONTENT_TOOL_NAMES, workitemsDir: temp })
 const failures = []
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 
-expect(registered.length === 21, 'expected 21 active tool registrations, got ' + registered.length)
+expect(registered.length === 22, 'expected 22 active tool registrations, got ' + registered.length)
 expect(registered.every(tool => TOOLS.some(base => base.name === tool.name)), 'registered tool missing from base fixtures')
 
 const ARGS = {
@@ -32,6 +32,7 @@ const ARGS = {
   dataops_scheme_analyze_data: { scenario: 'channel-report' },
   dataops_scheme_compose_solution: { scenario: 'channel-report' },
   dataops_develop_generate_code: { scenario: 'channel-report' },
+  dataops_develop_generate_lts: { workitemId: 'smoke-item', taskName: 'smoke_task', packageName: 'smoke_pkg' },
   dataops_code_scan: { scenario: 'channel-report' },
   dataops_cicd_compile: { scenario: 'channel-report' },
   dataops_cicd_test: { scenario: 'channel-report' },
