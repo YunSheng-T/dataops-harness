@@ -15,7 +15,7 @@ check('runtime log lists by platform coordinates and details by runId', () => {
   const etl = service.list({ platform: 'etl', project: 'dataops-sample', group: 'etl_channel_sync', job: 'sync_channel' })
   assert(etl.ok && etl.runs.length === 2, 'ETL runs')
   const detail = service.detail({ platform: 'lts', project: 'dataops-sample', group: 'channel_daily', task: 'channel_daily_mixed', runId: lts.runs[0].runId })
-  assert(detail.ok && detail.events.length === 4 && detail.errorCodes.includes('DB_TIMEOUT'), 'detail')
+  assert(detail.ok && detail.events.length === 5 && detail.errorCodes.includes('DB_TIMEOUT'), 'detail')
   assert(!('package' in detail.locator) && !('package' in lts.locator), 'runtime locator must not be package scoped')
 })
 

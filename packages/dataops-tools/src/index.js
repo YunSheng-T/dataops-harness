@@ -19,6 +19,8 @@ import { createMockCodeScanService } from './code-scan/mock.js'
 import { registerCodeScanRoute } from './code-scan/route.js'
 import { createMockRuntimeLogService } from './runtime-log/mock.js'
 import { registerRuntimeLogRoute } from './runtime-log/route.js'
+import { createMockDeployLogService } from './deploy-log/mock.js'
+import { registerDeployLogRoute } from './deploy-log/route.js'
 import { createAdapterIdentity } from './signoff-service.js'
 import { createDomainAdapters } from './providers/domain-adapters.js'
 import { buildDevelopArtifacts } from './develop-package.js'
@@ -886,6 +888,7 @@ export function apply(ctx, config) {
   const normalized = normalizeConfig(config)
   const codeScan = createMockCodeScanService()
   const runtimeLog = createMockRuntimeLogService()
+  const deployLog = createMockDeployLogService()
   const tools = createTools(normalized, { ctx, codeScan })
   for (const tool of tools) ctx.tools.register(tool)
   const store = createWorkitemStore(normalized)
@@ -955,6 +958,21 @@ export function apply(ctx, config) {
   }
   if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents'], mountRuntimeLog)
   else mountRuntimeLog(ctx)
+  const mountDeployLog = child => {
+    try {
+      const connection = child && typeof child.get === 'function' ? child.get('connection') : null
+      const root = ctx
+      const routeCtx = {
+        get: name => name === 'connection' ? connection : (root && typeof root.get === 'function' ? root.get(name) : null),
+        effect: root && typeof root.effect === 'function' ? root.effect.bind(root) : undefined
+      }
+      registerDeployLogRoute(routeCtx, deployLog)
+    } catch (error) {
+      if (ctx && typeof ctx.logger?.warn === 'function') ctx.logger.warn('[dataops] deploy log route failed: ' + (error && error.message ? error.message : String(error)))
+    }
+  }
+  if (typeof ctx.inject === 'function') ctx.inject(['connection', 'agents'], mountDeployLog)
+  else mountDeployLog(ctx)
 
   function mountDataopsCommand(child) {
     const commands = child && child.commands ? child.commands : (child && typeof child.get === 'function' ? child.get('commands') : null)

@@ -28,7 +28,7 @@ DataOps 插件优先解决 Agent 的**真实工作缺口**，而不是重做 IDE
 | DO-PLUGIN-013 | **Change Impact Review** | P2.1 | paused | DataOps 影响 section | Host + Client | `dataops_code_scan` 结果 | 已被 Code Scan Integration 取代 |
 | DO-PLUGIN-014 | **Code Scan Integration** | P2.1 | building | DataOps 检查 section | Host + Client | dataops CLI / ScanResult | Mock 已实现；等真实 CLI |
 | DO-PLUGIN-005 | **Migration Review** | P2 | idea | DataOps 检查 section | Host + Client | SQL/model parser | 定义 DDL/DML/Rollback 规则 |
-| DO-PLUGIN-006 | **Run Timeline** | P2.2 | building | DataOps 证据 section | Host + Client | dataops_shared_read_logs | Mock RuntimeLog 已实现 |
+| DO-PLUGIN-006 | **Run Timeline** | P2.2 | building | DataOps 证据 section | Host + Client | dataops_shared_read_logs | Mock RuntimeLog + DeployLog 已实现 |
 | DO-PLUGIN-007 | **Data Contract Diff** | P3 | idea | API 预览差异卡 | Host + Client | API YAML / ofl | 定义兼容性规则 |
 | DO-PLUGIN-008 | **Repo Change Digest** | P3 | idea | DataOps 概览 section | Host + Client | workspaceChanges | 聚合粒度 |
 | DO-PLUGIN-009 | **Repo Context Pack** | P3 | idea | system prompt / DataOps 面板 | Host | repo index | 控制上下文预算 |

@@ -38,8 +38,9 @@ const EVENTS = {
   'lts-run-20261102-0310': [
     { seq: 1, at: '2026-11-02T03:10:00+08:00', phase: 'schedule', level: 'info', job: 'scheduler', message: '任务进入调度队列' },
     { seq: 2, at: '2026-11-02T03:12:00+08:00', phase: 'start', level: 'info', job: 'start', message: 'run 开始' },
-    { seq: 3, at: '2026-11-02T03:24:00+08:00', phase: 'retry', level: 'warn', job: 'calc_sql', message: '作业重试 1 次', code: 'DB_TIMEOUT' },
-    { seq: 4, at: '2026-11-02T03:39:00+08:00', phase: 'error', level: 'error', job: 'G_1006', message: 'group 终止，下游未执行', code: 'DB_TIMEOUT' }
+    { seq: 3, at: '2026-11-02T03:14:00+08:00', phase: 'dependency', level: 'warn', job: 'load_check', message: '等待上游 dwd.orders 分区就绪', code: 'UPSTREAM_WAIT' },
+    { seq: 4, at: '2026-11-02T03:24:00+08:00', phase: 'retry', level: 'warn', job: 'calc_sql', message: '作业重试 1 次', code: 'DB_TIMEOUT' },
+    { seq: 5, at: '2026-11-02T03:39:00+08:00', phase: 'error', level: 'error', job: 'G_1006', message: 'group 终止；下游作业未执行', code: 'DB_TIMEOUT' }
   ],
   'lts-run-20261101-0310': [
     { seq: 1, at: '2026-11-01T03:10:00+08:00', phase: 'schedule', level: 'info', job: 'scheduler', message: '任务进入调度队列' },
@@ -103,6 +104,8 @@ export function createMockRuntimeLogService() {
       locator,
       run: { ...run },
       events,
+      upstream: ['dwd.orders'],
+      downstream: ['ads.channel_report', 'rpt.funnel'],
       errorCodes: Array.from(new Set(events.map(event => event.code).filter(Boolean))),
       source: 'mock',
       asOf: '2026-11-02T03:42:00+08:00'

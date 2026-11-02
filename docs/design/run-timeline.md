@@ -1,6 +1,6 @@
 # Run Timeline（P2.2）
 
-> 状态：Mock 实现完成，等待真实 CLI。
+> 状态：RuntimeLog / DeployLog Mock 实现完成，等待真实 CLI。
 > 路线图：`docs/design/dataops-plugin-roadmap.md`
 > 数据来源：现有 `dataops_shared_read_logs`；P2.2 先做 mock timeline，不接真实日志服务。
 > 蓝图：[全量](../../prototype/run-timeline-blueprint.html) · [增量](../../prototype/run-timeline-blueprint-delta.html)
@@ -99,6 +99,15 @@ lts · project-a · channel_daily · channel_daily_mixed
 不是 package/version。
 
 ## 2.3 DeployLog 与 RuntimeLog
+
+Mock 实现：
+
+```text
+DeployLog: deploymentId → deploy-20261102-001 / 002
+RuntimeLog: platform coordinates → recent runs → runId
+```
+
+DeployLog 通过 `证据 → 部署日志`，RuntimeLog 通过 `证据 → 运行日志`。
 
 ```text
 DeployLog
