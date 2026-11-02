@@ -26,6 +26,34 @@ workitemId = 创建后返回的 ID
 
 不要把 source.id 当成 workitemId；也不要用历史工作项当主演示对象，避免旧 revision / 旧门禁干扰。
 
+### 反复演示：重置 US 绑定
+
+US-3821 一旦接单，会绑定一个已有 Workitem；再次选择时会恢复旧阶段，不会从需求重新开始。
+
+每轮演示前先归档旧工作项：
+
+```bash
+# 先预览要归档的 ID
+node scripts/reset-dataops-demo.mjs --id 2026-10-27-workitem --dry-run
+
+# 归档后 US-3821 的 existingWorkitem 变为空
+node scripts/reset-dataops-demo.mjs --id 2026-10-27-workitem
+```
+
+脚本只把目录移到：
+
+```text
+workitems/.demo-archive/<timestamp>-2026-10-27-workitem/
+```
+
+不删除产物。归档后刷新页面，再输入：
+
+```text
+查看待处理 US
+```
+
+US-3821 会重新显示“无已有工作项”，选择后创建新的 Workitem。
+
 ### 兜底种子
 
 如果现场 Agent 流程卡住，切到已准备的工作项：
