@@ -664,7 +664,7 @@ check('stage result and stage navigator expose the current iteration', () => {
 check('requirement card exposes BA and requester signoff actions', () => {
   const tree = Cards.RequirementCard({ block: block({ kind: 'requirement', stage: 'requirement', title: '需求', goal: '目标', status: 'draft', review: { ba: { approver: '陈璐', status: 'pending' }, requester: { approver: '渠道运营', status: 'pending' } }, gaps: [] }) })
   const body = text(tree)
-  assert(body.includes('BA 签收') && body.includes('需求方确认'), 'signoff buttons exist')
+  assert(body.includes('BA · 待处理') && body.includes('需求方 · 待处理') && body.includes('确认并继续'), 'one-click signoff exists')
 })
 
 
@@ -697,6 +697,11 @@ check('stage navigator groups cards and statuses by stage', () => {
   assert(body.includes('阶段简报') && body.includes('需求') && body.includes('分析'), 'navigator content missing')
 })
 
+
+check('artifact object does not leak into card metadata', () => {
+  const body = text(Cards.RequirementCard({ block: block({ kind: 'requirement', title: '需求', goal: '目标', artifact: { path: 'requirement.yaml' }, gaps: [] }) }))
+  assert(!body.includes('[object Object]'), 'artifact object leaked')
+})
 
 for (const [name, fn] of checks) {
   try {

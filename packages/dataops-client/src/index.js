@@ -198,59 +198,52 @@ function apply(ctx) {
     React.useEffect(function () {
       var onRequest = function (event) {
         var detail = (event && event.detail) || {}
-        if (!detail.gate || !detail.role) return
-        var id = 'ui-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-        requestState[1]({ gate: String(detail.gate), role: String(detail.role), actor: String(detail.actor || detail.role), comment: detail.comment ? String(detail.comment) : null, actionId: id })
+        if (!detail.gate) return
+        if (Array.isArray(detail.roles) && detail.roles.length) {
+          requestState[1]({ gate: String(detail.gate), roles: detail.roles.map(function (role) { return { key: String(role.key), actor: String(role.actor || role.key), comment: role.comment ? String(role.comment) : null } }), workitemId: detail.workitemId || null })
+          return
+        }
+        if (!detail.role) return
+        requestState[1]({ gate: String(detail.gate), roles: [{ key: String(detail.role), actor: String(detail.actor || detail.role), comment: detail.comment ? String(detail.comment) : null }], workitemId: detail.workitemId || null })
       }
+      var onAll = function (event) { onRequest(event) }
       window.addEventListener('dataops:signoff-request', onRequest)
-      return function () { window.removeEventListener('dataops:signoff-request', onRequest) }
+      window.addEventListener('dataops:signoff-all', onAll)
+      return function () { window.removeEventListener('dataops:signoff-request', onRequest); window.removeEventListener('dataops:signoff-all', onAll) }
     }, [])
     if (!request) {
       return notice ? React.createElement('div', { className: 'do-signoff-toast', role: 'status', 'data-tone': noticeTone }, notice) : null
     }
-    var text = '【签收】gate=' + request.gate + ' role=' + request.role + ' actionId=' + request.actionId + ' actor=' + request.actor + (request.comment ? ' comment=' + request.comment : '')
-    function sendViaAgent() {
-      if (typeof window.__dataopsCompose === 'function') window.__dataopsCompose(text)
-      else if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('dataops:compose', { detail: { text: text } }))
+    function submit() {
+      var workitemId = request.workitemId || (typeof window !== 'undefined' ? window.__dataopsActiveWorkitemId : null)
+      if (!workitemId || typeof fetch !== 'function') {
+        noticeToneState[1]('error')
+        noticeState[1]('找不到当前 Workitem，请先让 Agent 读取工作项')
+        window.setTimeout(function () { noticeState[1](null) }, 4200)
+        return
+      }
+      var roles = request.roles || []
       requestState[1](null)
-      window.setTimeout(function () {
-        try {
-          var button = Array.prototype.slice.call(document.querySelectorAll('button')).reverse().find(function (candidate) {
-            var label = ((candidate.getAttribute('aria-label') || '') + ' ' + (candidate.textContent || '')).trim()
-            return /发送|send/i.test(label) && !candidate.disabled
-          })
-          if (button) button.click()
-          else if (typeof window.__dataopsSubmit === 'function') window.__dataopsSubmit(text)
-        } catch (error) { /* leave the visible draft for manual Enter */ }
-      }, 140)
-    }
-    function fill() {
-      var workitemId = typeof window !== 'undefined' ? window.__dataopsActiveWorkitemId : null
-      if (!workitemId || typeof fetch !== 'function') { sendViaAgent(); return }
-      requestState[1](null)
-      fetch('/api/dataops/signoff', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ workitemId: workitemId, gate: request.gate, role: request.role, comment: request.comment, actionId: request.actionId })
-      }).then(function (response) {
-        if (response.status === 404 || response.status === 405) { var unavailable = new Error('route unavailable'); unavailable.routeUnavailable = true; throw unavailable }
-        if (!response.ok) return response.json().catch(function () { return {} }).then(function (body) { throw new Error((body && body.message) || ('签收被拒绝（' + response.status + '）')) })
-        return response.json()
-      }).then(function (body) {
-        if (!body || body.ok !== true) throw new Error('签收被拒绝')
-        window.dispatchEvent(new CustomEvent('dataops:signoff-recorded', { detail: { workitem: body.workitem } }))
+      Promise.all(roles.map(function (role) {
+        var id = 'ui-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+        return fetch('/api/dataops/signoff', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ workitemId: workitemId, gate: request.gate, role: role.key, comment: role.comment, actionId: id })
+        }).then(function (response) {
+          if (!response.ok) return response.json().catch(function () { return {} }).then(function (body) { throw new Error((body && body.message) || ('签收被拒绝（' + response.status + '）')) })
+          return response.json()
+        }).then(function (body) { if (!body || body.ok !== true) throw new Error('签收被拒绝'); return body.workitem })
+      })).then(function (workitems) {
+        for (var i = 0; i < workitems.length; i++) window.dispatchEvent(new CustomEvent('dataops:signoff-recorded', { detail: { workitem: workitems[i] } }))
         noticeToneState[1]('success')
-        noticeState[1]('签收已记录，阶段状态已刷新')
+        noticeState[1]('签收已记录：' + roles.map(function (role) { return role.key; }).join(' / ') + '，阶段状态已刷新')
         window.setTimeout(function () { noticeState[1](null) }, 2600)
       }).catch(function (error) {
-        if (error && error.routeUnavailable) { sendViaAgent(); return }
         noticeToneState[1]('error')
         noticeState[1]('签收失败：' + (error && error.message ? error.message : '请检查身份/角色'))
         window.setTimeout(function () { noticeState[1](null) }, 4200)
       })
-    }
-    function copy() {
-      if (navigator.clipboard) navigator.clipboard.writeText(text)
     }
     var toast = notice
       ? React.createElement('div', { className: 'do-signoff-toast', role: 'status' }, notice)
@@ -262,13 +255,12 @@ function apply(ctx) {
           React.createElement('span', { className: 'do-signoff-host-title' }, '确认签收'),
           React.createElement('button', { type: 'button', className: 'do-signoff-host-x', onClick: function () { requestState[1](null) } }, '关闭')
         ),
-        React.createElement('div', { className: 'do-signoff-host-meta' }, request.gate + ' · ' + request.role + ' · ' + request.actor + (identity ? ' · 当前身份 ' + identity.name + '（' + (identity.roles || []).join('/') + '）' : '')),
-        React.createElement('div', { className: 'do-signoff-host-label' }, '将写入输入框的正常用户消息'),
-        React.createElement('pre', { className: 'do-signoff-host-preview' }, text),
+        React.createElement('div', { className: 'do-signoff-host-meta' }, request.gate + ' · ' + (request.roles || []).map(function (role) { return role.key + (role.actor ? '（' + role.actor + '）' : ''); }).join(' / ') + (identity ? ' · 当前身份 ' + identity.name + '（' + (identity.roles || []).join('/') + '）' : '')),
+        React.createElement('div', { className: 'do-signoff-host-label' }, '直接写入 Workitem approval，不生成用户消息'),
+        React.createElement('div', { className: 'do-signoff-host-preview' }, (request.roles || []).map(function (role) { return role.key + ' · ' + (role.comment || '确认'); }).join('\n')),
         React.createElement('div', { className: 'do-signoff-host-actions' },
-          React.createElement('button', { type: 'button', className: 'do-signoff-host-btn', onClick: copy }, '复制回执'),
           React.createElement('button', { type: 'button', className: 'do-signoff-host-btn', onClick: function () { requestState[1](null) } }, '取消'),
-          React.createElement('button', { type: 'button', className: 'do-signoff-host-btn do-signoff-host-primary', onClick: fill }, '签收并提交')
+          React.createElement('button', { type: 'button', className: 'do-signoff-host-btn do-signoff-host-primary', onClick: submit }, '确认并继续')
         )
       )) : null
     )

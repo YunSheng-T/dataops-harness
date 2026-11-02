@@ -852,7 +852,8 @@ export function createDataopsCards(React, LineageFlow) {
   }
 
   function deliverablePath(m) {
-    return m && (m.deliverable || m.artifact) || null
+    var value = m && (m.deliverable || m.artifact)
+    return typeof value === 'string' ? value : null
   }
 
   function composeMessage(text) {
@@ -880,6 +881,14 @@ export function createDataopsCards(React, LineageFlow) {
     return composeMessage('【签收】gate=' + gate + ' role=' + role + ' actionId=' + actionId() + ' actor=' + (actor || role) + (comment ? ' comment=' + comment : ''))
   }
 
+  function signoffAll(gate, roles, workitemId) {
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('dataops:signoff-all', { detail: { gate: gate, roles: roles, workitemId: workitemId || null } }))
+      return
+    }
+    return composeMessage('【签收】gate=' + gate + ' roles=' + roles.map(function (role) { return role.key }).join(',') + ' actionId=' + actionId())
+  }
+
   function returnGate(gate, role, reason) {
     return composeMessage('【退回】gate=' + gate + ' role=' + role + ' actionId=' + actionId() + ' reason=' + (reason || '内容需要修改'))
   }
@@ -904,19 +913,19 @@ export function createDataopsCards(React, LineageFlow) {
     var gate = props.gate
     var roles = props.roles || []
     if (!roles.length) return null
+    var pending = roles.filter(function (role) {
+      var current = review[role.key]
+      var st = typeof current === 'string' ? current : (current && current.status) || (role.key === 'se' || role.key === 'dev' ? 'deferred' : 'pending')
+      return st === 'pending' || st === 'advisory_pending' || (role.key === 'committer' && st === 'waiting')
+    })
     return h('div', { className: 'do-signoff' },
       h('span', { className: 'do-signoff-title' }, '签收'),
       roles.map(function (role) {
-        var key = role.key
-        var current = review[key]
-        var st = typeof current === 'string' ? current : (current && current.status) || (key === 'se' || key === 'dev' ? 'deferred' : 'pending')
-        return h('span', { key: key, className: 'do-kv', style: { gap: '4px' } },
-          h('span', { className: 'do-pill', 'data-tone': st === 'approved' || st === 'signed' || st === 'advisory_ok' ? 'pass' : st === 'rejected' || st === 'advisory_object' ? 'warn' : undefined }, role.label + ' · ' + statusText(st)),
-          (st === 'pending' || st === 'advisory_pending' || (role.key === 'committer' && st === 'waiting'))
-            ? h(Btn, { variant: role.key === 'requester' ? 'primary' : 'ghost', onClick: function () { signoff(gate, role.key, role.actor, role.comment) } }, role.action || '签收')
-            : null
-        )
-      })
+        var current = review[role.key]
+        var st = typeof current === 'string' ? current : (current && current.status) || (role.key === 'se' || role.key === 'dev' ? 'deferred' : 'pending')
+        return h('span', { key: role.key, className: 'do-pill', 'data-tone': st === 'approved' || st === 'signed' || st === 'advisory_ok' ? 'pass' : st === 'rejected' || st === 'advisory_object' ? 'warn' : undefined }, role.label + ' · ' + statusText(st))
+      }),
+      pending.length ? h(Btn, { variant: 'primary', onClick: function () { signoffAll(gate, pending, m.workitemId) } }, '确认并继续') : null
     )
   }
 
