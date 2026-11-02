@@ -731,22 +731,29 @@ export function createDataopsTabs(React, contextStore, LineageFlow, Cards) {
     }
 
     function Deliverables() {
-      var artifacts = workitem && Array.isArray(workitem.artifacts) ? workitem.artifacts : []
+      var baseArtifacts = workitem && Array.isArray(workitem.artifacts) ? workitem.artifacts : []
       var current = workitem && workitem.currentIteration ? workitem.currentIteration : null
-      if (!workitem) return h('div', { className: 'rd-content-inner' }, h('div', { className: 'rd-empty' }, h('div', { className: 'rd-empty-mark' }, '∅'), h('b', null, '还没有 Workitem 交付物'), h('p', null, '让 Agent 完成一次阶段 prepare 后，产物会出现在这里。')))
+      var previewKinds = ['requirement', 'design', 'analysis', 'solution', 'tech_plan', 'develop', 'cicd']
+      var previews = previewKinds.map(function (kind) { return context && context[kind] }).filter(Boolean).filter(function (payload) {
+        return !baseArtifacts.some(function (artifact) { return artifact.kind === payload.kind || artifact.artifactId === payload.kind })
+      }).map(function (payload) {
+        return { artifactId: payload.kind, kind: payload.kind, stage: payload.stage || payload.kind, preview: true, revisions: [], currentRevision: { version: 1, status: 'preview', content: payload, createdAt: payload.asOf || payload.updatedAt || '' } }
+      })
+      var artifacts = baseArtifacts.concat(previews)
+      if (!workitem && !previews.length) return h('div', { className: 'rd-content-inner' }, h('div', { className: 'rd-empty' }, h('div', { className: 'rd-empty-mark' }, '∅'), h('b', null, '还没有 Workitem 交付物'), h('p', null, '让 Agent 完成一次阶段 prepare 后，产物会出现在这里。')))
       return h('div', { className: 'rd-content-inner' },
-        h('div', { className: 'rd-meta' }, h('span', { className: 'rd-status' }, h('i', null), 'Workitem'), h('span', null, workitem.id || ''),
+        h('div', { className: 'rd-meta' }, h('span', { className: 'rd-status' }, h('i', null), 'Workitem'), h('span', null, workitem && workitem.id ? workitem.id : '当前会话'),
           current ? h('span', null, 'current · ' + current.artifactId + ' ' + current.revisionId) : null),
         artifacts.length ? artifacts.map(function (artifact) {
           var currentRevision = artifact.currentRevision || {}
           var isCurrent = current && current.artifactId === artifact.artifactId
-          return h('button', { type: 'button', className: 'rd-artifact' + (isCurrent ? ' on' : ''), key: artifact.artifactId, onClick: function () {
+          return h('button', { type: 'button', className: 'rd-artifact' + (isCurrent ? ' on' : '') + (artifact.preview ? ' preview' : ''), key: artifact.artifactId, onClick: function () {
             if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
               window.dispatchEvent(new CustomEvent('dataops:artifact-inspector', { detail: { workitem: workitem, artifact: artifact } }))
             }
           } },
-            h('div', { className: 'rd-artifact-main' }, h('b', null, artifact.kind || artifact.artifactId), h('span', null, (artifact.revisions || []).length + ' revisions · ' + (artifact.stage || ''))),
-            h('div', { className: 'rd-artifact-side' }, h('span', { className: 'rd-badge', 'data-tone': currentRevision.status === 'approved' || currentRevision.status === 'review' ? 'pass' : 'warn' }, currentRevision.status || 'draft'), h('code', null, currentRevision.version ? 'v' + currentRevision.version : artifact.currentRevisionId || '')))
+            h('div', { className: 'rd-artifact-main' }, h('b', null, artifact.kind || artifact.artifactId), h('span', null, artifact.preview ? 'draft preview · 未归档' : (artifact.revisions || []).length + ' revisions · ' + (artifact.stage || ''))),
+            h('div', { className: 'rd-artifact-side' }, h('span', { className: 'rd-badge', 'data-tone': currentRevision.status === 'approved' || currentRevision.status === 'review' ? 'pass' : 'warn' }, currentRevision.status || 'draft'), h('code', null, artifact.preview ? 'preview' : (currentRevision.version ? 'v' + currentRevision.version : artifact.currentRevisionId || ''))))
         }) : h('div', { className: 'rd-inline-empty' }, h('b', null, '还没有阶段产物'), h('p', null, 'Agent 阶段 prepare 后会生成 revision，并在这里显示当前版本。')),
         current ? h('div', { className: 'rd-current-iteration' }, h('span', null, 'currentIteration'), h('code', null, current.stage + ' / ' + current.artifactId + ' / ' + current.revisionId), current.gate ? h('span', { className: 'rd-badge', 'data-tone': 'warn' }, current.gate) : null) : null)
     }

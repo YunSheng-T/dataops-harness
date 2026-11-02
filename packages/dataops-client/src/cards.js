@@ -314,6 +314,7 @@ export function createDataopsCards(React) {
     '.rd-float-hash{font-family:ui-monospace,Menlo,monospace;font-size:8px;color:var(--dsw-alias-label-tertiary,#8b93a2);word-break:break-all;margin:2px 0 8px}',
     '.rd-float-actions{display:flex;gap:4px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07))}',
     '.rd-artifact{display:flex;align-items:center;gap:8px;border:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.08));border-radius:6px;background:var(--dsw-alias-bg-layer-1,#fff);padding:8px 9px;margin:0 0 4px;min-width:0}',
+    '.rd-artifact.preview{border-style:dashed}',
     '.rd-artifact.on{border-color:var(--dsw-alias-state-business-line,#d7e0ff);background:var(--dsw-alias-state-business-bg,#eef2ff)}',
     '.rd-artifact-main{min-width:0;flex:1}',
     '.rd-artifact-main b{display:block;font-size:10px;line-height:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
@@ -322,6 +323,12 @@ export function createDataopsCards(React) {
     '.rd-artifact-side code{font-family:ui-monospace,Menlo,monospace;font-size:8px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.rd-current-iteration{display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.07));margin-top:9px;padding-top:8px;font-size:8.5px;color:var(--dsw-alias-label-tertiary,#8b93a2)}',
     '.rd-current-iteration code{font-family:ui-monospace,Menlo,monospace;font-size:8px;color:var(--dsw-alias-label-secondary,#61666b);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.do-design-lead{display:flex;flex-direction:column;gap:2px;border-left:2px solid var(--dsw-alias-state-business-primary,#3f63d9);padding:1px 0 1px 8px;margin:1px 0 8px}',
+    '.do-design-lead b{font-size:12px;line-height:1.4;font-weight:500}',
+    '.do-design-lead span{font-size:10.5px;line-height:1.5;color:var(--dsw-alias-label-secondary,#61666b)}',
+    '.do-design-incomplete{display:flex;flex-direction:column;gap:2px;padding:8px 9px;border:1px dashed var(--dsw-alias-border-l2,rgba(0,0,0,.14));border-radius:6px;background:var(--dsw-alias-bg-l2,#f7f8fa)}',
+    '.do-design-incomplete b{font-size:10.5px;font-weight:500}',
+    '.do-design-incomplete span{font-size:10px;line-height:1.5;color:var(--dsw-alias-label-secondary,#61666b)}',
     '.rd-deploy-query{display:flex;gap:4px;margin:0 0 9px}',
     '.rd-deploy-input{flex:1;min-width:0;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.12));border-radius:5px;background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-primary,#171a20);font:9px var(--sans);padding:0 7px;height:24px;outline:none}',
     '.rd-deploy-input:focus{border-color:var(--dsw-alias-state-business-primary,#3f63d9)}',
@@ -1189,6 +1196,10 @@ export function createDataopsCards(React) {
     var evidence = asArray(m.designEvidence || m.evidenceTrace || m.evidence)
     var review = m.review || {}
     var se = review.se
+    var sources = asArray(m.sources).filter(function (source) { return source && (source.table || source.name) })
+    var quality = asArray(m.quality).filter(function (item) { return item && (item.item || item.name) })
+    var headline = m.summary || (target.table ? '设计 ' + target.table : '设计尚未完成')
+    var lead = m.goal || m.scope || (target.grain ? '粒度：' + target.grain : '等待补充目标表与设计口径')
     return h(Frame, {
       title: '数据设计 · ' + (m.target && m.target.table ? m.target.table : '未命名'),
       state: status === 'draft' ? 'running' : 'done',
@@ -1207,13 +1218,14 @@ export function createDataopsCards(React) {
         h(Btn, { key: 'back', variant: 'ghost', onClick: function () { returnGate('design', 'ba', '设计需要修改') } }, '退回修改')
       ]
     },
-      h('dl', { className: 'do-grid' },
-        h('dt', null, '粒度'), h('dd', null, target.grain || '—'),
-        h('dt', null, '主键'), h('dd', null, h('span', { className: 'do-code' }, primaryKey.join(' + ') || '—')),
-        h('dt', null, '分区'), h('dd', null, h('span', { className: 'do-code' }, target.partition || '—')),
-        h('dt', null, '产出/SLA'), h('dd', null, ((m.schedule && m.schedule.sla) || '—') + (m.schedule && m.schedule.cron ? ' · ' + m.schedule.cron : '')),
-        h('dt', null, '来源'), h('dd', null, asArray(m.sources).map(function (s, i) { return h('span', { key: i }, i ? ' ⋈ ' : '', h('span', { className: 'do-code' }, s.table)) }))
-      ),
+      h('div', { className: 'do-design-lead' }, h('b', null, headline), h('span', null, lead)),
+      target.table ? h('dl', { className: 'do-grid do-design-grid' },
+        h('dt', null, '粒度'), h('dd', null, target.grain || '待补充'),
+        h('dt', null, '主键'), h('dd', null, h('span', { className: 'do-code' }, primaryKey.join(' + ') || '待补充')),
+        h('dt', null, '分区'), h('dd', null, h('span', { className: 'do-code' }, target.partition || '待补充')),
+        h('dt', null, '产出/SLA'), h('dd', null, ((m.schedule && m.schedule.sla) || '待补充') + (m.schedule && m.schedule.cron ? ' · ' + m.schedule.cron : '')),
+        h('dt', null, '来源'), h('dd', null, sources.length ? sources.map(function (source, i) { return h('span', { key: i }, i ? ' ⋈ ' : '', h('span', { className: 'do-code' }, source.table || source.name)) }) : '待补充')
+      ) : h('div', { className: 'do-design-incomplete' }, h('b', null, '设计还没有目标表'), h('span', null, '先补充 target.table / sources，再确认设计。')),
       path.length ? h('div', null, h('div', { className: 'do-label' }, 'DataMap 寻源'), h(DataMapPath, { path: path }), h(AssetCards, { assets: assets })) : null,
       evidence.length ? h('div', null,
         h('div', { className: 'do-label' }, '设计证据链'),
@@ -1227,8 +1239,8 @@ export function createDataopsCards(React) {
         })
       ) : null,
       asArray(m.metrics).length ? h('div', null, h('div', { className: 'do-label' }, '口径'), h('div', { className: 'do-kv' }, asArray(m.metrics).map(function (x, i) { return h(Pill, { key: i, tone: 'brand' }, x.name + ' · ' + (x.definition || '')) }))) : null,
-      asArray(m.quality).length ? h('div', null, h('div', { className: 'do-label' }, '质量/约束'), h('div', { className: 'do-kv' }, asArray(m.quality).map(function (q, i) { return h(Pill, { key: i, tone: q.status === 'warn' ? 'warn' : q.status === 'fail' ? 'warn' : 'pass' }, q.item + ' · ' + (q.expectation || statusText(q.status))) }))) : null,
-      h(Impact, { impact: m.impact }),
+      quality.length ? h('div', null, h('div', { className: 'do-label' }, '质量/约束'), h('div', { className: 'do-kv' }, quality.map(function (q, i) { return h(Pill, { key: i, tone: q.status === 'warn' ? 'warn' : q.status === 'fail' ? 'warn' : 'pass' }, q.item || q.name, ' · ', q.expectation || statusText(q.status)) }))) : null,
+      m.impact ? h(Impact, { impact: m.impact }) : h('div', { className: 'do-muted', style: { marginTop: '7px' } }, '影响面待评估：设计还没有目标表或下游血缘。'),
       h(Gaps, { gaps: m.gaps }),
       (m.gaps || []).some(function (g) { return g.severity === 'blocking' })
         ? h('div', { className: 'do-signoff' }, h('span', { className: 'do-signoff-title' }, '缺口'), h(Btn, { variant: 'ghost', onClick: function () { composeMessage('补充 mock 证据：用 closed 证据重新评估设计缺口') } }, '补充 mock 证据'))
