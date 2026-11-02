@@ -237,8 +237,9 @@ function apply(ctx) {
       })).then(function (workitems) {
         for (var i = 0; i < workitems.length; i++) window.dispatchEvent(new CustomEvent('dataops:signoff-recorded', { detail: { workitem: workitems[i] } }))
         noticeToneState[1]('success')
-        noticeState[1]('签收已记录：' + roles.map(function (role) { return role.key; }).join(' / ') + '，阶段状态已刷新')
+        noticeState[1]('签收已记录：' + roles.map(function (role) { return role.key; }).join(' / ') + '，正在刷新阶段…')
         window.setTimeout(function () { noticeState[1](null) }, 2600)
+        window.setTimeout(function () { window.location.reload() }, 650)
       }).catch(function (error) {
         noticeToneState[1]('error')
         noticeState[1]('签收失败：' + (error && error.message ? error.message : '请检查身份/角色'))

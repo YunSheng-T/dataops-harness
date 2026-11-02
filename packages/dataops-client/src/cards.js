@@ -1050,7 +1050,38 @@ export function createDataopsCards(React, LineageFlow) {
 
   function LineageV2Preview(props) {
     var l = props.lineage || props.model || {}
-    var graph = l.graph || { nodes: l.nodes || [], edges: l.edges || [] }
+    var graph = l.graph
+    if (!graph) {
+      var legacyNodes = []
+      var legacyEdges = []
+      var seen = {}
+      function addLegacy(id, kind, label) {
+        if (seen[id]) return
+        seen[id] = true
+        legacyNodes.push({ id: id, type: kind, label: label, layer: kind === 'physical_table' ? 'table' : undefined })
+      }
+      ;(l.nodes || []).forEach(function (item) {
+        if (typeof item !== 'string') return
+        var parts = item.split(/\s*(?:→|->)\s*/).map(function (part) { return part.trim() }).filter(Boolean)
+        var previous = null
+        parts.forEach(function (part) {
+          var raw = part.replace(/（[^）]*）/g, '').trim()
+          var match = raw.match(/^(table|job|task):(.+)$/)
+          if (!match) return
+          var kind = match[1] === 'table' ? 'physical_table' : match[1] === 'job' ? 'etl_job' : 'schedule_task'
+          var id = match[1] + ':' + match[2]
+          addLegacy(id, kind, match[2])
+          if (previous) legacyEdges.push({ from: previous, to: id, type: 'feeds' })
+          previous = id
+        })
+      })
+      ;(l.downstream || []).forEach(function (name) {
+        var id = 'table:' + String(name).replace(/^table:/, '')
+        addLegacy(id, 'physical_table', String(name).replace(/^table:/, ''))
+        if (l.target) legacyEdges.push({ from: 'table:' + l.target, to: id, type: 'feeds' })
+      })
+      graph = { nodes: legacyNodes, edges: legacyEdges }
+    }
     var nodes = graph.nodes || []
     var edges = graph.edges || []
     var tables = nodes.filter(function (n) { return n.type === 'physical_table' })
