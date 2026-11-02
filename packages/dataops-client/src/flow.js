@@ -791,6 +791,7 @@ function content(info, tab) {
   }
 
   function LineageGraph(props) {
+    ensureWorkbenchStyles()
     var graph = props.graph || { nodes: [], edges: [], kind: 'table_lineage' }
     var flowNodes = graph.nodes || []
     var flowEdges = graph.edges || []
