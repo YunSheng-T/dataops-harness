@@ -24,7 +24,20 @@ description: Stage 2 设计阶段使用；把需求落成 target/grain/PK/source
 - quality/impact/gaps/review
 
 DataMap、血缘、质量必须分开标注；不要把血缘塞进 DataMap，也不要用 DataMap 冒充质量。
-优先调 `dataops_shared_stage`：`action=prepare`、`kind=design`、`stage=design`，由它写交付物、更新 workitem 并出卡。
+
+生成 design payload 后**必须调用一次** `dataops_shared_stage`：
+
+```text
+action: prepare
+kind: design
+stage: design
+deliverable: deliverables/design/design.yaml
+payload: <design payload>
+```
+
+由它写交付物、生成 ArtifactRevision、绑定 `currentIteration`、清空旧 gate，并返回阶段卡。
+
+禁止只调用 `dataops_shared_present_deliverable` 或只在对话里展示设计卡；那只是预览，不会进入 Workitem Artifact Ledger。
 
 ## 门禁
 
