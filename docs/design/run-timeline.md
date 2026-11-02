@@ -27,14 +27,49 @@ DataOps
 
 `dataops_shared_read_logs` 是唯一数据入口；DataOps 只展示它的结构化结果。
 
+## 2.1 对象模型
+
+```text
+LTS task 定义
+  lts_code/<dir>/task.yaml
+        │ 1:N
+        ▼
+run 运行实例
+  runId + bizDate + status
+        │ 1:N
+        ▼
+job / group / dependency 事件
+  job、phase、level、code
+```
+
+主键是 **runId**，不是 LTS task 定义。
+
+- `taskRef` 是上下文，指向 LTS task / 调度 task
+- `runId` 才是时间线的归属对象
+- `job` 是 run 内的事件维度
+- 同一 task 的多次运行各自独立，不合并成一条“任务时间线”
+- P2.2 不做跨 run 聚合；跨 run 汇总属于后续 Task Health
+
+```text
+taskRef
+  id: 调度任务 ID
+  name: LTS task name
+  path?: lts_code/.../task.yaml
+runId
+bizDate?
+```
+
+调度 task ID 和 LTS task name 可能不同，不能用其中一个假装另一个；映射不到时保留 `taskRef` 和 gap。
+
 ## 3. 输入
 
 沿用 `dataops_shared_read_logs` 的输出，补充一个稳定的时间线视图：
 
 ```text
 RunTimeline
+  taskRef { id, name, path? }
   runId
-  taskId
+  bizDate?
   status: success | failed | running | partial
   startedAt
   finishedAt
