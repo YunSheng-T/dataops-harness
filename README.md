@@ -11,22 +11,39 @@ git submodule update --init --recursive
 基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的数据开发工作台。
 **独立项目，与 DeepSeek 不存在隶属、合作、授权或背书关系。**
 
+## 当前运行时
+
+仓库 pin 写在 `upstream.json`：
+
+```text
+runtimeVersion: 0.2.1-rc.4
+compatibleRuntimeRange: >=0.2.1-rc.2 <0.3.0
+```
+
+启动前先检查：
+
+```bash
+node scripts/check-runtime-version.mjs
+```
+
+当前机器如果实际运行 rc.2，会明确告警；不要把 rc.2 的验证结果标成 rc.4。内网安装必须使用兼容的 DSH runtime，并优先统一到 pin 版本。
+
 ## 里面有什么
 
 | 目录 | 内容 |
 |---|---|
-| `packages/dataops-client` | 用户面插件：14 个活动 toolview（事实/CICD/USPicker/阶段卡/StageResultCard 等）、标题阶段 chip、阶段简报、右栏资产/血缘/证据 |
+| `packages/dataops-client` | 用户面插件：15 类 toolview（事实/CICD/USPicker/阶段卡/StageResultCard 等）、标题阶段 chip、阶段简报、右栏资产/血缘/证据、会话内 LineageGraph |
 | `packages/dataops-brand` | 品牌插件：∞ 标记 + `DataOps` 字标（侧栏 + 空会话 Hero） |
-| `packages/dataops-tools` | Host 工具：19 个活动原子能力（事实/CICD/工作项/日志/presenter/US/DataMap/ensure/stage）；provider 支持 `mock` / `cli` / `http`；真实域 adapter 见内网架构 |
+| `packages/dataops-tools` | Host 工具：22 个活动工具（30 个已实现注册）；事实/CICD/工作项/日志/presenter/US/DataMap/ensure/stage/ltsgen；provider 支持 `mock` / `cli` / `http` |
 | `packages/dataops-preset` | Agent preset `dataops-dev` 的 patch 源片段：DataOps Lead persona、workflow/workitem 技能、文件/提问/待办工具、发布审批约束 |
 | `packages/dataops-bundle` | 发布 bundle：组合 tools/brand/client/preset，声明 `dsh.bundle` 与 `engines.dsh`；用户唯一安装入口 |
 | `packages/dataops-install` | 安装 / 诊断 / 卸载 CLI：preflight、seed web 模板、官方 `dsh plugin add`、receipt、skills、离线 overrides |
 | `profiles/dataops` | 独立 profile 模板（基于 `dsh-base` + `dsh-web-app`，不碰 `desktop` profile） |
-| `.agents/skills` | 领域技能：SQL 评审、建模评审、管道排障、影响面、服务契约、工作项协议 |
+| `.agents/skills` | 领域技能：SQL 评审、建模评审、管道排障、影响面、服务契约、工作项协议、阶段技能、ltsgen |
 | `prototype` | 原生 DSH 界面追加原型、三视图富节点血缘图谱原型（React Flow）与截图 |
-| `docs/design` | 框架、用户面、换品牌、发布/安装、Mock 演示、真实数据接入 |
+| `docs/design` | 框架、用户面、换品牌、发布/安装、Mock 演示、真实数据接入、内网 provider 契约 |
 | `workitems/_template` | 工作项 v0 模板：item.yaml / intent.md / plan.md / decision.md；交付阶段与审批记录 |
-| `docs/dataops-harness-blueprint.md` | 两仓库关系与 DSH 高价值资产盘点 |
+| `docs/ops` | 内网安装、升级、Agent playbook、离线 provider 示例 |
 
 > **阶段模型 v2**：本版实现到 Stage 5（需求 → 设计 → 方案 → 开发 → CICD）；Stage 6 不实现。阶段/设计归属与公共组件视图见 [docs/design/blueprint-v2.md](docs/design/blueprint-v2.md) 和 [prototype/blueprint-v2.html](prototype/blueprint-v2.html)。
 
@@ -46,51 +63,101 @@ P2.1 Code Scan Integration：[Mock 全量](prototype/code-scan-integration-bluep
 
 DataOps Dev P2 Agent 共同编辑：[设计](docs/design/dataops-dev-agent-collaboration.md) · [ADR 0015](docs/decisions/0015-dataops-dev-agent-collaboration.md) · [全量蓝图](prototype/dataops-dev-agent-collaboration-blueprint.html) · [P1 → P2 增量](prototype/dataops-dev-agent-collaboration-blueprint-delta.html)。
 
-DataOps Dev P3 结构化源码与 Diagnostics（待确认）：[设计](docs/design/dataops-dev-structured-diagnostics.md) · [ADR 0016](docs/decisions/0016-dataops-dev-structured-diagnostics.md) · [全量蓝图](prototype/dataops-dev-structured-diagnostics-blueprint.html) · [P2 → P3 增量](prototype/dataops-dev-structured-diagnostics-blueprint-delta.html)。
+DataOps Dev P3 结构化源码与 Diagnostics（已验收）：[设计](docs/design/dataops-dev-structured-diagnostics.md) · [ADR 0016](docs/decisions/0016-dataops-dev-structured-diagnostics.md) · [全量蓝图](prototype/dataops-dev-structured-diagnostics-blueprint.html) · [P2 → P3 增量](prototype/dataops-dev-structured-diagnostics-blueprint-delta.html) · [验证报告](docs/dataops-dev/verification/P3验证报告.md)。
+
+DataOps Dev P4 Artifact 动作与 Slots（已验收）：[设计](docs/design/dataops-dev-artifact-actions-slots.md) · [ADR 0017](docs/decisions/0017-dataops-dev-artifact-actions-slots.md) · [全量蓝图](prototype/dataops-dev-artifact-actions-slots-blueprint.html) · [P3 → P4 增量](prototype/dataops-dev-artifact-actions-slots-blueprint-delta.html) · [验证报告](docs/dataops-dev/verification/P4验证报告.md)。
+
+DataOps Dev P5 已保存作业 DryRun（DR-01～07 安全发起、异步结果、恢复与完整安全矩阵已通过；DR-08 真实平台验收阻塞，完整 P5 未验收）：[设计](docs/design/dataops-dev-dryrun.md) · [ADR 0018](docs/decisions/0018-dataops-dev-dryrun.md) · [全量蓝图](prototype/dataops-dev-dryrun-blueprint.html) · [P4 → P5 增量](prototype/dataops-dev-dryrun-blueprint-delta.html) · [交互原型](prototype/dataops-dev-dryrun-prototype.html) · [验证报告](docs/dataops-dev/verification/P5验证报告.md)。
 
 验收清单：[P1 + P2 验收](docs/verification/p1-p2-acceptance.md)。
 
 可视化：[Agent 架构全量蓝图](prototype/agent-architecture.html) · [v2 → Agent v1 增量](prototype/agent-architecture-delta.html)。
 
+## 当前能力
+
+```text
+US 接单 → 需求 → 设计 → 3a/3b/3c → 开发 → CICD
+Artifact Ledger：不可变 revision + currentIteration + evidenceRefs
+DataOps 右栏：仓库体检 / 资产 / 血缘 / 交付物 / 证据 / 检查
+Lineage：table_lineage / data_flow / task_dag；task_dag 来自真实 task.yaml
+CICD：mock pipeline + 制品包；deploy=opt-in；真实部署仅 internal 配置
+ltsgen：mock 生成 lts_code/<task>/task.yaml + output/<package>.zip；jar 内网替换
+```
+
 ## Mock 演示
 
-不接内网，先跑 Stage 0–5 mock 演示 + 排障：见 [docs/design/mock-demo.md](docs/design/mock-demo.md)。
+不接内网，按阶段流转脚本走：
 
-![DataOps 6-stage mock story](prototype/shots/real-dataops-story.png)
+- [阶段流转演示脚本](docs/demo/stage-flow-demo-2026-11-03.md)
+- [功能演示脚本](docs/demo/2026-11-03-demo-script.md)
+- [Mock 演示设计](docs/design/mock-demo.md)
 
-## 快速开始（本地 profile）
+演示工作项可用 US 接单创建，也可用 seed 兜底。重复演示先归档旧 Workitem：
 
-```sh
-# 1. 构建两个客户端包
+```bash
+node scripts/reset-dataops-demo.mjs --id <workitem-id>
+```
+
+![DataOps stage flow](prototype/shots/real-dataops-story.png)
+
+## 快速开始
+
+### 1. 构建
+
+```bash
 node packages/dataops-client/scripts/build.mjs
 node packages/dataops-brand/scripts/build.mjs
+node scripts/verify-local.mjs
+```
 
-# 可选：P1.4 自然语言 e2e（本地模型 + 交互式审批）
-node scripts/e2e/dataops-p1.4.mjs --scenario query
+`verify-local` 通过后才启动。
 
-# 2. 安装到独立 profile（默认 ~/.dsh/profiles/dataops，不碰 desktop）
+### 2. 选择安装方式
+
+开发机 source-link：
+
+```bash
 node scripts/install-dataops-profile.mjs
-
-# 3. 安装原生 dsh（推荐，版本对齐桌面端；只需一次）
-npm install -g @deepseek-ai/dsh@0.2.1-rc.4
-
-# 4. 先看组合，再启动
-dsh --profile dataops --dump-config
+node scripts/install-dataops-skills.mjs
+node scripts/check-install.mjs --home "$DSH_HOME"
 dsh --profile dataops
 ```
 
-没有网络或不想装全局时，用仓库内的包装脚本（调用桌面端自带的 CLI）：
+内网稳定机 release：
 
-```sh
+```bash
+node scripts/release-dataops.mjs
+node packages/dataops-install/bin/dataops-install.mjs install \
+  --dsh <path-to-dsh> \
+  --offline dist/dataops-0.1.0 \
+  --yes
+node packages/dataops-install/bin/dataops-install.mjs doctor --dsh <path-to-dsh>
+```
+
+升级见 [内网升级手册](docs/ops/update-dataops-on-intranet.md)。
+安装/升级前不要使用会丢掉用户插件的 `--reset`。
+
+### 3. 检查 runtime
+
+```bash
+node scripts/check-runtime-version.mjs
+```
+
+当前 pin 是 rc.4；如果实际是 rc.2，只能视为兼容运行，不能当作 rc.4 验收。
+
+### 4. 启动
+
+```bash
+DSH_HOME="$DSH_HOME" dsh --profile dataops
+```
+
+没有全局 `dsh` 时：
+
+```bash
 ./scripts/dsh --profile dataops
 ```
 
-`dsh` 不在你的 PATH 里是正常的：桌面端只是内置了 CLI，没有全局安装。
-也可以打开 DSH Desktop 自带的终端，那里的 `dsh` 已经在 PATH 上：
-
-```sh
-dsh --profile dataops
-```
+桌面端自带的终端也可以直接运行 `dsh --profile dataops`。
 
 ## 本地发布与安装（M2/M3）
 
@@ -115,13 +182,14 @@ headless 验收记录见 [docs/verification/release-install-acceptance.md](docs/
 
 ## 验证
 
-```sh
-cd packages/dataops-client && npm run check   # 9 条离线断言 + 5 类 seat 的注册 smoke
-cd packages/dataops-brand && npm run check    # 品牌渲染 + 3 个 seat 的注册 smoke
-cd packages/dataops-tools && npm run check    # 24 个注册工具（P3 活动面 16）+ 6 阶段 payload + HTTP/CLI stub + 注册 smoke
+```bash
+node scripts/verify-local.mjs                 # 16 项离线检查
+node packages/dataops-tools/scripts/check.mjs # 30 个已实现工具；22 个活动面
+node packages/dataops-client/scripts/check.mjs
+node scripts/check-runtime-version.mjs
 ```
 
-真机验证记录见 `docs/design/rebranding.md#验证记录`。
+真机验证记录见 [docs/design/rebranding.md](docs/design/rebranding.md)。
 
 ## 设计原则
 
@@ -139,6 +207,14 @@ cd packages/dataops-tools && npm run check    # 24 个注册工具（P3 活动�
 - [内网 Stage 0–5 实施计划](docs/plans/intranet-stage0-5.md)
 
 - [内网离线安装](docs/ops/offline-install.md)
+
+- [内网升级手册](docs/ops/update-dataops-on-intranet.md)
+
+- [内网 Agent playbook](docs/ops/intranet-agent-playbook.md)
+
+- [内网 provider 契约](docs/design/internal-integration-contract.md)
+
+- [交接包评估](docs/design/handoff-20261102-assessment.md)
 
 ## 本地验收
 
