@@ -11,6 +11,46 @@ git submodule update --init --recursive
 基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的数据开发工作台。
 **独立项目，与 DeepSeek 不存在隶属、合作、授权或背书关系。**
 
+## 安装 DSH（前置）
+
+DataOps bundle **不包含 DSH runtime**。仓库里的 `deepseek-harness/` submodule 和 `upstream.json` 是源码引用/版本 pin，不是可直接执行的 runtime。
+
+先选择一种安装方式：
+
+### A. 全局 npm（推荐固定版本）
+
+```bash
+npm install -g @deepseek-ai/dsh@0.2.1-rc.4
+dsh --version
+```
+
+### B. DSH Desktop 自带 runtime
+
+DSH Desktop 不一定把 `dsh` 放到全局 PATH。可以使用它自带的终端，或：
+
+```bash
+./scripts/dsh --version
+```
+
+当前 `scripts/dsh` 优先找 DSH Desktop；如果桌面端不在默认路径，用 `DSH_APP_PATH` 指向它的 `Contents/Resources/app`。如果机器上还有 DSH NEXT，请安装对应的全局 CLI，避免实际 runtime 和 pin 不一致。
+
+### C. 内网已有 DSH runtime
+
+使用内网提供的兼容版本，并显式指定：
+
+```bash
+/path/to/dsh --version
+DSH_BIN=/path/to/dsh node scripts/check-runtime-version.mjs
+```
+
+兼容范围：
+
+```text
+>=0.2.1-rc.2 <0.3.0
+```
+
+推荐统一到 `upstream.json` 的 pin `0.2.1-rc.4`。
+
 ## 当前运行时
 
 仓库 pin 写在 `upstream.json`：
