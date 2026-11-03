@@ -1,0 +1,30 @@
+#!/bin/sh
+# Run the DSH CLI from the pinned deepseek-harness source checkout.
+#
+# Prerequisites:
+#   cd deepseek-harness
+#   corepack prepare pnpm@11.28.5 --activate
+#   pnpm install --frozen-lockfile
+#   pnpm run build
+#
+# usage:
+#   ./scripts/dsh-from-source --version
+#   ./scripts/dsh-from-source --profile dataops
+set -eu
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+SOURCE="$ROOT/deepseek-harness"
+if [ ! -f "$SOURCE/package.json" ]; then
+  echo "scripts/dsh-from-source: deepseek-harness submodule is missing" >&2
+  echo "run: git submodule update --init --recursive" >&2
+  exit 1
+fi
+if [ ! -d "$SOURCE/node_modules" ]; then
+  echo "scripts/dsh-from-source: deepseek-harness dependencies are not installed" >&2
+  echo "run: cd $SOURCE && pnpm install --frozen-lockfile && pnpm run build" >&2
+  exit 1
+fi
+if [ ! -d "$SOURCE/apps/cli" ]; then
+  echo "scripts/dsh-from-source: source CLI is missing" >&2
+  exit 1
+fi
+exec pnpm --dir "$SOURCE" dsh "$@"

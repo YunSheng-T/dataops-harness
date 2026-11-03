@@ -34,7 +34,28 @@ DSH Desktop 不一定把 `dsh` 放到全局 PATH。可以使用它自带的终�
 
 当前 `scripts/dsh` 优先找 DSH Desktop；如果桌面端不在默认路径，用 `DSH_APP_PATH` 指向它的 `Contents/Resources/app`。如果机器上还有 DSH NEXT，请安装对应的全局 CLI，避免实际 runtime 和 pin 不一致。
 
-### C. 内网已有 DSH runtime
+### C. 从源码构建（submodule）
+
+仓库已通过 submodule 引入 pinned 的 `deepseek-harness` 源码（当前 rc.4），但它默认没有安装依赖/构建。
+
+```bash
+cd deepseek-harness
+corepack prepare pnpm@11.28.5 --activate
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm dsh --version
+cd ..
+```
+
+启动 DataOps：
+
+```bash
+./scripts/dsh-from-source --profile dataops
+```
+
+源码构建是高级路径：依赖 Node、pnpm 11.28.5、原生编译环境和上游依赖。它不等于 DataOps profile 已安装；profile 仍需单独安装。不要把 `node_modules/`、`dist/` 构建产物提交进仓库。
+
+### D. 内网已有 DSH runtime
 
 使用内网提供的兼容版本，并显式指定：
 
