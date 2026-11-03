@@ -26,7 +26,32 @@ readlink "$DSH_HOME/profiles/dataops/node_modules/@dataops/dsh-dataops-client"
 
 说明是 **source-link 模式**；否则很可能是 **release 安装副本**。
 
+## 1.1 先检查运行时版本
+
+```bash
+node scripts/check-runtime-version.mjs
+```
+
+如果输出：
+
+```text
+pin: 0.2.1-rc.4
+installedDsh: 0.2.1-rc.2
+```
+
+说明仓库 pin 和实际运行版本不一致。`rc.2` 在兼容范围内，但不能把 rc.2 的结果当成 rc.4 的验证结果。
+
+推荐内网统一使用：
+
+```bash
+npm install -g @deepseek-ai/dsh@0.2.1-rc.4
+dsh --version
+```
+
+或者显式指定 `DSH_BIN` 指向内网匹配的 runtime。
+
 ## 2. 模式 A：source-link（开发机常用）
+
 
 内网 checkout 更新后：
 
